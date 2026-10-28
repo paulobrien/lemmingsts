@@ -681,7 +681,7 @@ export const TESTED_SOLUTIONS: readonly TestedSolution[] = [
     replay: '54=s2&54=l0&83=l1&112=l2&141=l3&200=s4&200=l4&201=i49&359=l2&400=s5&400=l3&500=s4&500=l0&524=s5&524=l1&592=l3&716=l1&784=l3&908=l1&976=l3&1100=l1&1292=l1&1500=s3&1500=l0&1500=l2&1500=l4',
     hints: [
       'The long falls need two separate landing ramps before the crowd can safely follow.',
-      'Give the first four lemmings Floaters and hold the rest at the entrance. Use Blockers to turn one Floater back from the top of the tower and another back from the ground to its right.',
+      'Give the first four lemmings Floaters, hold the rest at the entrance and raise the release rate. Use Blockers to turn one Floater back from the top of the tower and another back from the ground to its right.',
       'Build a ramp left from the tower towards the entrance, and another left from the lower ground to catch the drop from the tower. Once both ramps are complete, bomb the three Blockers to release the crowd.',
     ],
   },
