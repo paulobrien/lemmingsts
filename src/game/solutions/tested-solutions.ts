@@ -460,6 +460,15 @@ export const TESTED_SOLUTIONS: readonly TestedSolution[] = [
   },
   {
     groupIndex: 3,
+    levelIndex: 15,
+    replay: '6=i50&56=d50&57=s8&86=l0&112=s6&118=l1&321=i53&369=d53&440=i89&635=l9',
+    hints: [
+      'A lower tunnel gives everyone a shorter path, but the release rate must be managed carefully.',
+      'Dig just beyond the entrance; send a second lemming to bash along the lower level. Adjust the release rate to give the tunnel time, then use another Basher near its far end to keep a late arrival moving.',
+    ],
+  },
+  {
+    groupIndex: 3,
     levelIndex: 19,
     replay: '90=s4&90=l1&130=s6&130=l0&244=s5&244=l0&531=s7&531=l0&593=s1&593=l49&600=l0&940=s7&940=l49',
     hints: [
