@@ -23,14 +23,15 @@ describe('DOS vaporizing', () => {
       expect(action.process({} as Level, lem)).toBe(LemmingStateType.NO_STATE_TYPE);
       expect([lem.x, lem.y]).toEqual([8, 9]);
     }
-    expect(lem.isDisabled()).toBe(true);
+    expect(lem.isDisabled()).toBe(false);
     expect(action.process({} as Level, lem)).toBe(LemmingStateType.OUT_OFF_LEVEL);
   });
 
   it('enters vaporizing from a fire object and removes the victim after its animation', () => {
     const timer = { getGameTicks: () => 1 } as GameTimer;
     const triggers = new TriggerManager(timer);
-    triggers.add(new Trigger(TriggerTypes.KILL, 5, 5, 8, 8));
+    const fire = new Trigger(TriggerTypes.KILL, 5, 5, 8, 8);
+    triggers.add(fire);
     const manager = Object.create(LemmingManager.prototype) as LemmingManager;
     const lem = new Lemming(6, 6, 0);
     lem.action = { process: () => LemmingStateType.NO_STATE_TYPE, getActionName: () => 'walk',
@@ -38,15 +39,18 @@ describe('DOS vaporizing', () => {
     const sprites = { getAnimation: () => ({}) } as unknown as LemmingsSprite;
     const vapor = new ActionVaporizingSystem(sprites);
     const actions = []; actions[LemmingStateType.FRYING] = vapor;
+    const athlete = { triggerLemAction: vi.fn(() => true) };
     const removeOne = vi.fn();
-    Object.assign(manager, { level: { width: 32, height: 32 }, lemmings: [lem], actions,
+    Object.assign(manager, { level: { width: 32, height: 32 }, lemmings: [lem], actions, skillActions: { [SkillTypes.CLIMBER]: athlete },
       logging: { debug: vi.fn() }, triggerManager: triggers,
       gameVictoryCondition: { getLeftCount: () => 0, removeOne }, nextNukingLemmingsIndex: -1 });
     manager.tick();
     expect(lem.action).toBe(vapor);
     expect(manager.doLemmingAction(lem, SkillTypes.BOMBER)).toBe(false);
+    expect(manager.doLemmingAction(lem, SkillTypes.CLIMBER)).toBe(true);
     for (let i = 0; i < 13; i++) manager.tick();
     expect(lem.removed).toBe(false);
+    expect(fire.getActivationCount()).toBe(1);
     manager.tick();
     expect(lem.removed).toBe(true);
     expect(removeOne).toHaveBeenCalledOnce();

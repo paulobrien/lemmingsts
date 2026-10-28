@@ -23,7 +23,6 @@ export class ActionVaporizingSystem implements IActionSystem {
 
     public process(_level: Level, lem: Lemming): LemmingStateType {
         // https://github.com/ericlangedijk/Lemmix/blob/master/src/Game.pas#L3312
-        lem.disable();
         lem.frameIndex++;
         return lem.frameIndex >= 14 ? LemmingStateType.OUT_OFF_LEVEL : LemmingStateType.NO_STATE_TYPE;
     }
