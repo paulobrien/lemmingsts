@@ -157,6 +157,15 @@ export const TESTED_SOLUTIONS: readonly TestedSolution[] = [
       'Give each a Builder at the first ledge; extend the second bridge as needed, then bash through the wall ahead.',
     ],
   },
+  {
+    groupIndex: 0,
+    levelIndex: 29,
+    replay: '64=s6&64=l0&120=l0&208=l0',
+    hints: [
+      'The pits descend in a zigzag; each has a narrow side wall.',
+      'Bash out of the first pit to the left, the next to the right, and the last to the left.',
+    ],
+  },
 ];
 
 /** Unverified levels deliberately return no solution or hints. */
