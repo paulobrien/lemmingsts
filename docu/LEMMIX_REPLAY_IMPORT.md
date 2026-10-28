@@ -26,6 +26,8 @@ Additional public recordings verified on local files are [Tricky 5](https://www.
 
 The public [Taxing 25](https://www.lemmingsforums.net/index.php?topic=4539.45) and [Mayhem 27](https://www.lemmingsforums.net/index.php?topic=4539.105) recordings also verify, saving 80 and 50 respectively.
 
+The public [Mayhem 19 DOS recording](https://www.lemmingsforums.net/index.php?topic=1383.105) verifies with 48 rescued when supplied as `LEMMIX_MAYHEM19_REPLAY_PATH` alongside `RUN_PRIVATE_GAME_TESTS=1`.
+
 The following recordings from the public [minimum-skills challenge](https://www.lemmingsforums.net/index.php?topic=1068.0) also verify on the local original game files. Their environment variables enable the matching opt-in integration tests. Rescue counts are measured in this engine; the Taxing 22 recording's filename describes a save-all solution, but this engine saves 49.
 
 | Level | Recording | Environment variable | Rescued |
