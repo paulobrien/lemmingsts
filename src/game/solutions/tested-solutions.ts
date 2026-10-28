@@ -373,6 +373,16 @@ export const TESTED_SOLUTIONS: readonly TestedSolution[] = [
       'Put a Blocker under the entrance and bash right through the pillar. Once the last lemming emerges, dig under the Blocker to release it, then build to stop the Digger.',
     ],
   },
+  {
+    groupIndex: 1,
+    levelIndex: 26,
+    replay: '54=l0&132=s8&132=l0&132=s4&132=l1&205=l2&397=s7&397=l0&870=s4&870=l0&880=s1&880=l3&880=l4&900=s3&900=l1&1220=s4&1220=l44&1271=l26&1565=s5&1565=l3&1765=l3&1800=s7&1800=l4&1898=s5&1898=l3&2098=l3&2231=l3&2379=s6&2379=l4&2379=s3&2379=l44',
+    hints: [
+      'Hold the crowd while a few climbers prepare the route.',
+      'Cut a safe way down from the entrance, then use a climber to mine back toward the crowd and another to build toward the exit from the right.',
+      'Once the tunnel and exit stairs are ready, release the lower Blocker and let the crowd follow.',
+    ],
+  },
 ];
 
 /** Unverified levels deliberately return no solution or hints. */
