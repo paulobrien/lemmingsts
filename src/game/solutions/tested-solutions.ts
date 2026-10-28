@@ -132,6 +132,15 @@ export const TESTED_SOLUTIONS: readonly TestedSolution[] = [
   },
   {
     groupIndex: 0,
+    levelIndex: 13,
+    replay: '152=s6&152=l0&317=s5&317=l0&509=l0&701=l0&893=l0&990=s6&990=l0&1186=l0&1328=s5&1328=l0&1520=l0&1712=l0&1904=l0&1932=s6&1932=l0',
+    hints: [
+      'There is water below the chambers and barriers between them.',
+      'Bash through the first barrier, then build up and bash through the next two. Build another staircase in the final chamber and bash toward the exit.',
+    ],
+  },
+  {
+    groupIndex: 0,
     levelIndex: 15,
     replay: '198=s5&198=l0&390=l0&582=l0&774=l0&966=l0&1158=l0&1350=l0',
     hints: [
