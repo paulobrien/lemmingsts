@@ -70,6 +70,9 @@ export class Game {
         });
 
         this.triggerManager = new TriggerManager(this.gameTimer);
+        this.triggerManager.onSoundEffect.on(effect => {
+            if (effect !== undefined) this.onSoundEffect.trigger(effect);
+        });
         this.triggerManager.addRange(level.triggers);
         level.setBlockerFieldLookup((x, y) => this.triggerManager.hasBlockerFieldAt(x, y));
 
@@ -163,6 +166,7 @@ export class Game {
 
         this.onGameEnd.dispose();
         this.onSoundEffect.dispose();
+        this.triggerManager.onSoundEffect.dispose();
     }
 
 

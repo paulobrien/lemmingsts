@@ -201,6 +201,10 @@ import { TriggerManager } from './trigger-manager';
             }
 
             this.releaseIteration++;
+            // DOS cues the voice and entrance sound on iterations 15 and 34.
+            // https://github.com/ericlangedijk/Lemmix/blob/master/src/Game.pas#L3534
+            if (this.releaseIteration === 15) this.onSoundEffect.trigger(SoundEffect.LetsGo);
+            else if (this.releaseIteration === 34) this.onSoundEffect.trigger(SoundEffect.Entrance);
             if (this.releaseIteration < 35) return;
             this.releaseCountdown--;
 
@@ -343,6 +347,9 @@ import { TriggerManager } from './trigger-manager';
             if (stateType === LemmingStateType.EXITING) this.onSoundEffect.trigger(SoundEffect.Exit);
             else if (stateType === LemmingStateType.SPLATTING) this.onSoundEffect.trigger(SoundEffect.Splat);
             else if (stateType === LemmingStateType.EXPLODING) this.onSoundEffect.trigger(SoundEffect.Explosion);
+            else if (stateType === LemmingStateType.DROWNING) this.onSoundEffect.trigger(SoundEffect.Drowning);
+            else if (stateType === LemmingStateType.FRYING) this.onSoundEffect.trigger(SoundEffect.Fire);
+            else if (stateType === LemmingStateType.OHNO && !this.isNuking()) this.onSoundEffect.trigger(SoundEffect.OhNo);
             // Original DOS/Lemmix starts its fall counter at three pixels.
             // A later custom-DOS variant starts at zero; this engine targets
             // the classic original rules rather than identifying executables.

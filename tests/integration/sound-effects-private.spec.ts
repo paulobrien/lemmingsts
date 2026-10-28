@@ -33,7 +33,9 @@ it.skipIf(process.env.RUN_PRIVATE_GAME_TESTS !== '1')('renders and finishes the 
       new File([Uint8Array.from(await readFile(`dos/lemmings/${name}`))], name))));
     const factory = new GameFactory('/data');
     const resources = (await factory.getGameResources(GameTypes.LEMMINGS))!;
-    for (const effect of [SoundEffect.Assign, SoundEffect.Exit, SoundEffect.Splat, SoundEffect.Explosion]) {
+    for (const effect of [SoundEffect.Entrance, SoundEffect.LetsGo, SoundEffect.Assign, SoundEffect.OhNo,
+      SoundEffect.Splat, SoundEffect.Explosion, SoundEffect.Fire, SoundEffect.Exit, SoundEffect.Drowning,
+      5, 6, 8, 13, 14]) {
       const track = await resources.getSoundTrack(effect);
       const player = new AudioPlayer(track, true);
       const context = player.audioCtx as unknown as TestAudioContext;
@@ -47,7 +49,10 @@ it.skipIf(process.env.RUN_PRIVATE_GAME_TESTS !== '1')('renders and finishes the 
       expect(Math.max(...peaks)).toBeGreaterThan(0.01);
       expect(track.isFinished()).toBe(true);
       expect(context.suspend).toHaveBeenCalledOnce();
-      expect(peaks.at(-1)).toBeLessThan(0.001);
+      // Some trap and water effects have a longer, quiet release than the
+      // original four cues; all must decay before the player suspends.
+      const originalCue = [SoundEffect.Assign, SoundEffect.Exit, SoundEffect.Splat, SoundEffect.Explosion].includes(effect);
+      expect(peaks.at(-1), `effect ${effect} release`).toBeLessThan(originalCue ? 0.001 : 0.01);
       player.stop();
       expect(context.close).toHaveBeenCalledOnce();
     }
@@ -60,6 +65,8 @@ it.skipIf(process.env.RUN_PRIVATE_GAME_TESTS !== '1')('renders and finishes the 
       game.getGameTimer().tick();
     }
     expect(game.getGameState()).toBe(GameStateTypes.SUCCEEDED);
+    expect(events).toContain(SoundEffect.LetsGo);
+    expect(events).toContain(SoundEffect.Entrance);
     expect(events).toContain(SoundEffect.Assign);
     expect(events).toContain(SoundEffect.Exit);
   } finally {

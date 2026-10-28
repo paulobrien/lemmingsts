@@ -3,11 +3,14 @@ import { DisplayImage } from '../view/display-image';
 import { GameTimer } from './game-timer';
 import { Lemming } from './lemming';
 import { Trigger } from './trigger';
+import { EventHandler } from '../utilities/event-handler';
+import { SoundEffect } from './sound-effects';
 
 /** manages all triggers */
 export class TriggerManager {
 
     private triggers: Trigger[] = [];
+    public readonly onSoundEffect = new EventHandler<SoundEffect>();
 
     constructor(private gameTimer: GameTimer) {
 
@@ -69,7 +72,15 @@ export class TriggerManager {
                 // The central blocker cell owns the map location but has no
                 // turning effect; it still hides the object underneath.
                 if (this.triggers[i].getType() === TriggerTypes.BLOCKER_CENTER) return TriggerTypes.NO_TRIGGER;
-                return this.triggers[i].trigger(x, y, tick);
+                const trigger = this.triggers[i];
+                const type = trigger.trigger(x, y, tick);
+                const soundId = trigger.getSoundIndex();
+                // The object data uses DOS's one-based driver numbers. Only
+                // a successful trap activation cues its configured sound.
+                if (type === TriggerTypes.TRAP && soundId >= 1 && soundId <= 18) {
+                    this.onSoundEffect.trigger((soundId - 1) as SoundEffect);
+                }
+                return type;
             }
         }
 

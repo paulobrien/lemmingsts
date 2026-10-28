@@ -29,6 +29,11 @@ export class Trigger {
         return this.type;
     }
 
+    /** Raw DOS object sound IDs are one-based; zero means no sound. */
+    public getSoundIndex(): number {
+        return this.soundIndex;
+    }
+
     /** Number of successful activations, excluding misses and cooldowns. */
     public getActivationCount(): number {
         return this.activationCount;

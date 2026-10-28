@@ -56,7 +56,7 @@ The app must not commit, bundle or publicly distribute the original game files. 
 
 ## 6. Polish and release
 
-- Improve presentation, level completion feedback, settings and onboarding; address real-device feedback and bugs. The optional AdLib sound-effects toggle now covers skill assignments, exits, splats and explosions; connect and verify the remaining gameplay effects.
+- Improve presentation, level completion feedback, settings and onboarding; address real-device feedback and bugs. Optional AdLib effects cover opening cues, skill assignments, Oh No, exits, splats, explosions, water, fire and triggered traps; connect and verify the remaining gameplay effects.
 - Document setup, the private asset workflow, accessibility and known limitations. Review the project's code, emulator and game-asset licences before any wider distribution.
 - Deploy the app to an appropriate HTTPS host and test the production build. Never publish original game files as part of the site.
 - Consider cross-device progress sync only if desired; it requires a storage and privacy design. If a Play Store listing or Android package becomes a requirement, assess a Trusted Web Activity and Android signing first. Consider Expo or a native rewrite only for specific needs that the web app cannot meet.

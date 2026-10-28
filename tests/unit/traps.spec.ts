@@ -284,6 +284,7 @@ describe('triggered traps', () => {
         actions[LemmingStateType.OHNO] = ohno;
         const removeOne = vi.fn();
         Object.assign(manager, { level: emptyLevel(), lemmings: [first], triggerManager: triggers, actions, logging: { debug: vi.fn() },
+            onSoundEffect: { trigger: vi.fn() },
             gameVictoryCondition: { getLeftCount: () => 0, removeOne }, nextNukingLemmingsIndex: -1 });
         manager.tick();
         expect(first.removed).toBe(false);

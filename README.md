@@ -44,7 +44,7 @@ Progress and settings are stored locally per browser. They do not sync between d
 
 Hints are available only for levels with a verified solution and are revealed one at a time on request. Loading a level successfully does not prove it is completable; the optional local integration tests exercise the recorded solutions as they are added. All 120 original levels have passed a local completion replay; some of those checks require separately obtained community recordings. The project-authored solution and hint collection is still incomplete, and some original DOS physics details need further verification.
 
-Music and sound effects have separate switches and start off by default. The optional effects currently cover successful skill assignments, exits, splats, and explosions using the locally imported DOS AdLib data; other gameplay effects are not yet connected. Effects are monophonic: a newer effect replaces the previous one. The existing AdLib interpreter uses a legacy Web Audio processor, and browsers may require a user interaction before audio can play.
+Music and sound effects have separate switches and start off by default. The optional effects use the locally imported DOS AdLib data and cover the opening cues, skill assignments, Oh No, exits, splats, explosions, drowning, fire and triggered traps. Other gameplay effects are not yet connected. Effects are monophonic: a newer effect replaces the previous one. The existing AdLib interpreter uses a legacy Web Audio processor, and browsers may require a user interaction before audio can play.
 
 ## Licence and acknowledgements
 
