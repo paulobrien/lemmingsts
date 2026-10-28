@@ -189,10 +189,14 @@ export function verifyLemmixCandidate(game: Game, candidate: LemmixCandidate): {
         if (game.getVictoryCondition().getCurrentReleaseRate() !== rate + event.delta) return fail(`release-rate change failed at tick ${tick}`);
       } else {
         const lemming = game.getLemmingManager().getLemming(event.id);
-        if (!lemming || lemming.removed || lemming.x !== event.x || lemming.y !== event.y) return fail(`lemming ${event.id} position differs at tick ${tick}`);
+        if (!lemming || lemming.removed) return fail(`lemming ${event.id} is unavailable at tick ${tick}`);
         const count = game.getGameSkills().getSkill(event.skill);
         game.queueCommand(new CommandLemmingsAction(event.id));
         if (game.getGameSkills().getSkill(event.skill) !== count - 1) return fail(`skill assignment failed at tick ${tick}`);
+        // Lemmix records positions after assignment. Becoming a miner moves
+        // the lemming down one pixel as part of that transition.
+        // https://github.com/ericlangedijk/Lemmix/blob/master/src/Game.pas#L4320
+        if (lemming.x !== event.x || lemming.y !== event.y) return fail(`lemming ${event.id} position differs at tick ${tick}`);
       }
     }
     timer.tick();

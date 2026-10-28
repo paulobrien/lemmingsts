@@ -28,6 +28,7 @@ const target = { levelTitle: 'Synthetic level', initialReleaseRate: 50 };
 
 function fakeGame(x = 12, allowAssignment = true): Game {
   let ticks = 0, selected = SkillTypes.CLIMBER, remaining = 10, releaseRate = 50;
+  const lemming = { x, y: 34, removed: false };
   const commands: string[] = [];
   const timer = { getGameTicks: () => ticks, getGameTimeLimit: () => 4, isRunning: () => false, tick: () => { ticks++; } };
   const skills = { getSelectedSkill: () => selected, getSkill: () => remaining };
@@ -37,12 +38,16 @@ function fakeGame(x = 12, allowAssignment = true): Game {
     getGameState: () => ticks >= 3 ? GameStateTypes.SUCCEEDED : GameStateTypes.RUNNING,
     getGameSkills: () => skills,
     getVictoryCondition: () => ({ getCurrentReleaseRate: () => releaseRate }),
-    getLemmingManager: () => ({ getLemming: () => ({ x, y: 34, removed: false }) }),
+    getLemmingManager: () => ({ getLemming: () => lemming }),
     getCommandManager: () => ({ serialize: () => commands.join('&') }),
     queueCommand: (command: { getCommandKey(): string; save(): number[] }) => {
       const key = command.getCommandKey(), value = command.save()[0];
       if (key === 's' && selected !== value) { selected = value; commands.push(`${ticks}=s${value}`); }
-      if (key === 'l' && allowAssignment) { remaining--; commands.push(`${ticks}=l${value}`); }
+      if (key === 'l' && allowAssignment) {
+        remaining--;
+        if (selected === SkillTypes.MINER) lemming.y++;
+        commands.push(`${ticks}=l${value}`);
+      }
       if (key === 'i') { releaseRate += value; commands.push(`${ticks}=i${value}`); }
       if (key === 'd') { releaseRate -= value; commands.push(`${ticks}=d${value}`); }
     },
@@ -70,6 +75,13 @@ describe('Lemmix replay conversion (synthetic inputs)', () => {
     const candidate = parseLemmixReplay(lrb([{ tick: 1, flags: 0x80, assigned: 3 }]), target);
     expect(verifyLemmixCandidate(fakeGame(13), candidate)).toEqual({ ok: false, reason: 'lemming 0 position differs at tick 1' });
     expect(verifyLemmixCandidate(fakeGame(12, false), candidate)).toEqual({ ok: false, reason: 'skill assignment failed at tick 1' });
+  });
+
+  it('compares a miner position after the one-pixel assignment transition', () => {
+    const candidate = parseLemmixReplay(lrb([{ tick: 1, flags: 0x80, assigned: 9, y: 35 }]), target);
+    expect(verifyLemmixCandidate(fakeGame(), candidate)).toEqual({ ok: true, replay: candidate.replay });
+    const wrongPosition = parseLemmixReplay(lrb([{ tick: 1, flags: 0x80, assigned: 9, y: 34 }]), target);
+    expect(verifyLemmixCandidate(fakeGame(), wrongPosition)).toEqual({ ok: false, reason: 'lemming 0 position differs at tick 1' });
   });
 
   it('translates paired pauses and a paused instantaneous v1 rate change', () => {
