@@ -75,7 +75,7 @@ export class GameTimer {
             return;
         }
 
-        this.gameTimerHandler = setInterval(() => {
+        this.gameTimerHandler = window.setInterval(() => {
             this.tick();
         }, (this.TIME_PER_FRAME_MS / this._speedFactor));
     }
@@ -102,7 +102,9 @@ export class GameTimer {
         let leftTicks = this.ticksTimeLimit - this.tickIndex;
         if (leftTicks < 0) leftTicks = 0;
 
-        return Math.floor(this.ticksToSeconds(leftTicks));
+        // Keep the last partial second playable; rounding down ends a level
+        // almost a full second before its configured limit.
+        return Math.ceil(this.ticksToSeconds(leftTicks));
     }
 
     /** return the left game time in seconds */
@@ -120,7 +122,7 @@ export class GameTimer {
 
     /** calc the number ticks form game-time in seconds  */
     public secondsToTicks(seconds: number): number {
-        return seconds * (1000 / this.TIME_PER_FRAME_MS);
+        return seconds * 1000 / this.TIME_PER_FRAME_MS;
     }
 
     /** return the maximum time in seconds to win the game  */

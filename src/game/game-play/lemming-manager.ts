@@ -1,4 +1,5 @@
 import { LemmingsSprite } from '../resources/lemmings-sprite';
+import { GameTypes } from '../game-types';
 import { TriggerTypes } from '../resources/lemmings/trigger-types';
 import { Level } from '../resources/level';
 import { MaskProvider } from '../resources/mask-provider';
@@ -40,6 +41,7 @@ import { TriggerManager } from './trigger-manager';
         private skillActions: IActionSystem[] = [];
 
         private releaseTickIndex: number = 0;
+        private nextEntranceIndex: number = 0;
 
         private logging = new LogHandler("LemmingManager");
 
@@ -146,7 +148,18 @@ import { TriggerManager } from './trigger-manager';
             if (this.releaseTickIndex >= (104 - this.gameVictoryCondition.getCurrentReleaseRate())) {
                 this.releaseTickIndex = 0;
 
-                let entrance = this.level.entrances[0];
+                const entrances = this.level.entrances;
+                if (entrances.length === 0) return;
+                // Original DOS Lemmings uses a four-slot entrance order: two
+                // entrances release A-B-B-A, and three use A-B-C-B.
+                let entranceOrder = entrances.map((_, index) => index);
+                if (this.level.gameType === GameTypes.LEMMINGS && entrances.length === 2) {
+                    entranceOrder = [0, 1, 1, 0];
+                } else if (this.level.gameType === GameTypes.LEMMINGS && entrances.length === 3) {
+                    entranceOrder = [0, 1, 2, 1];
+                }
+                const entrance = entrances[entranceOrder[this.nextEntranceIndex]];
+                this.nextEntranceIndex = (this.nextEntranceIndex + 1) % entranceOrder.length;
 
                 this.addLemming(entrance.x + 24, entrance.y + 14);
 
@@ -212,7 +225,7 @@ import { TriggerManager } from './trigger-manager';
         }
 
         /** return a lemming at a given position */
-        public getLemmingAt(x: number, y: number): Lemming | null {
+        public getLemmingAt(x: number, y: number, hitSlop = 0): Lemming | null {
             let lems = this.lemmings;
 
             let minDistance = 99999;
@@ -221,7 +234,10 @@ import { TriggerManager } from './trigger-manager';
             for (let i = 0; i < lems.length; i++) {
                 let lem = lems[i];
 
-                let distance = lem.getClickDistance(x, y);
+                // Dead or exiting lemmings must not obscure selectable ones.
+                if (lem.removed || lem.isDisabled()) continue;
+
+                let distance = lem.getClickDistance(x, y, hitSlop);
                 //console.log("--> "+ distance);
 
                 if ((distance < 0) || (distance >= minDistance)) {
@@ -262,7 +278,7 @@ import { TriggerManager } from './trigger-manager';
 
         /** change the action a Lemming is doing */
         public doLemmingAction(lem: Lemming, skillType: SkillTypes): boolean {
-            if (lem == null) {
+            if (lem == null || lem.removed || lem.isDisabled()) {
                 return false;
             }
 
