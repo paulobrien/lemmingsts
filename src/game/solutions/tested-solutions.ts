@@ -332,6 +332,16 @@ export const TESTED_SOLUTIONS: readonly TestedSolution[] = [
   },
   {
     groupIndex: 1,
+    levelIndex: 6,
+    replay: '70=s8&70=l0&71=s1&71=l0&180=s5&180=l0&180=i79&248=l0&484=l0&722=l0&955=l0&1192=l0&1425=l0&1653=s8&1653=l0&2120=s7&2120=l0&2215=s5&2215=l0&2295=l1&2340=l1&2380=l1&2420=l1&2460=l1&2540=l1&2580=l1',
+    hints: [
+      'Hold everyone safely in the starting pillar while one scout prepares the route.',
+      'Dig a holding pit, make the Digger a Climber, and use a Builder to turn the scout toward the ascending pillars. Raise the release rate once the crowd is contained.',
+      'Bridge each gap, dig down the final pillar, mine toward the exit and bridge the small gap. Build repeatedly in the holding pit to release the crowd.',
+    ],
+  },
+  {
+    groupIndex: 1,
     levelIndex: 7,
     replay: '220=s5&220=l0&412=l0&604=l0&708=l7&796=l0&1698=l0&1890=l0&2082=l0&2492=l0&2556=l0&2748=l0&3147=l0&3227=l0&3419=l0&3611=l0&4049=l0&4216=l0&4408=l0&4600=l0',
     hints: [
