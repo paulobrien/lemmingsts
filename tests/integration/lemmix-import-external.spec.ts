@@ -63,6 +63,9 @@ it.skipIf(!taxing9Path || process.env.RUN_PRIVATE_GAME_TESTS !== '1')('verifies 
 // Optional replay sources are documented in docu/LEMMIX_REPLAY_IMPORT.md.
 for (const { name, env, group, level, saved } of [
   { name: 'Fun 12', env: 'LEMMIX_FUN12_REPLAY_PATH', group: 0, level: 11, saved: 80 },
+  { name: 'Fun 14', env: 'LEMMIX_FUN14_REPLAY_PATH', group: 0, level: 13, saved: 80 },
+  { name: 'Fun 15', env: 'LEMMIX_FUN15_REPLAY_PATH', group: 0, level: 14, saved: 80 },
+  { name: 'Fun 17', env: 'LEMMIX_FUN17_REPLAY_PATH', group: 0, level: 16, saved: 20 },
   { name: 'Fun 19', env: 'LEMMIX_FUN19_REPLAY_PATH', group: 0, level: 18, saved: 80 },
   { name: 'Fun 23', env: 'LEMMIX_FUN23_REPLAY_PATH', group: 0, level: 22, saved: 80 },
   { name: 'Fun 25', env: 'LEMMIX_FUN25_REPLAY_PATH', group: 0, level: 24, saved: 73 },
@@ -111,8 +114,10 @@ for (const { name, env, group, level, saved } of [
   { name: 'Mayhem 9', env: 'LEMMIX_MAYHEM9_REPLAY_PATH', group: 3, level: 8, saved: 79 },
   { name: 'Mayhem 10', env: 'LEMMIX_MAYHEM10_REPLAY_PATH', group: 3, level: 9, saved: 72 },
   { name: 'Mayhem 14', env: 'LEMMIX_MAYHEM14_REPLAY_PATH', group: 3, level: 13, saved: 80 },
+  { name: 'Mayhem 17', env: 'LEMMIX_MAYHEM17_REPLAY_PATH', group: 3, level: 16, saved: 77 },
   { name: 'Mayhem 19', env: 'LEMMIX_MAYHEM19_REPLAY_PATH', group: 3, level: 18, saved: 48 },
   { name: 'Mayhem 21', env: 'LEMMIX_MAYHEM21_REPLAY_PATH', group: 3, level: 20, saved: 50 },
+  { name: 'Mayhem 23', env: 'LEMMIX_MAYHEM23_REPLAY_PATH', group: 3, level: 22, saved: 72 },
   { name: 'Mayhem 25', env: 'LEMMIX_MAYHEM25_REPLAY_PATH', group: 3, level: 24, saved: 73 },
   { name: 'Mayhem 26', env: 'LEMMIX_MAYHEM26_REPLAY_PATH', group: 3, level: 25, saved: 76 },
   { name: 'Mayhem 27', env: 'LEMMIX_MAYHEM27_REPLAY_PATH', group: 3, level: 26, saved: 50 },

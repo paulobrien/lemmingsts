@@ -22,6 +22,18 @@ A separate [Tricky 22 replay](https://www.lemmingsforums.net/index.php?topic=149
 
 The public [Taxing 9 replay](https://www.lemmingsforums.net/index.php?topic=1490.0), `Taxing9-undamaged.lrb`, verifies with 20 rescued.
 
+The following locally obtained recordings also verify after the walker/jumper
+top-boundary correction. Fun 17 uses a blocker glitch; these results describe
+only the runs checked here, not all solutions or full DOS parity.
+
+| Level | Recording | Environment variable | Rescued |
+| --- | --- | --- | ---: |
+| Fun 14 | [attachment 642](https://www.lemmingsforums.net/index.php?action=dlattach;attach=642) | `LEMMIX_FUN14_REPLAY_PATH` | 80 |
+| Fun 15 | [attachment 643](https://www.lemmingsforums.net/index.php?action=dlattach;attach=643) | `LEMMIX_FUN15_REPLAY_PATH` | 80 |
+| Fun 17 | [attachment 656](https://www.lemmingsforums.net/index.php?action=dlattach;attach=656) | `LEMMIX_FUN17_REPLAY_PATH` | 20 |
+| Mayhem 17 | [attachment 13697](https://www.lemmingsforums.net/index.php?action=dlattach;attach=13697) | `LEMMIX_MAYHEM17_REPLAY_PATH` | 77 |
+| Mayhem 23 | [attachment 13700](https://www.lemmingsforums.net/index.php?action=dlattach;attach=13700) | `LEMMIX_MAYHEM23_REPLAY_PATH` | 72 |
+
 Additional public recordings verified on local files are [Tricky 5](https://www.lemmingsforums.net/index.php?topic=1490.0) (70 rescued), [Fun 25 and Taxing 3](https://www.lemmingsforums.net/index.php?topic=1490.15) (73 and 80), [Fun 12, Tricky 10, an alternate Tricky 22, and Taxing 20](https://www.lemmingsforums.net/index.php?topic=1490.30) (80, 80, 80 and 70), [Taxing 11 and Taxing 15](https://www.lemmingsforums.net/index.php?topic=1490.15) (50 and 80), and [Taxing 16](https://www.lemmingsforums.net/index.php?topic=1490.45) (80). The verification outcome describes this engine's execution of each recording; it is not a claim of complete DOS physics equivalence.
 
 The public [Taxing 25](https://www.lemmingsforums.net/index.php?topic=4539.45) and [Mayhem 27](https://www.lemmingsforums.net/index.php?topic=4539.105) recordings also verify, saving 80 and 50 respectively.
