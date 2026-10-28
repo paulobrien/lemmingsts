@@ -69,7 +69,7 @@ export const TESTED_SOLUTIONS: readonly TestedSolution[] = [
   {
     groupIndex: 0,
     levelIndex: 6,
-    replay: '223=s5&223=l0&675=l0',
+    replay: '223=s5&223=l0&677=l0',
     hints: [
       'The crowd needs a way up to the higher ground, and then across a narrow gap.',
       'Use the first lemming to build towards the right-hand ledge; assign it another Builder near the far edge before it steps into the gap.',
@@ -105,7 +105,7 @@ export const TESTED_SOLUTIONS: readonly TestedSolution[] = [
   {
     groupIndex: 0,
     levelIndex: 11,
-    replay: '168=s6&168=l0&298=s4&298=l1&383=s5&383=l0&616=l0&816=l0&913=l0&944=n',
+    replay: '172=s6&172=l0&302=s4&302=l1&387=s5&387=l0&620=l0&820=l0&917=l0&949=n',
     hints: [
       'Keep the crowd away from the left-hand drop, then make a route out of the hollow.',
       'Bash through the central wall, use a Blocker near the left edge, then build from the hollow until the crowd can reach the exit.',
@@ -132,8 +132,17 @@ export const TESTED_SOLUTIONS: readonly TestedSolution[] = [
   },
   {
     groupIndex: 0,
+    levelIndex: 15,
+    replay: '198=s5&198=l0&390=l0&582=l0&774=l0&966=l0&1158=l0&1350=l0',
+    hints: [
+      'The exit is high above the right-hand edge of the starting platform.',
+      'Start the first lemming building near that edge and extend the staircase until it reaches the exit platform.',
+    ],
+  },
+  {
+    groupIndex: 0,
     levelIndex: 17,
-    replay: '243=s4&243=l0&243=s3&243=l0&369=s4&369=l8&369=s3&369=l8&481=s4&481=l12&481=s3&481=l12&600=s4&600=l13&600=s3&600=l13&790=s4&790=l32&790=s3&790=l32',
+    replay: '249=s4&249=l0&249=s3&249=l0&375=s4&375=l8&375=s3&375=l8&487=s4&487=l16&487=s3&487=l16&604=s4&604=l17&604=s3&604=l17&781=s4&781=l18&781=s3&781=l18',
     hints: [
       'The floors have dangerous fire patches; choose a safe spot above each room.',
       'Stop and bomb a lemming to open each floor in turn, keeping the holes clear of flames and offset so the drops stay safe.',
@@ -160,7 +169,7 @@ export const TESTED_SOLUTIONS: readonly TestedSolution[] = [
   {
     groupIndex: 0,
     levelIndex: 20,
-    replay: '295=s6&295=l0&315=l0&335=l0&355=l1&375=l2&406=l3&429=l3&453=l4&491=l5&511=l5&531=l1&553=l4&573=l2&603=l11&631=l12&659=l0&686=l0&706=l6&726=l0&746=l3&1108=s5&1108=l0',
+    replay: '296=s6&296=l0&316=l0&336=l0&356=l1&376=l2&407=l3&430=l3&454=l4&492=l5&512=l5&532=l1&554=l4&574=l2&604=l11&632=l12&660=l0&687=l0&707=l6&727=l0&1123=s5&1123=l0',
     hints: [
       'There is a route through the rock, followed by a trap before the exit.',
       'Bash through the rock, then use a Builder to give the group a safe path above the trap.',
@@ -169,7 +178,7 @@ export const TESTED_SOLUTIONS: readonly TestedSolution[] = [
   {
     groupIndex: 0,
     levelIndex: 24,
-    replay: '355=s6&355=l0&485=s8&485=l2',
+    replay: '353=s6&353=l0&485=s8&485=l1',
     hints: [
       'The route climbs the fence before reaching the web above the exit.',
       'Bash through the barrier at the top of the fence, then dig down through the web so the crowd can reach the exit.',
