@@ -101,9 +101,9 @@ describe('local original DOS assets', () => {
         for (let tick = 0; tick < maxTicks && game!.getGameState() === GameStateTypes.RUNNING; tick++) {
           game!.getGameTimer().tick();
         }
-        expect(game!.getGameState(), label).toBe(GameStateTypes.SUCCEEDED);
-        expect(game!.getVictoryCondition().getSurvivorsCount(), label).toBeGreaterThan(0);
-        expect(game!.getCommandManager().serialize(), `${label} must execute every recorded command`).toBe(solution.replay);
+        expect.soft(game!.getGameState(), label).toBe(GameStateTypes.SUCCEEDED);
+        expect.soft(game!.getVictoryCondition().getSurvivorsCount(), label).toBeGreaterThan(0);
+        expect.soft(game!.getCommandManager().serialize(), `${label} must execute every recorded command`).toBe(solution.replay);
       }
     } finally {
       await clearLemmingsFiles();

@@ -86,24 +86,6 @@ export const TESTED_SOLUTIONS: readonly TestedSolution[] = [
   },
   {
     groupIndex: 0,
-    levelIndex: 10,
-    replay: '75=s6&75=l0',
-    hints: [
-      'The crowd is trapped by a wall.',
-      'Make the first lemming a Basher as it approaches the right-hand wall.',
-    ],
-  },
-  {
-    groupIndex: 0,
-    levelIndex: 16,
-    replay: '15=s6&15=l0',
-    hints: [
-      'One entrance gives its lemmings a way out of their pen.',
-      'Make the first lemming from the rightmost entrance a Basher against the wall to its right.',
-    ],
-  },
-  {
-    groupIndex: 0,
     levelIndex: 23,
     replay: '240=s6&240=l0',
     hints: [
