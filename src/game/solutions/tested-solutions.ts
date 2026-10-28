@@ -627,6 +627,16 @@ export const TESTED_SOLUTIONS: readonly TestedSolution[] = [
   },
   {
     groupIndex: 2,
+    levelIndex: 20,
+    replay: '54=l0&210=s5&210=l0&402=l0&594=l0&950=s1&950=l1&1120=s7&1120=l1&1245=l1&1480=s6&1480=l1&1533=s5&1533=l10',
+    hints: [
+      'A climber can make a safe path above the fire while another opens a route for the group.',
+      'Build over the flamethrower and towards the exit. Send a second climber to mine back through the wall, using the steel to turn them around.',
+      'Bash into the holding area and build a short connecting step under the steel so the group can reach the upper staircase.',
+    ],
+  },
+  {
+    groupIndex: 2,
     levelIndex: 21,
     replay: '54=s2&54=l0&107=l1&250=s4&250=l0&296=s5&296=l1&488=l1&680=l1&713=l10&762=l11&813=l12&867=l13&905=l10&920=l14&973=l15',
     hints: [
