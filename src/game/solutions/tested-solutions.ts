@@ -260,6 +260,15 @@ export const TESTED_SOLUTIONS: readonly TestedSolution[] = [
   },
   {
     groupIndex: 0,
+    levelIndex: 27,
+    replay: '100=l0&100=s2&100=l0&296=s5&296=l0&488=l0&680=l0&872=l0&1064=l0&1256=l0&1448=l0&1640=l0&1832=l0&2100=s8&2100=l1&2165=l1&2254=l1&2351=l1&2428=s4&2428=l1',
+    hints: [
+      'A scout can build from the ground to the exit while the others wait inside.',
+      'Give a left-facing scout Climber and Floater, then build left from beneath the fire platform. When the route is ready, dig staggered holes through the four floors of the starting cage and stop lemmings walking into the water on the right.',
+    ],
+  },
+  {
+    groupIndex: 0,
     levelIndex: 29,
     replay: '64=s6&64=l0&131=l0&219=l0',
     hints: [
