@@ -40,7 +40,9 @@ import { TriggerManager } from './trigger-manager';
         private actions: IActionSystem[] = [];
         private skillActions: IActionSystem[] = [];
 
-        private releaseTickIndex: number = 0;
+        // Lemmix opens entrances on iteration 35, then counts down 20 frames.
+        private releaseIteration: number = 0;
+        private releaseCountdown: number = 20;
         private nextEntranceIndex: number = 0;
 
         private logging = new LogHandler("LemmingManager");
@@ -83,8 +85,6 @@ import { TriggerManager } from './trigger-manager';
             this.skillActions[SkillTypes.BUILDER] = this.actions[LemmingStateType.BUILDING];
             this.skillActions[SkillTypes.BOMBER] = new ActionCountdownSystem(masks);
 
-            /// wait before first lemming is spawn
-            this.releaseTickIndex = this.gameVictoryCondition.getCurrentReleaseRate() - 30;
         }
 
 
@@ -143,10 +143,12 @@ import { TriggerManager } from './trigger-manager';
                 return;
             }
 
-            this.releaseTickIndex++;
+            this.releaseIteration++;
+            if (this.releaseIteration < 35) return;
+            this.releaseCountdown--;
 
-            if (this.releaseTickIndex >= (104 - this.gameVictoryCondition.getCurrentReleaseRate())) {
-                this.releaseTickIndex = 0;
+            if (this.releaseCountdown === 0) {
+                this.releaseCountdown = Math.floor((99 - this.gameVictoryCondition.getCurrentReleaseRate()) / 2) + 4;
 
                 const entrances = this.level.entrances;
                 if (entrances.length === 0) return;
