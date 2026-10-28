@@ -86,6 +86,13 @@ export class ActionBuildSystem implements IActionSystem {
                 lem.lookRight = !lem.lookRight;
                 return LemmingStateType.WALKING;
             }
+
+            // DOS stops a builder when its 13-pixel-tall sprite rises above
+            // the top boundary. It becomes a walker without turning around.
+            // https://github.com/ericlangedijk/Lemmix/blob/master/src/Game.pas#L3044
+            if (lem.y - 13 < Lemming.LEM_MIN_Y) {
+                return LemmingStateType.WALKING;
+            }
         }
         return LemmingStateType.NO_STATE_TYPE;
 
