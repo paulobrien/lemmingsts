@@ -69,7 +69,7 @@ export const TESTED_SOLUTIONS: readonly TestedSolution[] = [
   {
     groupIndex: 0,
     levelIndex: 7,
-    replay: '74=s4&74=l0',
+    replay: '75=s4&75=l0',
     hints: [
       'The exit is close to the entrance; the crowd initially heads the wrong way.',
       'Place a Blocker shortly after the first lemming lands to turn the rest back toward the exit.',
@@ -114,6 +114,15 @@ export const TESTED_SOLUTIONS: readonly TestedSolution[] = [
   },
   {
     groupIndex: 0,
+    levelIndex: 17,
+    replay: '243=s4&243=l0&243=s3&243=l0&369=s4&369=l8&369=s3&369=l8&481=s4&481=l12&481=s3&481=l12&600=s4&600=l13&600=s3&600=l13&790=s4&790=l32&790=s3&790=l32',
+    hints: [
+      'The floors have dangerous fire patches; choose a safe spot above each room.',
+      'Stop and bomb a lemming to open each floor in turn, keeping the holes clear of flames and offset so the drops stay safe.',
+    ],
+  },
+  {
+    groupIndex: 0,
     levelIndex: 18,
     replay: '858=s5&858=l0&1058=l0&1258=l0&1458=l0&1560=i3&1561=i3&1562=i3&1563=i3&1564=i3&1565=i3&1566=i3&1567=i3&1568=i3&1569=i3&1570=i3&1571=i3&1572=i3&1573=i3&1574=i3&1575=i3&1576=i3&1577=i3&1578=i3&1579=i3&1580=i3&1581=i3&1582=i3&1583=i3&1584=i3&1585=i3&1586=i1',
     hints: [
@@ -128,6 +137,15 @@ export const TESTED_SOLUTIONS: readonly TestedSolution[] = [
     hints: [
       'There is a gap at the start, a row of barriers, and a final gap near the exit.',
       'Bridge the opening, bash through the barriers, then build to the exit before increasing the release rate.',
+    ],
+  },
+  {
+    groupIndex: 0,
+    levelIndex: 20,
+    replay: '295=s6&295=l0&315=l0&335=l0&355=l1&375=l2&406=l3&429=l3&453=l4&491=l5&511=l5&531=l1&553=l4&573=l2&603=l11&631=l12&659=l0&686=l0&706=l6&726=l0&746=l3&1108=s5&1108=l0',
+    hints: [
+      'There is a route through the rock, followed by a trap before the exit.',
+      'Bash through the rock, then use a Builder to give the group a safe path above the trap.',
     ],
   },
 ];
