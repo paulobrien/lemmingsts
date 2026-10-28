@@ -423,6 +423,16 @@ export const TESTED_SOLUTIONS: readonly TestedSolution[] = [
   },
   {
     groupIndex: 3,
+    levelIndex: 12,
+    replay: '85=s5&85=l0&98=s8&98=l1&414=s5&414=l0&606=s6&606=l0&620=s8&620=l0&636=s6&636=l0&650=s1&650=l1&799=s6&799=l1',
+    hints: [
+      'The two lemmings need to take different routes before they can reunite.',
+      'Send the first across the gaps; have the second dig down and bash along the lower route.',
+      'Near the far wall, dig briefly from the upper tunnel and resume bashing, leaving room for the other lemming to climb through.',
+    ],
+  },
+  {
+    groupIndex: 3,
     levelIndex: 23,
     replay: '65=s6&65=l0&109=l0&197=l0',
     hints: [
