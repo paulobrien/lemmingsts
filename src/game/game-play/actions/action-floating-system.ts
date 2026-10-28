@@ -10,8 +10,10 @@ import { Animation } from './../../resources/animation';
 
 export class ActionFloatingSystem implements IActionSystem {
 
-    private static floatSpeed: number[] = [3, 3, 3, 3, -1, 1, 1, 1, 2, 2, 2, 2, 2, 2, 2, 2];
-    private static floatFrame: number[] = [0, 1, 3, 5, 5, 5, 5, 5, 5, 6, 7, 7, 6, 5, 4, 4];
+    // Lemmix's table is indexed independently from the animation frame.
+    // https://github.com/ericlangedijk/Lemmix/blob/master/src/Game.pas#L731
+    private static floatSpeed: number[] = [3, 3, 3, 3, -1, 0, 1, 1, 2, 2, 2, 2, 2, 2, 2, 2];
+    private static floatFrame: number[] = [1, 2, 3, 5, 5, 5, 5, 5, 5, 6, 7, 7, 6, 5, 4, 4];
 
     public soundSystem = new SoundSystem();
 
@@ -41,7 +43,7 @@ export class ActionFloatingSystem implements IActionSystem {
     public draw(gameDisplay: DisplayImage, lem: Lemming) {
         let ani = this.sprite[(lem.lookRight ? 1 : 0)];
 
-        let frame = ani.getFrame(ActionFloatingSystem.floatFrame[lem.frameIndex]);
+        let frame = ani.getFrame(lem.frameIndex);
 
         gameDisplay.drawFrame(frame, lem.x, lem.y);
     }
@@ -49,13 +51,10 @@ export class ActionFloatingSystem implements IActionSystem {
 
     public process(level: Level, lem: Lemming): LemmingStateType {
 
-        lem.frameIndex++;
-        if (lem.frameIndex >= ActionFloatingSystem.floatFrame.length) {
-            /// first 8 are the opening of the umbrella
-            lem.frameIndex = 8;
-        }
-
-        let speed = ActionFloatingSystem.floatSpeed[lem.frameIndex];
+        const index = lem.state;
+        let speed = ActionFloatingSystem.floatSpeed[index];
+        lem.frameIndex = ActionFloatingSystem.floatFrame[index];
+        lem.state = index === 15 ? 8 : index + 1;
 
         for (let i = 0; i < speed; i++) {
             if (level.hasGroundAt(lem.x, lem.y + i)) {
