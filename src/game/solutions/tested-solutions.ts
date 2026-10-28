@@ -323,6 +323,15 @@ export const TESTED_SOLUTIONS: readonly TestedSolution[] = [
   },
   {
     groupIndex: 1,
+    levelIndex: 7,
+    replay: '220=s5&220=l0&412=l0&604=l0&708=l7&796=l0&1698=l0&1890=l0&2082=l0&2492=l0&2556=l0&2748=l0&3147=l0&3227=l0&3419=l0&3611=l0&4049=l0&4216=l0&4408=l0&4600=l0',
+    hints: [
+      'Bridge the first gap, then build a zigzag route up through the floors.',
+      'Use another Builder on the far side to complete the first crossing early. At each floor, cover the open end before building back toward the next level; the exit is at the upper left.',
+    ],
+  },
+  {
+    groupIndex: 1,
     levelIndex: 8,
     replay: '100=s4&100=l0&250=l2&337=s5&337=l1&537=l1&737=l1&840=s7&840=l1&960=s5&960=l1&1160=l1&1360=l1&1430=s7&1430=l1&1530=s6&1530=l1&1798=s5&1798=l1&1998=l1&2198=l1&3000=s3&3000=l2',
     hints: [
