@@ -213,6 +213,16 @@ export const TESTED_SOLUTIONS: readonly TestedSolution[] = [
   },
   {
     groupIndex: 0,
+    levelIndex: 26,
+    replay: '54=s2&54=l0&107=l1&160=l2&250=s4&250=l0&296=s5&296=l1&303=l2&488=l1&495=l2&680=l1&687=l2&4000=s3&4000=l0',
+    hints: [
+      'The first few can float down and prepare a safe landing for the rest.',
+      'Use a Blocker below the ledge to turn one Floater left. Build up toward the falling point, and have another Floater build over the Blocker to reach the exit.',
+      'Once enough lemmings are safe, bomb the Blocker to finish.',
+    ],
+  },
+  {
+    groupIndex: 0,
     levelIndex: 29,
     replay: '64=s6&64=l0&131=l0&219=l0',
     hints: [
