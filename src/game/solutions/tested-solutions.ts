@@ -204,11 +204,29 @@ export const TESTED_SOLUTIONS: readonly TestedSolution[] = [
   },
   {
     groupIndex: 1,
+    levelIndex: 0,
+    replay: '210=s4&210=l1&330=s5&330=l0&530=l0&730=l0&930=l0&1272=s6&1272=l0&1700=s3&1700=l1',
+    hints: [
+      'Keep the crowd safe while one lemming prepares a route over the gap and through the obstacle.',
+      'Use a Blocker to hold the group; have the leader build across the pit and bash through the wall, then bomb the Blocker to release the others.',
+    ],
+  },
+  {
+    groupIndex: 1,
     levelIndex: 1,
     replay: '0=s8&0=i3&1=i3&2=i3&3=i3&4=i3&5=i3&6=i3&7=i3&8=i3&9=i3&10=i3&11=i1&555=l0&583=l1&611=l2&639=l3&667=l4&695=l5&723=l6&751=l7&779=l8&807=l9&835=l10&863=l11&891=l12&919=l13&947=l14&975=l15&1003=l16&1031=l17&1059=l18&1087=l19&1115=l20&1143=l21&1171=l22&1199=l23&1227=l24&1255=l25&1283=l26&1311=l27&1339=l28&1367=l29&1395=l30&1423=l31&1451=l32&1479=l33&1507=l34&1535=l35&1563=l36&1591=l37&1619=l38&1647=l39',
     hints: [
       'The drop becomes safe if each lemming can descend through the platform first.',
       'Raise the release rate, then assign each lemming a Digger, starting on the right and moving left across the platform.',
+    ],
+  },
+  {
+    groupIndex: 1,
+    levelIndex: 3,
+    replay: '54=l0&80=l1&106=l2&132=l3&158=l4&184=l5&210=l6&236=l7&262=l8&288=l9&314=l10&340=l11&366=l12&392=l13&418=l14&444=l15&470=l16&496=l17&522=l18&548=l19&574=l20&600=l21&600=s4&600=l1&626=s1&626=l22&652=l23&678=l24&704=l25&710=s5&710=l0&730=s1&730=l26&756=l27&782=l28&808=l29&834=l30&848=s4&848=l2&860=s1&860=l31&886=l32&910=s5&910=l0&912=s1&912=l33&938=l34&964=l35&990=l36&1016=l37&1042=l38&1068=l39&1162=s5&1162=l0&1362=l0&1562=l0&1700=s6&1700=l0&1730=s5&1730=l0&2000=s3&2000=l1',
+    hints: [
+      'Send a climber ahead and keep others safe while the route to the exit is prepared.',
+      'Give the crowd Climber, use Blockers on both sides of the wall, then build across the gaps. At the small platform, interrupt the bridge so the leader can drop onto it before building again; remove the right Blocker when the route is ready.',
     ],
   },
 ];
