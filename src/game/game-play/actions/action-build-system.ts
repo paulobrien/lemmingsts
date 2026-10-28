@@ -53,12 +53,15 @@ export class ActionBuildSystem implements IActionSystem {
 
         lem.frameIndex = (lem.frameIndex + 1) % 16;
 
-        if (lem.frameIndex == 9) {
+        // DOS/Lemmix repeats this brick on frame 10 when nine bricks remain.
+        // Another lemming can remove part of it between the two frames.
+        // https://github.com/ericlangedijk/Lemmix/blob/master/src/Game.pas#L2996
+        if (lem.frameIndex == 9 || (lem.frameIndex == 10 && lem.state == 3)) {
 
             /// lay brick
             const x = lem.x + (lem.lookRight ? 0 : -4);
             for (let i = 0; i < 6; i++) {
-                level.setGroundAt(x + i, lem.y - 1, 7);
+                if (!level.hasGroundAt(x + i, lem.y - 1)) level.setGroundAt(x + i, lem.y - 1, 7);
             }
 
             return LemmingStateType.NO_STATE_TYPE;

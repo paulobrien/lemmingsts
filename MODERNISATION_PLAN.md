@@ -29,6 +29,7 @@ The app must not commit, bundle or publicly distribute the original game files. 
 
 - Add focused tests for binary parsing, level configuration, game rules, timers and representative skill behaviours. Use synthetic fixtures and add regression tests for bugs we fix.
 - Separate game logic from rendering and input where useful, retaining the original timing and gameplay. Inspect lifecycle cleanup, resource loading and error handling.
+- Verify builder bricks overlapping visible, non-solid object pixels. Lemmix checks the world pixel before drawing a brick, while this engine checks its separate solid-terrain mask; their behavior may differ where an object is visible without solid terrain.
 - Add an opt-in local integration or browser smoke test using the supplied assets, without adding those assets to Git or CI.
 - Verify every original level with a deterministic recorded solution that meets its rescue target. Track levels with a tested solution separately from levels that have merely loaded. Adapt external walkthroughs or replays only after checking edition, physics, format and reuse rights.
 - Keep optional, progressively revealing hints alongside verified solutions. Never show a hint automatically or imply an unverified level has a tested solution.

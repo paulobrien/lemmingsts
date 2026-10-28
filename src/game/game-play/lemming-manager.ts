@@ -125,8 +125,16 @@ import { TriggerManager } from './trigger-manager';
                 // seven intervening animation frames. The initial digging
                 // frame remains 0; later frames increment before processing.
                 // https://github.com/ericlangedijk/Lemmix/blob/master/src/Game.pas#L2907
-                const checkObjects = !(previousAction instanceof ActionDiggSystem) ||
-                    (!countdownFinishes && (lem.frameIndex === 0 || lem.frameIndex === 8));
+                let checkObjects = true;
+                if (previousAction instanceof ActionDiggSystem) {
+                    checkObjects = !countdownFinishes && (lem.frameIndex === 0 || lem.frameIndex === 8);
+                } else if (previousAction instanceof ActionBuildSystem) {
+                    // Lemmix skips object checks on brick-laying frame 9 and
+                    // the extra frame 10 when three bricks are complete.
+                    // https://github.com/ericlangedijk/Lemmix/blob/master/src/Game.pas#L2996
+                    checkObjects = !countdownFinishes && lem.frameIndex !== 9 &&
+                        !(lem.frameIndex === 10 && lem.state === 3);
+                }
                 this.processNewAction(lem, newAction);
 
                 if (checkObjects) {

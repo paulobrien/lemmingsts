@@ -4,6 +4,7 @@ import { Lemming } from '../../src/game/game-play/lemming';
 import { LemmingManager } from '../../src/game/game-play/lemming-manager';
 import { LemmingStateType } from '../../src/game/game-play/lemming-state-type';
 import { ActionDiggSystem } from '../../src/game/game-play/actions/action-digg-system';
+import { ActionBuildSystem } from '../../src/game/game-play/actions/action-build-system';
 import { LemmingsSprite } from '../../src/game/resources/lemmings-sprite';
 import { Trigger } from '../../src/game/game-play/trigger';
 import { TriggerManager } from '../../src/game/game-play/trigger-manager';
@@ -24,6 +25,30 @@ function emptyLevel(): Level {
 }
 
 describe('triggered traps', () => {
+    it.each([
+        { priorFrame: 8, bricks: 0 },
+        { priorFrame: 9, bricks: 3 },
+    ])('skips object checks on DOS builder brick frames (frame=$priorFrame, completed=$bricks)', ({ priorFrame, bricks }) => {
+        let tick = 1;
+        const triggers = new TriggerManager({ getGameTicks: () => tick } as GameTimer);
+        triggers.add(new Trigger(TriggerTypes.TRAP, 5, 5, 8, 8));
+        const manager = Object.create(LemmingManager.prototype) as LemmingManager;
+        const first = new Lemming(6, 6, 0);
+        first.setAction(new ActionBuildSystem({ getAnimation: () => ({}) } as unknown as LemmingsSprite));
+        first.frameIndex = priorFrame;
+        first.state = bricks;
+        const level = { setGroundAt: vi.fn(), hasGroundAt: () => false } as unknown as Level;
+        const removeOne = vi.fn();
+        Object.assign(manager, { level, lemmings: [first], triggerManager: triggers,
+            gameVictoryCondition: { getLeftCount: () => 0, removeOne }, nextNukingLemmingsIndex: -1 });
+        manager.tick();
+        expect(first.removed).toBe(false);
+        tick++;
+        manager.tick();
+        expect(first.removed).toBe(true);
+        expect(removeOne).toHaveBeenCalledOnce();
+    });
+
     it.each([{ initial: true, checksAfter: 1 }, { initial: false, checksAfter: 8 }])(
         'checks a digger on the correct digging frame (initial=$initial)', ({ initial, checksAfter }) => {
         let tick = 1;
