@@ -1,101 +1,28 @@
-import { LogHandler } from '@/game/utilities/log-handler';
 import { BinaryReader } from './binary-reader';
+import { getLemmingsFile } from './game-file-store';
 
-/**
-* Handle Files loading from remote/web
-*/
+/** Loads application configuration from the web and private game data locally. */
 export class FileProvider {
+  constructor(private rootPath: string) {}
 
-  private log: LogHandler = new LogHandler('FileProvider');
-
-
-  constructor(private rootPath: string) {
-
-  }
-
-  private createFullUrl(path: string, fileName?: string) {
-
+  private createFullUrl(path: string, fileName?: string): string {
     return this.rootPath + (path ? '/' + path : '') + (fileName ? '/' + fileName : '');
   }
 
+  public async loadBinary(path: string, filename?: string): Promise<BinaryReader> {
+    if (path.toLowerCase() !== 'lemmings' || !filename) {
+      throw new Error('Only original DOS Lemmings files are supported. Import them on this device to play.');
+    }
 
-  /** load binary data from URL: rootPath + [path] + filename */
-  public loadBinary(path: string, filename?: string): Promise<BinaryReader> {
+    const buffer = await getLemmingsFile(filename);
+    if (!buffer) throw new Error(`Game file ${filename} is missing. Import the original DOS Lemmings files on this device.`);
+    return new BinaryReader(buffer, 0, null, filename);
+  }
 
+  public async loadString(path: string, filename?: string): Promise<string> {
     const url = this.createFullUrl(path, filename);
-
-    this.log.debug('loading:' + url);
-
-    return new Promise((resolve, reject) => {
-      const xhr = new XMLHttpRequest();
-
-      xhr.onload = () => {
-
-        if (xhr.status >= 200 && xhr.status < 300) {
-          const reader = new BinaryReader(xhr.response, 0, null, this.fileNameFormUrl(url));
-          resolve(reader);
-
-        } else {
-
-          this.log.log('error load file:' + url);
-          reject({ status: xhr.status, statusText: xhr.statusText });
-        }
-      };
-
-
-      xhr.onerror = () => {
-        this.log.log('error load file:' + url);
-        reject({ status: xhr.status, statusText: xhr.statusText });
-      };
-
-      xhr.open('GET', url);
-      xhr.responseType = 'arraybuffer';
-
-      xhr.send();
-    });
+    const response = await fetch(url);
+    if (!response.ok) throw new Error(`Could not load game configuration (${response.status}).`);
+    return response.text();
   }
-
-
-  /** load string data from URL */
-  public loadString(path: string, filename?: string): Promise<string> {
-
-    const url = this.createFullUrl(path, filename);
-
-    this.log.log('Load file as string: ' + url);
-
-    return new Promise((resolve, reject) => {
-
-      const xhr = new XMLHttpRequest();
-
-      xhr.onload = () => {
-        resolve(xhr.response);
-      }
-
-      xhr.onerror = () => {
-        this.log.log('error load file:' + url);
-        reject({ status: xhr.status, statusText: xhr.statusText });
-      }
-
-      /// setup query
-      xhr.open('GET', url, true);
-      xhr.responseType = 'text';
-
-
-      /// call url
-      xhr.send(null);
-    });
-  }
-
-
-  // Extract filename form URL
-  private fileNameFormUrl(url: string): string {
-    if (url == '') return '';
-
-    url = url.substring(0, (url.indexOf('#') == -1) ? url.length : url.indexOf('#'));
-    url = url.substring(0, (url.indexOf('?') == -1) ? url.length : url.indexOf('?'));
-    url = url.substring(url.lastIndexOf('/') + 1, url.length);
-
-    return url;
-  }
-
 }
