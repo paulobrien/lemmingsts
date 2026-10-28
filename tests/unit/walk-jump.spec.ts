@@ -29,4 +29,33 @@ describe('DOS walking and jumping', () => {
     expect(jumping.process(level, lem)).toBe(LemmingStateType.WALKING);
     expect([lem.x, lem.y]).toEqual([11, 16]);
   });
+
+  it('turns a jumper at the DOS top boundary and resumes walking', () => {
+    const level = { hasGroundAt: (_x: number, y: number) => y >= 0 } as Level;
+    const lem = new Lemming(10, 7, 0);
+    const jumping = new ActionJumpSystem(sprites);
+
+    expect(jumping.process(level, lem)).toBe(LemmingStateType.NO_STATE_TYPE);
+    expect([lem.y, lem.lookRight]).toEqual([5, true]);
+    expect(jumping.process(level, lem)).toBe(LemmingStateType.WALKING);
+    expect([lem.y, lem.lookRight]).toEqual([3, false]);
+  });
+
+  it('turns a walker when stepping above the DOS top boundary', () => {
+    const hasGroundAt = (x: number, y: number) => x === 11 && y >= 4 && y <= 5;
+    const level = { getGroundMaskLayer: () => ({ hasGroundAt }) } as unknown as Level;
+    const lem = new Lemming(10, 5, 0);
+
+    expect(new ActionWalkSystem(sprites).process(level, lem)).toBe(LemmingStateType.NO_STATE_TYPE);
+    expect([lem.x, lem.y, lem.lookRight]).toEqual([11, 3, false]);
+  });
+
+  it('resumes walking if the top boundary is reached on the first jump frame', () => {
+    const hasGroundAt = (x: number, y: number) => x === 11 && y >= 3 && y <= 6;
+    const level = { getGroundMaskLayer: () => ({ hasGroundAt }) } as unknown as Level;
+    const lem = new Lemming(10, 6, 0);
+
+    expect(new ActionWalkSystem(sprites).process(level, lem)).toBe(LemmingStateType.WALKING);
+    expect([lem.x, lem.y, lem.lookRight]).toEqual([11, 3, false]);
+  });
 });

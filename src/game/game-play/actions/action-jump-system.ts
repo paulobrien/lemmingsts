@@ -48,6 +48,9 @@ export class ActionJumpSystem implements IActionSystem {
             }
         }
         lem.y -= i;
+        if (lem.checkWalkingTopBoundary()) {
+            return LemmingStateType.WALKING;
+        }
         if (i < 2) {
             return LemmingStateType.WALKING;
         }

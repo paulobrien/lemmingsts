@@ -39,6 +39,15 @@ export class Lemming {
         this.state = 0;
     }
 
+    /** Apply the DOS top boundary for the ten-pixel walker/jumper sprite. */
+    public checkWalkingTopBoundary(): boolean {
+        // https://github.com/ericlangedijk/Lemmix/blob/master/src/Game.pas#L3381
+        if (this.y - 10 >= Lemming.LEM_MIN_Y) return false;
+        this.y = Lemming.LEM_MIN_Y - 2 + 10;
+        this.lookRight = !this.lookRight;
+        return true;
+    }
+
     /** set the countdown action of this lemming */
     public setCountDown(action: IActionSystem | null): boolean {
         if (action === null) {

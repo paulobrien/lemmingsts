@@ -85,10 +85,12 @@ export class ActionWalkSystem implements IActionSystem {
                 // steep step; the jumping action handles the remaining rise.
                 // https://github.com/ericlangedijk/Lemmix/blob/master/src/Game.pas#L2826
                 lem.y -= 2;
+                if (lem.checkWalkingTopBoundary()) return LemmingStateType.WALKING;
                 return LemmingStateType.JUMPING;
             }
             else {
                 lem.y -= upDelta - 1;
+                lem.checkWalkingTopBoundary();
                 // walk with small jump up
                 return LemmingStateType.NO_STATE_TYPE;
             }
