@@ -322,7 +322,7 @@ export const TESTED_SOLUTIONS: readonly TestedSolution[] = [
   {
     groupIndex: 1,
     levelIndex: 15,
-    replay: '110=s7&110=l0&220=s6&220=l0&868=s3&868=l0&875=l33&889=l13&905=l34&924=l14&930=l35&950=l36&970=l37&979=l15&995=l38',
+    replay: '110=s7&110=l0&220=s6&220=l0&900=s3&900=l0&907=l33&921=l13&937=l34&956=l14&962=l35&982=l36&1002=l37&1011=l15&1027=l38',
     hints: [
       'Open the first ledge, then create a descending route through the fences.',
       'Mine right, switch the Miner to Basher before reaching the bottom, then give ten approaching lemmings Bombers at progressively later points along the fence.',

@@ -149,6 +149,11 @@ import { TriggerManager } from './trigger-manager';
                     // their mask and idle frames do not check objects.
                     // https://github.com/ericlangedijk/Lemmix/blob/master/src/Game.pas#L3123
                     checkObjects = lem.frameIndex === 0 || lem.frameIndex === 3 || lem.frameIndex === 15;
+                } else if (checkObjects && previousAction instanceof ActionOhNoSystem) {
+                    // Lemmix skips object checks when the Oh No animation
+                    // ends or the lemming falls out of the level.
+                    // https://github.com/ericlangedijk/Lemmix/blob/master/src/Game.pas#L3338
+                    checkObjects = newAction !== LemmingStateType.EXPLODING && newAction !== LemmingStateType.OUT_OFF_LEVEL;
                 }
                 this.processNewAction(lem, newAction);
 

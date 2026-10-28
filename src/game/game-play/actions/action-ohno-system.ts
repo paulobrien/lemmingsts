@@ -43,13 +43,15 @@ export class ActionOhNoSystem implements IActionSystem {
             return LemmingStateType.EXPLODING;
         }
 
-        // fall down!
-        for (let i = 0; i < 3; i++) {
-            if (!level.hasGroundAt(lem.x, lem.y + 1)) {
-                lem.y++;
-                break;
-            }
+        // DOS/Lemmix checks at the lemming's feet and falls at most three
+        // pixels in each Oh No frame, stopping as soon as it meets terrain.
+        // https://github.com/ericlangedijk/Lemmix/blob/master/src/Game.pas#L3338
+        let distance = 0;
+        while (distance < 3 && !level.hasGroundAt(lem.x, lem.y)) {
+            lem.y++;
+            distance++;
         }
+        if (lem.y > level.height + 3) return LemmingStateType.OUT_OFF_LEVEL;
 
         return LemmingStateType.NO_STATE_TYPE;
 

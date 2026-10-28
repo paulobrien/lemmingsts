@@ -9,6 +9,7 @@ import { ActionBashSystem } from '../../src/game/game-play/actions/action-bash-s
 import { ActionMineSystem } from '../../src/game/game-play/actions/action-mine-system';
 import { ActionFloatingSystem } from '../../src/game/game-play/actions/action-floating-system';
 import { ActionCountdownSystem } from '../../src/game/game-play/actions/action-countdown-system';
+import { ActionOhNoSystem } from '../../src/game/game-play/actions/action-ohno-system';
 import { LemmingsSprite } from '../../src/game/resources/lemmings-sprite';
 import { MaskProvider } from '../../src/game/resources/mask-provider';
 import { Trigger } from '../../src/game/game-play/trigger';
@@ -30,6 +31,27 @@ function emptyLevel(): Level {
 }
 
 describe('triggered traps', () => {
+    it('does not check objects when the Oh No animation becomes an explosion', () => {
+        const triggers = new TriggerManager({ getGameTicks: () => 1 } as GameTimer);
+        triggers.add(new Trigger(TriggerTypes.TRAP, 5, 5, 8, 8));
+        const manager = Object.create(LemmingManager.prototype) as LemmingManager;
+        const first = new Lemming(6, 6, 0);
+        const sprites = { getAnimation: () => ({}) } as unknown as LemmingsSprite;
+        first.setAction(new ActionOhNoSystem(sprites));
+        first.frameIndex = 15;
+        const exploding = { process: () => LemmingStateType.NO_STATE_TYPE, getActionName: () => 'exploding',
+            draw: () => undefined, triggerLemAction: () => false };
+        const actions = []; actions[LemmingStateType.EXPLODING] = exploding;
+        const removeOne = vi.fn();
+        Object.assign(manager, { level: { width: 32, height: 32 }, actions, onSoundEffect: { trigger: vi.fn() },
+            logging: { debug: vi.fn() }, lemmings: [first], triggerManager: triggers,
+            gameVictoryCondition: { getLeftCount: () => 0, removeOne }, nextNukingLemmingsIndex: -1 });
+        manager.tick();
+        expect(first.action).toBe(exploding);
+        expect(first.removed).toBe(false);
+        expect(removeOne).not.toHaveBeenCalled();
+    });
+
     it.each([false, true])('checks floating objects unless its countdown expires (expires=$0)', expires => {
         const triggers = new TriggerManager({ getGameTicks: () => 1 } as GameTimer);
         triggers.add(new Trigger(TriggerTypes.TRAP, 5, 5, 8, 8));
