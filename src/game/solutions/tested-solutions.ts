@@ -177,6 +177,15 @@ export const TESTED_SOLUTIONS: readonly TestedSolution[] = [
   },
   {
     groupIndex: 0,
+    levelIndex: 21,
+    replay: '209=s6&209=l1&335=s4&335=l0&387=s6&387=l1&592=l1&679=l1&818=l1&933=l1&1099=l1&1223=l1&1324=s5&1324=l1&1524=l1&1724=l1&1871=l1&1951=l1&2151=l1&2351=l1&2498=l1&2578=l1&2778=l1&2978=l1&3000=s3&3000=l0&3159=s5&3159=l1&3223=l1&3423=l1&3623=l1&3834=s6&3834=l1',
+    hints: [
+      'Keep the group safe while a scout opens a route through the trees and up the hill.',
+      'Use a Blocker on the left, bash right, and build a zigzag staircase to reach the upper exit. Release the crowd as the scout finishes, and bash through the last tree.',
+    ],
+  },
+  {
+    groupIndex: 0,
     levelIndex: 23,
     replay: '424=s8&424=l0&498=s4&498=l1',
     hints: [
