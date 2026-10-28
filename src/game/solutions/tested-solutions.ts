@@ -150,6 +150,15 @@ export const TESTED_SOLUTIONS: readonly TestedSolution[] = [
   },
   {
     groupIndex: 0,
+    levelIndex: 16,
+    replay: '90=s6&90=l0&95=l1&95=l2&180=s4&180=l3&650=s3&650=l3',
+    hints: [
+      'The hazards along the bottom are easier to cross as a tightly packed group.',
+      'Bash left from the upper compartments, hold everyone on the far-left ledge with a Blocker, then bomb the Blocker to release the crowd together.',
+    ],
+  },
+  {
+    groupIndex: 0,
     levelIndex: 17,
     replay: '249=s4&249=l0&250=s3&250=l0&375=s4&375=l8&376=s3&376=l8&487=s4&487=l16&488=s3&488=l16&604=s4&604=l17&605=s3&605=l17&781=s4&781=l18&782=s3&782=l18',
     hints: [
