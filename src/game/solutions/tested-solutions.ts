@@ -15,7 +15,7 @@ export const TESTED_SOLUTIONS: readonly TestedSolution[] = [
   {
     groupIndex: 0,
     levelIndex: 0,
-    replay: '132=s8&132=l0',
+    replay: '152=s8&152=l0',
     hints: [
       'Look for a place to dig through the floor.',
       'Make the first lemming a digger before it reaches the right-hand wall.',
@@ -24,7 +24,7 @@ export const TESTED_SOLUTIONS: readonly TestedSolution[] = [
   {
     groupIndex: 0,
     levelIndex: 1,
-    replay: '0=s2&34=l0&88=l1&142=l2&196=l3&250=l4&304=l5&358=l6&412=l7&466=l8&520=l9',
+    replay: '0=s2&54=l0&82=l1&110=l2&138=l3&166=l4&194=l5&222=l6&250=l7&278=l8&306=l9',
     hints: [
       'What could protect the lemmings from the long fall?',
       'Select Floater, then give each lemming a parachute as it emerges.',
@@ -33,7 +33,7 @@ export const TESTED_SOLUTIONS: readonly TestedSolution[] = [
   {
     groupIndex: 0,
     levelIndex: 2,
-    replay: '150=s4&150=l0&360=l1&540=l2&730=l3&910=l4',
+    replay: '170=s4&170=l0&354=l1&508=l2&672=l3&826=l4',
     hints: [
       'The platforms form a zigzag route downward, but the crowd needs help turning at each edge.',
       'Place Blockers alternately on the right and left ends of successive platforms, then turn the final group toward the exit.',
@@ -42,7 +42,7 @@ export const TESTED_SOLUTIONS: readonly TestedSolution[] = [
   {
     groupIndex: 0,
     levelIndex: 4,
-    replay: '145=s6&145=l0&258=l0&276=l1&355=l2&434=l3&575=l0&590=l3&601=l2&612=l1&649=l0&659=l1&669=l4&679=l2&690=l3&711=l2&721=l0',
+    replay: '165=s6&165=l0&270=l1&278=l0&323=l2&376=l3&532=l3&569=l2&585=l4&595=l0&606=l1&632=l3&647=l2&653=l1&679=l2&741=l0',
     hints: [
       'The barriers on the route can be opened from the side.',
       'Choose a Basher for lemmings approaching each barrier; repeat until the path to the exit is clear.',
@@ -51,7 +51,7 @@ export const TESTED_SOLUTIONS: readonly TestedSolution[] = [
   {
     groupIndex: 0,
     levelIndex: 5,
-    replay: '40=s3&40=l0&295=s4&295=l1&296=s3&296=l1',
+    replay: '60=s3&60=l0&289=s4&289=l1&290=s3&290=l1',
     hints: [
       'The crowd needs an opening in its starting chamber and a way past the narrow post.',
       'Bomb the first lemming to open the floor; make a lemming block beside the post, then give that Blocker a Bomber.',
@@ -60,7 +60,7 @@ export const TESTED_SOLUTIONS: readonly TestedSolution[] = [
   {
     groupIndex: 0,
     levelIndex: 6,
-    replay: '203=s5&203=l0&655=l0',
+    replay: '223=s5&223=l0&675=l0',
     hints: [
       'The crowd needs a way up to the higher ground, and then across a narrow gap.',
       'Use the first lemming to build towards the right-hand ledge; assign it another Builder near the far edge before it steps into the gap.',
@@ -69,7 +69,7 @@ export const TESTED_SOLUTIONS: readonly TestedSolution[] = [
   {
     groupIndex: 0,
     levelIndex: 7,
-    replay: '21=s4&21=l0',
+    replay: '74=s4&74=l0',
     hints: [
       'The exit is close to the entrance; the crowd initially heads the wrong way.',
       'Place a Blocker shortly after the first lemming lands to turn the rest back toward the exit.',
@@ -78,7 +78,7 @@ export const TESTED_SOLUTIONS: readonly TestedSolution[] = [
   {
     groupIndex: 0,
     levelIndex: 8,
-    replay: '70=s6&70=l0',
+    replay: '123=s6&123=l0',
     hints: [
       'The route to the exit is blocked, but a horizontal path may help.',
       'Give the first lemming the Basher skill early, before the crowd reaches the obstacle.',
@@ -87,7 +87,7 @@ export const TESTED_SOLUTIONS: readonly TestedSolution[] = [
   {
     groupIndex: 0,
     levelIndex: 9,
-    replay: '34=s2&34=l0&88=l1&120=s4&120=l0&142=s2&142=l2&196=l3&250=l4&304=l5&358=l6&412=l7&466=l8&520=l9&574=l10&628=l11&682=l12&736=l13&790=l14&844=l15&898=l16&952=l17&1006=l18&1060=l19',
+    replay: '54=s2&54=l0&82=l1&110=l2&138=l3&140=s4&140=l0&141=s2&166=l4&194=l5&222=l6&250=l7&278=l8&306=l9&334=l10&362=l11&390=l12&418=l13&446=l14&474=l15&502=l16&530=l17&558=l18&586=l19',
     hints: [
       'The long drop calls for a way to slow the fall, then the group must turn toward the exit.',
       'Give each lemming a Floater; after the first lands, make it a Blocker to turn the others left.',
@@ -96,7 +96,7 @@ export const TESTED_SOLUTIONS: readonly TestedSolution[] = [
   {
     groupIndex: 0,
     levelIndex: 11,
-    replay: '115=s6&115=l0&246=s4&246=l1&330=s5&330=l0&563=l0&763=l0&860=l0&891=n',
+    replay: '168=s6&168=l0&298=s4&298=l1&383=s5&383=l0&616=l0&816=l0&913=l0&944=n',
     hints: [
       'Keep the crowd away from the left-hand drop, then make a route out of the hollow.',
       'Bash through the central wall, use a Blocker near the left edge, then build from the hollow until the crowd can reach the exit.',
@@ -106,7 +106,7 @@ export const TESTED_SOLUTIONS: readonly TestedSolution[] = [
   {
     groupIndex: 0,
     levelIndex: 12,
-    replay: '0=s8&633=l0&727=l1&821=l2&915=l3&1009=l4&1103=l5&1197=l6&1291=l7&1385=l8&1479=l9&1573=l10&1667=l11&1761=l12&1855=l13&1949=l14&2043=l15&2137=l16&2231=l17&2325=l18&2419=l19',
+    replay: '0=s8&555=l0&599=l1&643=l2&687=l3&731=l4&775=l5&819=l6&863=l7&907=l8&951=l9&995=l10&1039=l11&1083=l12&1127=l13&1171=l14&1215=l15&1259=l16&1303=l17&1347=l18&1391=l19',
     hints: [
       'The drop is too far from the top of the platform, but shorter from inside it.',
       'Make each lemming dig its own hole, starting towards the right and placing each next hole just to the left.',
@@ -114,17 +114,8 @@ export const TESTED_SOLUTIONS: readonly TestedSolution[] = [
   },
   {
     groupIndex: 0,
-    levelIndex: 17,
-    replay: '190=s4&190=l0&190=s3&190=l0&331=s4&331=l5&331=s3&331=l5&602=s4&602=l10&602=s3&602=l10&722=s4&722=l3&722=s3&722=l3&920=s4&920=l25&920=s3&920=l25',
-    hints: [
-      'The floors have dangerous fire patches; choose a safe spot above each room.',
-      'Stop and bomb a lemming to open each floor in turn, keeping the holes clear of flames and offset so the drops stay safe.',
-    ],
-  },
-  {
-    groupIndex: 0,
     levelIndex: 18,
-    replay: '898=s5&898=l0&1098=l0&1298=l0&1498=l0&1600=i3&1601=i3&1602=i3&1603=i3&1604=i3&1605=i3&1606=i3&1607=i3&1608=i3&1609=i3&1610=i3&1611=i3&1612=i3&1613=i3&1614=i3&1615=i3&1616=i3&1617=i3&1618=i3&1619=i3&1620=i3&1621=i3&1622=i3&1623=i3&1624=i3&1625=i3&1626=i1',
+    replay: '858=s5&858=l0&1058=l0&1258=l0&1458=l0&1560=i3&1561=i3&1562=i3&1563=i3&1564=i3&1565=i3&1566=i3&1567=i3&1568=i3&1569=i3&1570=i3&1571=i3&1572=i3&1573=i3&1574=i3&1575=i3&1576=i3&1577=i3&1578=i3&1579=i3&1580=i3&1581=i3&1582=i3&1583=i3&1584=i3&1585=i3&1586=i1',
     hints: [
       'The last hill needs a route to the elevated exit.',
       'Start building near the middle of the last hill, extend the bridge as needed, then raise the release rate so the crowd arrives in time.',
@@ -133,19 +124,10 @@ export const TESTED_SOLUTIONS: readonly TestedSolution[] = [
   {
     groupIndex: 0,
     levelIndex: 19,
-    replay: '135=s5&135=l0&427=s6&427=l0&441=l2&471=l0&507=l0&551=l0&587=l0&630=l0&667=l0&679=l3&693=s5&693=l0&733=s6&733=l3&1400=i3&1401=i3&1402=i3&1403=i3&1404=i3&1405=i3&1406=i3&1407=i3&1408=i3&1409=i3&1410=i3&1411=i3&1412=i3&1413=i3&1414=i3&1415=i3&1416=i3&1417=i3&1418=i3&1419=i3&1420=i3&1421=i3&1422=i3&1423=i3&1424=i3&1425=i3&1426=i3&1427=i3&1428=i3&1429=i3',
+    replay: '75=s5&75=l0&367=s6&367=l0&411=l0&447=l0&491=l0&527=l0&570=l0&607=l0&633=s5&633=l0&1340=i3&1341=i3&1342=i3&1343=i3&1344=i3&1345=i3&1346=i3&1347=i3&1348=i3&1349=i3&1350=i3&1351=i3&1352=i3&1353=i3&1354=i3&1355=i3&1356=i3&1357=i3&1358=i3&1359=i3&1360=i3&1361=i3&1362=i3&1363=i3&1364=i3&1365=i3&1366=i3&1367=i3&1368=i3&1369=i3',
     hints: [
       'There is a gap at the start, a row of barriers, and a final gap near the exit.',
       'Bridge the opening, bash through the barriers, then build to the exit before increasing the release rate.',
-    ],
-  },
-  {
-    groupIndex: 0,
-    levelIndex: 23,
-    replay: '240=s6&240=l0',
-    hints: [
-      'A horizontal path can help the group.',
-      'Try assigning a Basher to the leading lemming after it has travelled a little way.',
     ],
   },
 ];
