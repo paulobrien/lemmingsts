@@ -267,6 +267,15 @@ export const TESTED_SOLUTIONS: readonly TestedSolution[] = [
   },
   {
     groupIndex: 1,
+    levelIndex: 10,
+    replay: '180=s4&180=l1&326=s5&326=l0&539=l0&739=l0&939=l0&1139=l0&1339=l0&1539=l0&1739=l0&1939=l0&2139=l0&2204=s6&2204=l0&2329=l0&2451=s5&2451=l2&2651=l2&2851=l2',
+    hints: [
+      'Hold the crowd while a leader prepares a way into the attic.',
+      'Bridge the left gap, build a long staircase to the walls, and bash through them. Build a second bridge over the Blocker to release the crowd without damaging the floor.',
+    ],
+  },
+  {
+    groupIndex: 1,
     levelIndex: 14,
     replay: '54=s3&54=l0&82=l1&110=l2&138=l3',
     hints: [
