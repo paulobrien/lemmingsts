@@ -39,13 +39,18 @@ export class Lemming {
         this.state = 0;
     }
 
-    /** Apply the DOS top boundary for the ten-pixel walker/jumper sprite. */
-    public checkWalkingTopBoundary(): boolean {
+    /** Apply the DOS top boundary using the current sprite's foot offset. */
+    public checkTopBoundary(footOffset: number): boolean {
         // https://github.com/ericlangedijk/Lemmix/blob/master/src/Game.pas#L3381
-        if (this.y - 10 >= Lemming.LEM_MIN_Y) return false;
-        this.y = Lemming.LEM_MIN_Y - 2 + 10;
+        if (this.y - footOffset >= Lemming.LEM_MIN_Y) return false;
+        this.y = Lemming.LEM_MIN_Y - 2 + footOffset;
         this.lookRight = !this.lookRight;
         return true;
+    }
+
+    /** Walkers and jumpers use a ten-pixel foot offset. */
+    public checkWalkingTopBoundary(): boolean {
+        return this.checkTopBoundary(10);
     }
 
     /** set the countdown action of this lemming */

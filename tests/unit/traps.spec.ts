@@ -11,6 +11,7 @@ import { ActionFloatingSystem } from '../../src/game/game-play/actions/action-fl
 import { ActionCountdownSystem } from '../../src/game/game-play/actions/action-countdown-system';
 import { ActionOhNoSystem } from '../../src/game/game-play/actions/action-ohno-system';
 import { ActionFallSystem } from '../../src/game/game-play/actions/action-fall-system';
+import { ActionHoistSystem } from '../../src/game/game-play/actions/action-hoist-system';
 import { LemmingsSprite } from '../../src/game/resources/lemmings-sprite';
 import { MaskProvider } from '../../src/game/resources/mask-provider';
 import { Trigger } from '../../src/game/game-play/trigger';
@@ -32,6 +33,36 @@ function emptyLevel(): Level {
 }
 
 describe('triggered traps', () => {
+    it.each([
+        { priorFrame: 3, waitFrames: 0, expectedY: 8 },
+        { priorFrame: 4, waitFrames: 3, expectedY: 10 },
+    ])('checks hoisters on the source frames following $priorFrame', ({ priorFrame, waitFrames, expectedY }) => {
+        let tick = 1;
+        const triggers = new TriggerManager({ getGameTicks: () => tick } as GameTimer);
+        triggers.add(new Trigger(TriggerTypes.TRAP, 5, 5, 8, 12));
+        const manager = Object.create(LemmingManager.prototype) as LemmingManager;
+        const lem = new Lemming(6, 10, 0);
+        const sprites = { getAnimation: () => ({}) } as unknown as LemmingsSprite;
+        lem.setAction(new ActionHoistSystem(sprites));
+        lem.frameIndex = priorFrame;
+        const walker = { process: () => LemmingStateType.NO_STATE_TYPE, getActionName: () => 'walk',
+            draw: () => undefined, triggerLemAction: () => false };
+        const actions = []; actions[LemmingStateType.WALKING] = walker;
+        const removeOne = vi.fn();
+        Object.assign(manager, { level: { width: 32, height: 32 }, actions, logging: { debug: vi.fn() },
+            lemmings: [lem], triggerManager: triggers,
+            gameVictoryCondition: { getLeftCount: () => 0, removeOne }, nextNukingLemmingsIndex: -1 });
+        for (let frame = 0; frame < waitFrames; frame++) {
+            manager.tick();
+            expect(lem.removed).toBe(false);
+            tick++;
+        }
+        manager.tick();
+        expect(lem.y).toBe(expectedY);
+        expect(lem.removed).toBe(true);
+        expect(removeOne).toHaveBeenCalledOnce();
+    });
+
     it.each([false, true])('ignores a faller inside an exit but permits a landing (fatal=$0)', fatal => {
         const triggers = new TriggerManager({ getGameTicks: () => 1 } as GameTimer);
         triggers.add(new Trigger(TriggerTypes.EXIT_LEVEL, 5, 5, 8, 12));

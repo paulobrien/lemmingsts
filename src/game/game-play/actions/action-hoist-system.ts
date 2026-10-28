@@ -43,10 +43,15 @@ export class ActionHoistSystem implements IActionSystem {
 
         if (lem.frameIndex <= 4) {
             lem.y -= 2;
+            // Hoisting uses a twelve-pixel sprite foot offset.
+            // https://github.com/ericlangedijk/Lemmix/blob/master/src/Game.pas#L2980
+            lem.checkTopBoundary(12);
             return LemmingStateType.NO_STATE_TYPE;
         }
 
         if (lem.frameIndex >= 8) {
+            // Lemmix transitions to walking before checking the boundary.
+            lem.checkWalkingTopBoundary();
             return LemmingStateType.WALKING;;
         }
 

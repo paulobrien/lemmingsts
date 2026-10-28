@@ -154,6 +154,11 @@ import { TriggerManager } from './trigger-manager';
                     // ends or the lemming falls out of the level.
                     // https://github.com/ericlangedijk/Lemmix/blob/master/src/Game.pas#L3338
                     checkObjects = newAction !== LemmingStateType.EXPLODING && newAction !== LemmingStateType.OUT_OFF_LEVEL;
+                } else if (checkObjects && previousAction instanceof ActionHoistSystem) {
+                    // Hoisters check objects during the first four moving
+                    // frames and after transitioning back to walking.
+                    // https://github.com/ericlangedijk/Lemmix/blob/master/src/Game.pas#L2980
+                    checkObjects = lem.frameIndex <= 4 || newAction === LemmingStateType.WALKING;
                 }
                 this.processNewAction(lem, newAction);
 
