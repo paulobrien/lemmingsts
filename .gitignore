@@ -24,7 +24,7 @@ pnpm-debug.log*
 # Privately supplied original game files
 /dos/lemmings/
 
-/public/data/**/*.dat
-/public/data/**/*.exe
-/public/data/**/*.bat
-/public/data/**/*.com
+/public/data/**/*.[dD][aA][tT]
+/public/data/**/*.[eE][xX][eE]
+/public/data/**/*.[bB][aA][tT]
+/public/data/**/*.[cC][oO][mM]
