@@ -8,10 +8,10 @@ import { expect, it } from 'vitest';
 import { parseLemmixReplay } from '../../src/game/solutions/lemmix-replay-import';
 
 const path = process.env.LEMMIX_V1_REPLAY_PATH;
-it.skipIf(!path)('recognises and safely rejects the unsupported public v1 DOS replay', async () => {
+it.skipIf(!path)('parses a public DOS v1 replay as an unverified candidate', async () => {
   const bytes = Uint8Array.from(await readFile(path!));
-  expect(new TextDecoder().decode(bytes.subarray(0, 3))).toBe('LRB');
-  expect(bytes[3]).toBe(1);
-  expect(() => parseLemmixReplay(bytes, { levelTitle: 'Been there, seen it, done it', initialReleaseRate: 20 }))
-    .toThrow('only version 3 is supported');
+  const candidate = parseLemmixReplay(bytes, { levelTitle: 'Been there, seen it, done it', initialReleaseRate: 20 });
+  expect(candidate.sourceVersion).toBe(1);
+  expect(candidate.events.some(event => event.kind === 'assign')).toBe(true);
+  expect(candidate.events.some(event => event.kind === 'rate' && event.delta === 79)).toBe(true);
 });

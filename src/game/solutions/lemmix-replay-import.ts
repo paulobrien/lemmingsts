@@ -2,8 +2,11 @@ import { Game } from '../game';
 import { GameStateTypes } from '../game-state-types';
 import { GameTypes } from '../game-types';
 import { CommandLemmingsAction } from '../game-play/commands/command-lemming-action';
+import { CommandReleaseRateDecrease } from '../game-play/commands/command-release-rate-decrease';
+import { CommandReleaseRateIncrease } from '../game-play/commands/command-release-rate-increase';
 import { CommandSelectSkill } from '../game-play/commands/command-select-skill';
 import { SkillTypes } from '../game-play/skill-types';
+import { TriggerTypes } from '../resources/lemmings/trigger-types';
 
 /**
  * A deliberately limited Lemmix replay importer for local research.
@@ -14,12 +17,14 @@ import { SkillTypes } from '../game-play/skill-types';
  */
 type Event =
   | { readonly tick: number; readonly kind: 'select'; readonly skill: SkillTypes }
-  | { readonly tick: number; readonly kind: 'assign'; readonly skill: SkillTypes; readonly id: number; readonly x: number; readonly y: number };
+  | { readonly tick: number; readonly kind: 'assign'; readonly skill: SkillTypes; readonly id: number; readonly x: number; readonly y: number }
+  | { readonly tick: number; readonly kind: 'rate'; readonly delta: number };
 
 export interface LemmixCandidate {
   readonly levelTitle: string;
   readonly initialReleaseRate: number;
   readonly sourceLevelHash: string;
+  readonly sourceVersion: 1 | 3;
   readonly events: readonly Event[];
   readonly replay: string;
 }
@@ -28,10 +33,18 @@ export interface LemmixCandidate {
 // These flags identify the replay's source rules, not proof that this engine
 // implements each DOS quirk. Optional glitch and other game styles are rejected.
 const DOS_ORIGINAL_MECHANICS = 0x03df;
+// Version 1 predates the fixed triggered-trap animation mechanic.
+const LEGACY_DOS_ORIGINAL_MECHANICS = 0x01df;
 const HEADER_SIZE = 64;
 const RECORD_SIZE = 32;
 const SELECT = 0x40;
 const ASSIGN = 0x80;
+const START_PAUSE = 0x01;
+const END_PAUSE = 0x02;
+const PAUSING = 0x04;
+const RATE_INCREASE = 0x08;
+const RATE_DECREASE = 0x10;
+const RATE_STOP = 0x20;
 const ACTION_SKILL: Readonly<Record<number, SkillTypes>> = {
   3: SkillTypes.DIGGER, 4: SkillTypes.CLIMBER, 7: SkillTypes.BUILDER,
   8: SkillTypes.BASHER, 9: SkillTypes.MINER, 11: SkillTypes.FLOATER,
@@ -43,7 +56,7 @@ const BUTTON_SKILL: Readonly<Record<number, SkillTypes>> = {
   9: SkillTypes.MINER, 10: SkillTypes.DIGGER,
 };
 
-/** Parse v3 DOS-original skill-only records. This does not validate a solution. */
+/** Parse a limited DOS-original v1 or v3 recording. This does not validate a solution. */
 export function parseLemmixReplay(
   bytes: Uint8Array,
   target: { readonly levelTitle: string; readonly initialReleaseRate: number },
@@ -53,20 +66,24 @@ export function parseLemmixReplay(
   if (bytes.byteLength < HEADER_SIZE) fail('truncated header');
   const view = new DataView(bytes.buffer, bytes.byteOffset, bytes.byteLength);
   if (bytes[0] !== 0x4c || bytes[1] !== 0x52 || bytes[2] !== 0x42) fail('signature');
-  if (view.getUint8(3) !== 3) fail('only version 3 is supported');
+  const versionByte = view.getUint8(3);
+  if (versionByte !== 1 && versionByte !== 3) fail('only versions 1 and 3 are supported');
+  const sourceVersion: 1 | 3 = versionByte === 1 ? 1 : 3;
   if (view.getUint32(4, true) !== bytes.byteLength) fail('file size');
   if (view.getUint16(8, true) !== HEADER_SIZE || view.getUint32(12, true) !== HEADER_SIZE) fail('header layout');
-  if (view.getUint16(10, true) !== DOS_ORIGINAL_MECHANICS) fail('mechanics are not the supported DOS-original set');
-  if (view.getUint8(16) !== 0 || view.getUint8(17) !== 0 || view.getInt32(28, true) !== 0) fail('reserved header or pause-glitch data');
+  if (view.getUint16(10, true) !== (sourceVersion === 1 ? LEGACY_DOS_ORIGINAL_MECHANICS : DOS_ORIGINAL_MECHANICS)) fail('mechanics are not the supported DOS-original set');
+  if (sourceVersion === 3 && (view.getUint8(16) !== 0 || view.getUint8(17) !== 0 || view.getInt32(28, true) !== 0)) fail('reserved header or pause-glitch data');
   const count = view.getUint16(18, true);
   if (count > 32768 || bytes.byteLength !== HEADER_SIZE + count * RECORD_SIZE) fail('record count or trailing data');
   const title = new TextDecoder('windows-1252').decode(bytes.subarray(32, 64)).replace(/\0+$/, '').trim();
   if (!title || title !== target.levelTitle.trim()) fail('level title does not match');
-  const sourceLevelHash = view.getBigUint64(20, true).toString(16).padStart(16, '0');
+  const sourceLevelHash = sourceVersion === 3 ? view.getBigUint64(20, true).toString(16).padStart(16, '0') : '';
   const events: Event[] = [];
   const commands: string[] = [];
   let selected = SkillTypes.CLIMBER;
   let lastTick = 0;
+  let releaseRate = target.initialReleaseRate;
+  let pausedAt: number | undefined;
   const select = (tick: number, skill: SkillTypes) => {
     if (selected !== skill) {
       selected = skill;
@@ -81,10 +98,25 @@ export function parseLemmixReplay(
     if (tick < lastTick || tick < 0 || tick > 1_000_000) fail(`record ${i}: invalid iteration order`);
     lastTick = tick;
     const flags = view.getUint16(offset + 5, true);
-    if (!flags || (flags & ~(SELECT | ASSIGN))) fail(`record ${i}: pause, release-rate, nuke or other action flags`);
-    if (view.getUint8(offset + 29) !== 0 || view.getUint8(offset + 30) !== 0 || view.getUint8(offset + 31) !== 0) fail(`record ${i}: glitch or reserved flags`);
+    if (!flags || (flags & ~(SELECT | ASSIGN | START_PAUSE | END_PAUSE | PAUSING | RATE_INCREASE | RATE_DECREASE | RATE_STOP))) fail(`record ${i}: nuke or other action flags`);
+    if (sourceVersion === 3 && (view.getUint8(offset + 29) !== 0 || view.getUint8(offset + 30) !== 0 || view.getUint8(offset + 31) !== 0)) fail(`record ${i}: glitch or reserved flags`);
     const rate = view.getInt32(offset + 9, true);
-    if (rate !== target.initialReleaseRate) fail(`record ${i}: release-rate changes or unspecified rates are not supported`);
+    if (flags === START_PAUSE) {
+      if (pausedAt !== undefined || rate !== releaseRate) fail(`record ${i}: invalid pause start`);
+      pausedAt = tick;
+      continue;
+    }
+    if (flags === END_PAUSE) {
+      if (pausedAt !== tick || rate !== releaseRate) fail(`record ${i}: pause must end in the same iteration`);
+      pausedAt = undefined;
+      continue;
+    }
+    if (flags & (START_PAUSE | END_PAUSE)) fail(`record ${i}: combined pause boundary`);
+    if (((flags & PAUSING) !== 0) !== (pausedAt === tick)) fail(`record ${i}: inconsistent paused record`);
+    const rateFlags = flags & (RATE_INCREASE | RATE_DECREASE | RATE_STOP);
+    if (rateFlags && (!(flags & PAUSING) || (rateFlags !== (RATE_INCREASE | RATE_STOP) && rateFlags !== (RATE_DECREASE | RATE_STOP)))) fail(`record ${i}: held or unsupported release-rate change`);
+    if (!(flags & (SELECT | ASSIGN)) && !rateFlags) fail(`record ${i}: no supported action`);
+    if (!rateFlags && rate !== releaseRate) fail(`record ${i}: unexpected release-rate change`);
     // Lemmix applies assignments before button selection if both occur.
     if (flags & ASSIGN) {
       const skill = ACTION_SKILL[view.getUint8(offset + 7)];
@@ -100,9 +132,19 @@ export function parseLemmixReplay(
       if (skill === undefined) fail(`record ${i}: selected button`);
       select(tick, skill);
     } else if (view.getUint8(offset + 8) !== 0) fail(`record ${i}: unexpected selected button`);
+    if (rateFlags) {
+      if (rate < target.initialReleaseRate || rate > 99 || (rateFlags === (RATE_INCREASE | RATE_STOP) && rate < releaseRate) || (rateFlags === (RATE_DECREASE | RATE_STOP) && rate > releaseRate)) fail(`record ${i}: invalid instantaneous release-rate change`);
+      const delta = rate - releaseRate;
+      if (delta) {
+        events.push({ tick, kind: 'rate', delta });
+        commands.push(`${tick}=${delta > 0 ? 'i' : 'd'}${Math.abs(delta)}`);
+        releaseRate = rate;
+      }
+    }
   }
+  if (pausedAt !== undefined) fail('unclosed pause');
   if (!events.some(event => event.kind === 'assign')) fail('no skill assignments');
-  return { levelTitle: title, initialReleaseRate: target.initialReleaseRate, sourceLevelHash, events, replay: commands.join('&') };
+  return { levelTitle: title, initialReleaseRate: target.initialReleaseRate, sourceLevelHash, sourceVersion, events, replay: commands.join('&') };
 }
 
 /**
@@ -114,6 +156,7 @@ export function verifyLemmixCandidate(game: Game, candidate: LemmixCandidate): {
   const fail = (reason: string) => ({ ok: false as const, reason });
   if (game.getGameTimer().getGameTicks() !== 0 || game.getGameTimer().isRunning() || game.getCommandManager().serialize() !== '' || game.getGameState() !== GameStateTypes.RUNNING) return fail('game must be fresh and stopped');
   if (game.level.gameType !== GameTypes.LEMMINGS || game.level.name.trim() !== candidate.levelTitle || game.getVictoryCondition().getCurrentReleaseRate() !== candidate.initialReleaseRate) return fail('game level or starting release rate differs');
+  if (candidate.sourceVersion === 1 && game.level.triggers.some(trigger => trigger.getType() === TriggerTypes.TRAP)) return fail('legacy triggered-trap physics are unsupported');
   if (game.getGameSkills().getSelectedSkill() !== SkillTypes.CLIMBER) return fail('unexpected initial selected skill');
   let next = 0;
   const timer = game.getGameTimer();
@@ -125,6 +168,10 @@ export function verifyLemmixCandidate(game: Game, candidate: LemmixCandidate): {
       if (event.kind === 'select') {
         game.queueCommand(new CommandSelectSkill(event.skill));
         if (game.getGameSkills().getSelectedSkill() !== event.skill) return fail(`skill selection failed at tick ${tick}`);
+      } else if (event.kind === 'rate') {
+        const rate = game.getVictoryCondition().getCurrentReleaseRate();
+        game.queueCommand(event.delta > 0 ? new CommandReleaseRateIncrease(event.delta) : new CommandReleaseRateDecrease(-event.delta));
+        if (game.getVictoryCondition().getCurrentReleaseRate() !== rate + event.delta) return fail(`release-rate change failed at tick ${tick}`);
       } else {
         const lemming = game.getLemmingManager().getLemming(event.id);
         if (!lemming || lemming.removed || lemming.x !== event.x || lemming.y !== event.y) return fail(`lemming ${event.id} position differs at tick ${tick}`);
