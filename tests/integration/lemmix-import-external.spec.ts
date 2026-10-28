@@ -63,6 +63,7 @@ it.skipIf(!taxing9Path || process.env.RUN_PRIVATE_GAME_TESTS !== '1')('verifies 
 // Optional replay sources are documented in docu/LEMMIX_REPLAY_IMPORT.md.
 for (const { name, env, group, level, saved } of [
   { name: 'Fun 25', env: 'LEMMIX_FUN25_REPLAY_PATH', group: 0, level: 24, saved: 73 },
+  { name: 'Tricky 5', env: 'LEMMIX_TRICKY5_REPLAY_PATH', group: 1, level: 4, saved: 70 },
   { name: 'Tricky 10', env: 'LEMMIX_TRICKY10_REPLAY_PATH', group: 1, level: 9, saved: 80 },
   { name: 'Tricky 22 (alternate)', env: 'LEMMIX_TRICKY22_ALT_REPLAY_PATH', group: 1, level: 21, saved: 80 },
   { name: 'Taxing 3', env: 'LEMMIX_TAXING3_REPLAY_PATH', group: 2, level: 2, saved: 80 },
