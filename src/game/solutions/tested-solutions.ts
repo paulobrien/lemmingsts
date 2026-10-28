@@ -50,6 +50,15 @@ export const TESTED_SOLUTIONS: readonly TestedSolution[] = [
   },
   {
     groupIndex: 0,
+    levelIndex: 4,
+    replay: '0=s6&166=l0&290=l0&595=l7&628=l0&645=l0&659=l8&673=l7&681=l7&691=l0&710=l8&745=l9&765=l7',
+    hints: [
+      'The barriers on the route can be opened from the side.',
+      'Choose a Basher for lemmings approaching each barrier; repeat until the path to the exit is clear.',
+    ],
+  },
+  {
+    groupIndex: 0,
     levelIndex: 5,
     replay: '60=s3&60=l0&289=s4&289=l1&290=s3&290=l1',
     hints: [
