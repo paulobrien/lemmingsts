@@ -294,6 +294,15 @@ export const TESTED_SOLUTIONS: readonly TestedSolution[] = [
   },
   {
     groupIndex: 1,
+    levelIndex: 13,
+    replay: '140=s4&140=l1&165=s6&165=l0&236=s4&236=l2&302=s6&302=l0&761=l0&1561=l0&1720=s5&1720=l0&1920=l0&2120=l0&2320=l0&2520=l0&2584=s6&2584=l0&2695=s5&2695=l0&2895=l0&3095=l0&3295=l0&3495=l0&3695=l0&3740=s6&3740=l0&3800=s3&3800=l1',
+    hints: [
+      'Keep the crowd safe while a leader opens the obstacles and crosses the chasm.',
+      'Bash through the obstacles, build across the chasm and to the exit, interrupting the bridges to land on the far ground and exit platform. Then bomb the Blocker holding the group.',
+    ],
+  },
+  {
+    groupIndex: 1,
     levelIndex: 14,
     replay: '54=s3&54=l0&82=l1&110=l2&138=l3',
     hints: [
