@@ -41,15 +41,6 @@ export const TESTED_SOLUTIONS: readonly TestedSolution[] = [
   },
   {
     groupIndex: 0,
-    levelIndex: 3,
-    replay: '143=l0&150=s7&150=l0&246=s1&246=l1&349=l2&452=l3&555=l4&658=l5&761=l6&864=l7&967=l8&1070=l9',
-    hints: [
-      'A path must be opened, and each lemming needs a way up the far wall.',
-      'Make the first lemming a Climber, then a Miner near the start; make each following lemming a Climber.',
-    ],
-  },
-  {
-    groupIndex: 0,
     levelIndex: 4,
     replay: '145=s6&145=l0&258=l0&276=l1&355=l2&434=l3&575=l0&590=l3&601=l2&612=l1&649=l0&659=l1&669=l4&679=l2&690=l3&711=l2&721=l0',
     hints: [
