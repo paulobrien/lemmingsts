@@ -107,11 +107,6 @@ import { TriggerManager } from './trigger-manager';
 
             let lems = this.lemmings;
 
-            if (this.isNuking()) {
-                this.doLemmingAction(lems[this.nextNukingLemmingsIndex], SkillTypes.BOMBER);
-                this.nextNukingLemmingsIndex++;
-            }
-
             for (let i = 0; i < lems.length; i++) {
 
                 let lem = lems[i];
@@ -123,6 +118,18 @@ import { TriggerManager } from './trigger-manager';
 
                 let triggerAction = this.runTrigger(lem);
                 this.processNewAction(lem, triggerAction);
+            }
+
+            if (this.isNuking()) {
+                // The DOS sweep runs after lemmings update and skips removed
+                // slots without spending a frame on each of them.
+                // https://github.com/ericlangedijk/Lemmix/blob/master/src/Game.pas#L4061
+                while (this.nextNukingLemmingsIndex < lems.length && lems[this.nextNukingLemmingsIndex].removed) {
+                    this.nextNukingLemmingsIndex++;
+                }
+                const next = lems[this.nextNukingLemmingsIndex];
+                if (next && this.doLemmingAction(next, SkillTypes.BOMBER)) next.countdown = 79;
+                if (next) this.nextNukingLemmingsIndex++;
             }
         }
 
