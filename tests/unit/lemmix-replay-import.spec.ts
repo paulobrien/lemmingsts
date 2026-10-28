@@ -169,14 +169,28 @@ describe('Lemmix replay conversion (synthetic inputs)', () => {
     expect(() => parseLemmixReplay(lrb([record]), target)).toThrow('Unsupported or invalid LRB');
   });
 
-  it('rejects pauses which span simulation iterations', () => {
+  it('replays actions across multi-iteration and final unclosed pauses', () => {
     const bytes = lrb([
-      { tick: 0, flags: 1 }, { tick: 1, flags: 2 },
-      { tick: 2, flags: 0x80, assigned: 3 },
+      { tick: 0, flags: 1 }, { tick: 1, flags: 0x84, assigned: 3 },
+      { tick: 2, flags: 2 },
     ]);
     bytes[3] = 1;
     new DataView(bytes.buffer).setUint16(10, 0x01df, true);
-    expect(() => parseLemmixReplay(bytes, target)).toThrow('same iteration');
+    const candidate = parseLemmixReplay(bytes, target);
+    expect(candidate.replay).toBe('1=s8&1=l0');
+    expect(verifyLemmixCandidate(fakeGame(), candidate)).toEqual({ ok: true, replay: candidate.replay });
+
+    const unclosed = lrb([{ tick: 0, flags: 1 }, { tick: 1, flags: 0x84, assigned: 3 }]);
+    expect(parseLemmixReplay(unclosed, target).replay).toBe('1=s8&1=l0');
+  });
+
+  it('ignores incomplete pause annotations because Lemmix playback ignores them', () => {
+    const candidate = parseLemmixReplay(lrb([
+      { tick: 0, flags: 2 }, { tick: 1, flags: 0x84, assigned: 3 },
+      { tick: 2, flags: 1 },
+    ]), target);
+    expect(candidate.replay).toBe('1=s8&1=l0');
+    expect(verifyLemmixCandidate(fakeGame(), candidate)).toEqual({ ok: true, replay: candidate.replay });
   });
 
   it('rejects mismatched levels, versions, physics and malformed lengths', () => {

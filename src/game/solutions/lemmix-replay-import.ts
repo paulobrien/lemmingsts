@@ -84,7 +84,6 @@ export function parseLemmixReplay(
   let lastTick = 0;
   let releaseRate = target.initialReleaseRate;
   let heldRate: -1 | 0 | 1 = 0;
-  let pausedAt: number | undefined;
   const changeRate = (tick: number, delta: number) => {
     if (!delta) return;
     events.push({ tick, kind: 'rate', delta });
@@ -117,18 +116,18 @@ export function parseLemmixReplay(
     if (sourceVersion === 3 && (view.getUint8(offset + 29) !== 0 || view.getUint8(offset + 30) !== 0 || view.getUint8(offset + 31) !== 0)) fail(`record ${i}: glitch or reserved flags`);
     const rate = view.getInt32(offset + 9, true);
     if (rate < target.initialReleaseRate || rate > 99) fail(`record ${i}: invalid release rate`);
+    // Pause annotations are ignored in Lemmix playback: actions still occur
+    // at their recorded iterations, even if annotations are incomplete.
+    // https://github.com/ericlangedijk/Lemmix/blob/master/src/Game.pas#L4390
     if (flags === START_PAUSE) {
-      if (pausedAt !== undefined || rate !== releaseRate) fail(`record ${i}: invalid pause start`);
-      pausedAt = tick;
+      if (rate !== releaseRate) fail(`record ${i}: unexpected release-rate change`);
       continue;
     }
     if (flags === END_PAUSE) {
-      if (pausedAt !== tick || rate !== releaseRate) fail(`record ${i}: pause must end in the same iteration`);
-      pausedAt = undefined;
+      if (rate !== releaseRate) fail(`record ${i}: unexpected release-rate change`);
       continue;
     }
     if (flags & (START_PAUSE | END_PAUSE)) fail(`record ${i}: combined pause boundary`);
-    if (((flags & PAUSING) !== 0) !== (pausedAt === tick)) fail(`record ${i}: inconsistent paused record`);
     const rateFlags = flags & (RATE_INCREASE | RATE_DECREASE | RATE_STOP);
     const pausedStop = !!(flags & PAUSING) && !!(rateFlags & RATE_STOP);
     if (rateFlags && !pausedStop && rateFlags !== RATE_INCREASE && rateFlags !== RATE_DECREASE && rateFlags !== RATE_STOP) fail(`record ${i}: unsupported release-rate flags`);
@@ -156,7 +155,6 @@ export function parseLemmixReplay(
       else heldRate = rateFlags === RATE_INCREASE ? 1 : -1;
     }
   }
-  if (pausedAt !== undefined) fail('unclosed pause');
   if (heldRate !== 0 && releaseRate !== (heldRate > 0 ? 99 : target.initialReleaseRate)) fail('release-rate hold has no recorded end');
   if (!events.some(event => event.kind === 'assign')) fail('no skill assignments');
   return { levelTitle: title, initialReleaseRate: target.initialReleaseRate, sourceLevelHash, sourceVersion, events, replay: commands.join('&') };
