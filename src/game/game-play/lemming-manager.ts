@@ -117,11 +117,22 @@ import { TriggerManager } from './trigger-manager';
 
                 if (lem.removed) continue;
 
+                const previousAction = lem.action;
+                const countdownFinishes = lem.countdownAction !== null && lem.countdown === 1;
                 let newAction = lem.process(this.level);
+                // DOS/Lemmix checks interactive objects for a digger only on
+                // the frames where it digs a row (0 and 8), not during the
+                // seven intervening animation frames. The initial digging
+                // frame remains 0; later frames increment before processing.
+                // https://github.com/ericlangedijk/Lemmix/blob/master/src/Game.pas#L2907
+                const checkObjects = !(previousAction instanceof ActionDiggSystem) ||
+                    (!countdownFinishes && (lem.frameIndex === 0 || lem.frameIndex === 8));
                 this.processNewAction(lem, newAction);
 
-                let triggerAction = this.runTrigger(lem);
-                this.processNewAction(lem, triggerAction);
+                if (checkObjects) {
+                    let triggerAction = this.runTrigger(lem);
+                    this.processNewAction(lem, triggerAction);
+                }
             }
 
             if (this.isNuking()) {

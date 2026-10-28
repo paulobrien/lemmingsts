@@ -3,6 +3,8 @@ import { GameTypes } from '../../src/game/game-types';
 import { Lemming } from '../../src/game/game-play/lemming';
 import { LemmingManager } from '../../src/game/game-play/lemming-manager';
 import { LemmingStateType } from '../../src/game/game-play/lemming-state-type';
+import { ActionDiggSystem } from '../../src/game/game-play/actions/action-digg-system';
+import { LemmingsSprite } from '../../src/game/resources/lemmings-sprite';
 import { Trigger } from '../../src/game/game-play/trigger';
 import { TriggerManager } from '../../src/game/game-play/trigger-manager';
 import { GameTimer } from '../../src/game/game-play/game-timer';
@@ -22,6 +24,53 @@ function emptyLevel(): Level {
 }
 
 describe('triggered traps', () => {
+    it.each([{ initial: true, checksAfter: 1 }, { initial: false, checksAfter: 8 }])(
+        'checks a digger on the correct digging frame (initial=$initial)', ({ initial, checksAfter }) => {
+        let tick = 1;
+        const triggers = new TriggerManager({ getGameTicks: () => tick } as GameTimer);
+        triggers.add(new Trigger(TriggerTypes.TRAP, 5, 5, 8, 8));
+        const manager = Object.create(LemmingManager.prototype) as LemmingManager;
+        const first = new Lemming(6, 6, 0);
+        const sprites = { getAnimation: () => ({}) } as unknown as LemmingsSprite;
+        first.setAction(new ActionDiggSystem(sprites));
+        if (!initial) first.state = 1;
+        const level = { hasGroundAt: () => true, clearGroundAt: () => undefined,
+            isOutOfLevel: () => false, isProtectedAt: () => false } as unknown as Level;
+        const removeOne = vi.fn();
+        Object.assign(manager, { level, lemmings: [first], triggerManager: triggers,
+            gameVictoryCondition: { getLeftCount: () => 0, removeOne }, nextNukingLemmingsIndex: -1 });
+        for (let i = 1; i < checksAfter; i++) {
+            manager.tick();
+            expect(first.removed, `animation frame ${i}`).toBe(false);
+            tick++;
+        }
+        manager.tick();
+        expect(first.removed).toBe(true);
+        expect(removeOne).toHaveBeenCalledOnce();
+    });
+
+    it('does not check a digger on the frame its bomber countdown expires', () => {
+        const triggers = new TriggerManager({ getGameTicks: () => 1 } as GameTimer);
+        triggers.add(new Trigger(TriggerTypes.TRAP, 5, 5, 8, 8));
+        const manager = Object.create(LemmingManager.prototype) as LemmingManager;
+        const first = new Lemming(6, 6, 0);
+        const sprites = { getAnimation: () => ({}) } as unknown as LemmingsSprite;
+        first.setAction(new ActionDiggSystem(sprites));
+        first.countdown = 1;
+        const ohno = { process: () => LemmingStateType.NO_STATE_TYPE, getActionName: () => 'ohno',
+            draw: () => undefined, triggerLemAction: () => false };
+        first.countdownAction = { ...ohno, process: () => LemmingStateType.OHNO };
+        const actions = [];
+        actions[LemmingStateType.OHNO] = ohno;
+        const removeOne = vi.fn();
+        Object.assign(manager, { level: emptyLevel(), lemmings: [first], triggerManager: triggers, actions, logging: { debug: vi.fn() },
+            gameVictoryCondition: { getLeftCount: () => 0, removeOne }, nextNukingLemmingsIndex: -1 });
+        manager.tick();
+        expect(first.removed).toBe(false);
+        expect(first.action).toBe(ohno);
+        expect(removeOne).not.toHaveBeenCalled();
+    });
+
     it('removes one lemming and lets others pass until the trap rearms', () => {
         let tick = 10;
         const timer = { getGameTicks: () => tick } as GameTimer;
