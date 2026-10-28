@@ -20,6 +20,10 @@ A public [DOS Tricky 7 replay](https://www.lemmingsforums.net/index.php?topic=14
 
 A separate [Tricky 22 replay](https://www.lemmingsforums.net/index.php?topic=1490.30), `Tricky22-100%.lrb`, also verifies with all 80 lemmings rescued. These examples are third-party recordings; the project neither bundles nor redistributes them.
 
+The public [Taxing 9 replay](https://www.lemmingsforums.net/index.php?topic=1490.0), `Taxing9-undamaged.lrb`, verifies with 20 rescued.
+
+Additional public recordings verified on local files are [Fun 25 and Taxing 3](https://www.lemmingsforums.net/index.php?topic=1490.15) (73 and 80 rescued), [Tricky 10 and an alternate Tricky 22](https://www.lemmingsforums.net/index.php?topic=1490.30) (80 each), [Taxing 11](https://www.lemmingsforums.net/index.php?topic=1490.15) (50), and [Taxing 16](https://www.lemmingsforums.net/index.php?topic=1490.45) (80). The verification outcome describes this engine's execution of each recording; it is not a claim of complete DOS physics equivalence.
+
 To repeat the version 1 parsing check with a locally obtained copy of that replay, without committing it:
 
 ```sh
@@ -33,3 +37,7 @@ To verify Tricky 22 using a locally obtained copy:
 ```sh
 RUN_PRIVATE_GAME_TESTS=1 LEMMIX_TRICKY22_REPLAY_PATH=/absolute/path/to/Tricky22-100%.lrb npx vitest run tests/integration/lemmix-import-external.spec.ts
 ```
+
+For Taxing 9, set `LEMMIX_TAXING9_REPLAY_PATH` to the locally obtained recording instead.
+
+The other recordings can be checked in the same way using `LEMMIX_FUN25_REPLAY_PATH`, `LEMMIX_TRICKY10_REPLAY_PATH`, `LEMMIX_TRICKY22_ALT_REPLAY_PATH`, `LEMMIX_TAXING3_REPLAY_PATH`, `LEMMIX_TAXING11_REPLAY_PATH`, and `LEMMIX_TAXING16_REPLAY_PATH` respectively, together with `RUN_PRIVATE_GAME_TESTS=1`. Each path should point to the corresponding downloaded `.lrb` file.
