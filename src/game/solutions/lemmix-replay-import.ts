@@ -136,10 +136,15 @@ export function parseLemmixReplay(
       // Standard Lemmix records a nuke independently; reject ambiguous
       // combinations and optional glitch mechanics instead of guessing.
       // https://github.com/ericlangedijk/Lemmix/blob/master/src/Game.pas#L4268
-      if ((flags & ~(NUKE | PAUSING)) || nuked || rate !== releaseRate || view.getUint8(offset + 7) || view.getUint8(offset + 8)) fail(`record ${i}: unsupported nuke record`);
-      events.push({ tick, kind: 'nuke' });
-      commands.push(`${tick}=n`);
-      nuked = true;
+      if ((flags & ~(NUKE | PAUSING)) || rate !== releaseRate || view.getUint8(offset + 7) || view.getUint8(offset + 8)) fail(`record ${i}: unsupported nuke record`);
+      // During playback Lemmix calls BtnNuke for each record; subsequent
+      // standalone calls immediately return once the nuke is already active.
+      // https://github.com/ericlangedijk/Lemmix/blob/master/src/Game.pas#L3987
+      if (!nuked) {
+        events.push({ tick, kind: 'nuke' });
+        commands.push(`${tick}=n`);
+        nuked = true;
+      }
       continue;
     }
     const rateFlags = flags & (RATE_INCREASE | RATE_DECREASE | RATE_STOP);

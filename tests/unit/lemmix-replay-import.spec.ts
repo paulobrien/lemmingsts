@@ -89,11 +89,16 @@ describe('Lemmix replay conversion (synthetic inputs)', () => {
     expect(verifyLemmixCandidate(fakeGame(), candidate)).toEqual({ ok: true, replay: candidate.replay });
   });
 
-  it('rejects duplicate nukes and nuke-percentage glitch mechanics', () => {
-    expect(() => parseLemmixReplay(lrb([
+  it('ignores repeated standalone nukes, including on a later tick', () => {
+    const candidate = parseLemmixReplay(lrb([
       { tick: 1, flags: 0x80, assigned: 3 },
-      { tick: 2, flags: 0x100 }, { tick: 2, flags: 0x100 },
-    ]), target)).toThrow('unsupported nuke record');
+      { tick: 2, flags: 0x100 }, { tick: 2, flags: 0x100 }, { tick: 3, flags: 0x104 },
+    ]), target);
+    expect(candidate.replay).toBe('1=s8&1=l0&2=n');
+    expect(verifyLemmixCandidate(fakeGame(), candidate)).toEqual({ ok: true, replay: candidate.replay });
+  });
+
+  it('rejects nuke-percentage glitch mechanics', () => {
     const bytes = lrb([{ tick: 1, flags: 0x80, assigned: 3 }, { tick: 2, flags: 0x100 }]);
     new DataView(bytes.buffer).setUint16(10, 0x07df, true);
     expect(() => parseLemmixReplay(bytes, target)).toThrow('mechanics');
