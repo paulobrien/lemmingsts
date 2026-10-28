@@ -485,6 +485,15 @@ export const TESTED_SOLUTIONS: readonly TestedSolution[] = [
     ],
   },
   {
+    groupIndex: 1,
+    levelIndex: 27,
+    replay: '350=s5&350=l0&550=l0&755=s6&755=l0&800=s4&800=l1&870=s8&870=l0',
+    hints: [
+      'The exit is hidden inside one of the raised mounds.',
+      'From the slope to its right, build up to the nearer mound, bash inside and dig toward its center. A Blocker can protect the left edge.',
+    ],
+  },
+  {
     groupIndex: 2,
     levelIndex: 0,
     replay: '405=s6&405=l0&625=s1&625=l0&625=s2&625=l0&1370=s5&1370=l0&1562=l0&1754=l0&1863=s7&1863=l1&1946=s5&1946=l0&2098=s4&2098=l1&2278=s5&2278=l0&2400=s3&2400=l1&2470=s5&2470=l0&2852=s6&2852=l2',
