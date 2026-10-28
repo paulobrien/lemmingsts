@@ -657,6 +657,16 @@ export const TESTED_SOLUTIONS: readonly TestedSolution[] = [
   },
   {
     groupIndex: 2,
+    levelIndex: 17,
+    replay: '110=s5&110=l0&302=l0&494=l0&580=l0&772=l0&964=l0&1073=l0&1265=l0&1365=l0&1557=l0&1749=l0&1879=s3&1879=l27',
+    hints: [
+      'The left wall helps you climb over the one-way barrier.',
+      'Build towards the left wall, then build back to the barrier. When you need more height, build back up to the wall and make another staircase across.',
+      'Time a Bomber crossing the barrier so the explosion lowers its far edge, making the drop to the exit safe for the crowd.',
+    ],
+  },
+  {
+    groupIndex: 2,
     levelIndex: 18,
     replay: '171=s3&171=l0&310=l1&475=l2&715=l3&889=l4',
     hints: [
