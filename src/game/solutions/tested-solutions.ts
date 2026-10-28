@@ -512,6 +512,16 @@ export const TESTED_SOLUTIONS: readonly TestedSolution[] = [
     ],
   },
   {
+    groupIndex: 1,
+    levelIndex: 29,
+    replay: '54=l0&54=s2&54=l0&97=s1&97=l1&97=s2&97=l1&235=s7&235=l2&300=i3&301=i3&302=i3&303=i3&304=i3&305=i3&306=i3&307=i3&308=i3&309=i3&310=i3&311=i3&312=i3&313=i3&314=i3&315=i3&316=i3&317=i3&318=i3&319=i3&320=i3&321=i3&322=i3&323=i3&324=i3&325=i3&326=i3&800=s4&800=l0&1060=s7&1060=l1&1600=s3&1600=l0&1640=s7&1640=l3&1900=s1&1900=l3&1900=s2&1900=l3&2354=s5&2354=l3&2553=s7&2553=l3&3115=l2',
+    hints: [
+      'Send climbers over the columns and open sloping passages for the crowd.',
+      'Give the first two lemmings Climber and Floater. Mine through the first column, then use a temporary Blocker to turn a scout around and mine back through the second.',
+      'Mine right through the next column and remove the Blocker. Send another athlete over the following wall, use a Builder to turn them back, and mine back through it; then mine right through the last wall.',
+    ],
+  },
+  {
     groupIndex: 2,
     levelIndex: 0,
     replay: '405=s6&405=l0&625=s1&625=l0&625=s2&625=l0&1370=s5&1370=l0&1562=l0&1754=l0&1863=s7&1863=l1&1946=s5&1946=l0&2098=s4&2098=l1&2278=s5&2278=l0&2400=s3&2400=l1&2470=s5&2470=l0&2852=s6&2852=l2',
