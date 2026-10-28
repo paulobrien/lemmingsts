@@ -148,6 +148,15 @@ export const TESTED_SOLUTIONS: readonly TestedSolution[] = [
       'Bash through the rock, then use a Builder to give the group a safe path above the trap.',
     ],
   },
+  {
+    groupIndex: 0,
+    levelIndex: 25,
+    replay: '85=s5&85=l0&123=l1&368=l0&406=l1&568=l0&606=l1&768=l0&806=l1&968=l0&984=s6&984=l0&1006=s5&1006=l1&1022=s6&1022=l1',
+    hints: [
+      'Both lemmings must cross the gaps and reach the exit together.',
+      'Give each a Builder at the first ledge; extend the second bridge as needed, then bash through the wall ahead.',
+    ],
+  },
 ];
 
 /** Unverified levels deliberately return no solution or hints. */
