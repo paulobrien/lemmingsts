@@ -288,6 +288,15 @@ import { TriggerManager } from './trigger-manager';
                 return false;
             }
 
+            // DOS accepts blockers and builders only from these active ground
+            // states; a jump, climb or hoist is not an assignable ground state.
+            if (skillType === SkillTypes.BLOCKER || skillType === SkillTypes.BUILDER) {
+                const current = lem.action?.getActionName();
+                const allowed = ['walk', 'shruging', 'building', 'bashing', 'mining', 'digging'];
+                if (!current || !allowed.includes(current) ||
+                    (skillType === SkillTypes.BUILDER && current === 'building')) return false;
+            }
+
             // Reject impossible assignments before consuming a skill. DOS checks
             // the object-map cell in front and/or under the lemming at assignment.
             if (skillType === SkillTypes.BASHER || skillType === SkillTypes.MINER || skillType === SkillTypes.DIGGER) {
