@@ -393,6 +393,15 @@ export const TESTED_SOLUTIONS: readonly TestedSolution[] = [
       'Build left over the bear trap and toward the exit, then bash through the remaining rock to release the crowd.',
     ],
   },
+  {
+    groupIndex: 3,
+    levelIndex: 23,
+    replay: '65=s6&65=l0&109=l0&197=l0',
+    hints: [
+      'The route alternates direction at each level.',
+      'Use a Basher to open each wall in turn: left, right, then left.',
+    ],
+  },
 ];
 
 /** Unverified levels deliberately return no solution or hints. */
