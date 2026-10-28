@@ -213,6 +213,16 @@ export const TESTED_SOLUTIONS: readonly TestedSolution[] = [
   },
   {
     groupIndex: 0,
+    levelIndex: 22,
+    replay: '80=s8&80=l0&340=s5&340=l0&340=s6&340=l3&1900=s5&1900=l3&3103=s6&3103=l3',
+    hints: [
+      'A passage under the starting area leads toward the lower exit.',
+      'Dig below the entrance and stop before breaking through the floor. Bash left from the bottom of the shaft.',
+      'Build at the far end of the passage, then bash left from the raised step to reach the exit.',
+    ],
+  },
+  {
+    groupIndex: 0,
     levelIndex: 23,
     replay: '424=s8&424=l0&498=s4&498=l1',
     hints: [
