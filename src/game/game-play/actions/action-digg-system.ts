@@ -60,6 +60,7 @@ export class ActionDiggSystem implements IActionSystem {
             if (!this.digRow(level, lem, lem.y - 1)) {
                 return LemmingStateType.FALLING;
             }
+            if (level.isProtectedAt(lem.x, lem.y)) return LemmingStateType.WALKING;
 
         }
         return LemmingStateType.NO_STATE_TYPE;
@@ -76,6 +77,6 @@ export class ActionDiggSystem implements IActionSystem {
             }
         }
 
-        return (removeCount > 0);
+        return removeCount > 0;
     }
 }

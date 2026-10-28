@@ -286,6 +286,22 @@ import { TriggerManager } from './trigger-manager';
                 return false;
             }
 
+            // Reject impossible assignments before consuming a skill. DOS checks
+            // the object-map cell in front and/or under the lemming at assignment.
+            if (skillType === SkillTypes.BASHER || skillType === SkillTypes.MINER || skillType === SkillTypes.DIGGER) {
+                const current = lem.action?.getActionName();
+                const allowed = ['walk', 'shruging', 'building', 'bashing', 'mining', 'digging'];
+                if (!current || !allowed.includes(current) ||
+                    (skillType === SkillTypes.BASHER && current === 'bashing') ||
+                    (skillType === SkillTypes.MINER && current === 'mining') ||
+                    (skillType === SkillTypes.DIGGER && current === 'digging')) return false;
+                const direction = lem.lookRight ? 1 : -1;
+                if ((skillType === SkillTypes.BASHER || skillType === SkillTypes.MINER) &&
+                    this.level.isProtectedAt(lem.x + 8 * direction, lem.y - 8, direction)) return false;
+                if ((skillType === SkillTypes.MINER || skillType === SkillTypes.DIGGER) &&
+                    this.level.isProtectedAt(lem.x, lem.y)) return false;
+            }
+
             const needsGround = skillType === SkillTypes.BLOCKER || skillType === SkillTypes.BUILDER ||
                 skillType === SkillTypes.BASHER || skillType === SkillTypes.MINER || skillType === SkillTypes.DIGGER;
             if (needsGround && (lem.action instanceof ActionFallSystem || lem.action instanceof ActionFloatingSystem)) {

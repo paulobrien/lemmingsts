@@ -68,6 +68,11 @@ export class ActionBashSystem implements IActionSystem {
             if (yDelta == 3) {
                 return LemmingStateType.FALLING;
             }
+            const direction = lem.lookRight ? 1 : -1;
+            if (level.isProtectedAt(lem.x + 8 * direction, lem.y - 8, direction)) {
+                lem.lookRight = !lem.lookRight;
+                return LemmingStateType.WALKING;
+            }
         }
 
         /// apply mask

@@ -70,6 +70,10 @@ export class ActionMineSystem implements IActionSystem {
                 if (!level.hasGroundAt(lem.x, lem.y)) {
                     return LemmingStateType.FALLING;
                 }
+                if (level.isMinerProtectedAt(lem.x, lem.y, lem.lookRight ? 1 : -1)) {
+                    lem.lookRight = !lem.lookRight;
+                    return LemmingStateType.WALKING;
+                }
                 break;
         }
 

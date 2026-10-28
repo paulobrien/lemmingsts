@@ -120,6 +120,7 @@ export class LevelLoader {
             groundReader.groundPalette
         );
 
+        newLevel.setSteelAreas(levelReader.steel);
         newLevel.setMapObjects(levelReader.objects, groundReader.getObjectImages());
 
         return newLevel;
