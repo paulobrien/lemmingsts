@@ -433,6 +433,16 @@ export const TESTED_SOLUTIONS: readonly TestedSolution[] = [
   },
   {
     groupIndex: 3,
+    levelIndex: 19,
+    replay: '90=s4&90=l1&130=s6&130=l0&244=s5&244=l0&531=s7&531=l0&593=s1&593=l49&600=l0&940=s7&940=l49',
+    hints: [
+      'Save everyone by planning how to release the Blocker and recover the lemmings who modify the route.',
+      'Send the first lemming through the wall and build at the far edge, then mine back under the Blocker.',
+      'Give the scout and last lemming climbing ability; after the others cross, mine near the far end of the bridge to give the scout a way up.',
+    ],
+  },
+  {
+    groupIndex: 3,
     levelIndex: 23,
     replay: '65=s6&65=l0&109=l0&197=l0',
     hints: [
