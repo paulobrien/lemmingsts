@@ -328,6 +328,15 @@ export const TESTED_SOLUTIONS: readonly TestedSolution[] = [
       'Mine right, switch the Miner to Basher before reaching the bottom, then give ten approaching lemmings Bombers at progressively later points along the fence.',
     ],
   },
+  {
+    groupIndex: 1,
+    levelIndex: 16,
+    replay: '54=s3&54=l0&208=l1',
+    hints: [
+      'Two openings can guide the group down, but you cannot spare a third lemming.',
+      'Bomb one lemming on the top ledge, then bomb another while it walks right along the next ledge so the group can descend toward the exit.',
+    ],
+  },
 ];
 
 /** Unverified levels deliberately return no solution or hints. */
