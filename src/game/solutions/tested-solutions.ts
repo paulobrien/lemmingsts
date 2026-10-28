@@ -95,6 +95,16 @@ export const TESTED_SOLUTIONS: readonly TestedSolution[] = [
   },
   {
     groupIndex: 0,
+    levelIndex: 11,
+    replay: '115=s6&115=l0&246=s4&246=l1&330=s5&330=l0&563=l0&763=l0&860=l0&891=n',
+    hints: [
+      'Keep the crowd away from the left-hand drop, then make a route out of the hollow.',
+      'Bash through the central wall, use a Blocker near the left edge, then build from the hollow until the crowd can reach the exit.',
+      'Once enough lemmings are safe, the remaining lemmings can be nuked to finish the level.',
+    ],
+  },
+  {
+    groupIndex: 0,
     levelIndex: 12,
     replay: '0=s8&633=l0&727=l1&821=l2&915=l3&1009=l4&1103=l5&1197=l6&1291=l7&1385=l8&1479=l9&1573=l10&1667=l11&1761=l12&1855=l13&1949=l14&2043=l15&2137=l16&2231=l17&2325=l18&2419=l19',
     hints: [
@@ -109,6 +119,15 @@ export const TESTED_SOLUTIONS: readonly TestedSolution[] = [
     hints: [
       'The floors have dangerous fire patches; choose a safe spot above each room.',
       'Stop and bomb a lemming to open each floor in turn, keeping the holes clear of flames and offset so the drops stay safe.',
+    ],
+  },
+  {
+    groupIndex: 0,
+    levelIndex: 18,
+    replay: '898=s5&898=l0&1098=l0&1298=l0&1498=l0&1600=i3&1601=i3&1602=i3&1603=i3&1604=i3&1605=i3&1606=i3&1607=i3&1608=i3&1609=i3&1610=i3&1611=i3&1612=i3&1613=i3&1614=i3&1615=i3&1616=i3&1617=i3&1618=i3&1619=i3&1620=i3&1621=i3&1622=i3&1623=i3&1624=i3&1625=i3&1626=i1',
+    hints: [
+      'The last hill needs a route to the elevated exit.',
+      'Start building near the middle of the last hill, extend the bridge as needed, then raise the release rate so the crowd arrives in time.',
     ],
   },
   {
