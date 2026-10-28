@@ -19,7 +19,7 @@
           <div v-else class="actions">
             <button class="primary-button" type="button" :disabled="busy" @click="fileInput?.click()">{{ busy ? 'Getting things ready…' : 'Add your game files' }} <span aria-hidden="true">→</span></button>
             <button class="text-button folder-button" type="button" :disabled="busy" @click="folderInput?.click()">Or choose a folder</button>
-            <p class="hint">A one-time setup using your original DOS Lemmings files.</p>
+            <p class="hint">A one-time setup using your original DOS Lemmings files or a ZIP archive.</p>
           </div>
           <input ref="fileInput" class="visually-hidden" type="file" multiple @change="onFilesSelected" />
           <input ref="folderInput" class="visually-hidden" type="file" webkitdirectory multiple @change="onFilesSelected" />
@@ -36,7 +36,7 @@
         <div><p class="section-label">{{ ready ? 'READY TO GO' : 'FIRST THINGS FIRST' }}</p><h2 id="setup-title">{{ ready ? 'Your lemmings are waiting' : 'Bring your own game' }}</h2></div>
         <div class="setup-detail">
           <p v-if="ready">Your original files are stored in this browser, ready for your next adventure. They stay on this device.</p>
-          <p v-else>Select the original Lemmings <strong>.dat</strong> files together from your device. They’re stored in this browser, not uploaded. You’ll need to add them separately on each device.</p>
+          <p v-else>Select the original Lemmings <strong>.dat</strong> files together, or choose a ZIP containing them. They’re stored in this browser, not uploaded. You’ll need to add them separately on each device.</p>
           <button v-if="ready" class="text-button" type="button" :disabled="busy" @click="removeFiles">Remove game files</button>
         </div>
       </section>

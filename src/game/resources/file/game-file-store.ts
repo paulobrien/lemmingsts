@@ -1,3 +1,5 @@
+import { unzipSync } from 'fflate';
+
 /** Original DOS Lemmings resources required by the current game configuration. */
 export const REQUIRED_LEMMINGS_FILES: readonly string[] = [
   'ADLIB.DAT', 'MAIN.DAT', 'ODDTABLE.DAT',
@@ -10,6 +12,8 @@ export const REQUIRED_LEMMINGS_FILES: readonly string[] = [
 const DATABASE_NAME = 'lemmings-game-files';
 const STORE_NAME = 'original-lemmings';
 const requiredNames = new Set(REQUIRED_LEMMINGS_FILES);
+const MAX_ARCHIVE_BYTES = 16 * 1024 * 1024;
+const MAX_EXTRACTED_BYTES = 8 * 1024 * 1024;
 
 export interface FileValidation {
   missing: string[];
@@ -66,7 +70,30 @@ function transactionDone(transaction: IDBTransaction): Promise<void> {
 
 /** Validate and atomically replace the imported files with the selected original DOS files. */
 export async function importLemmingsFiles(files: FileList | readonly File[]): Promise<void> {
-  const selected = Array.from(files);
+  let selected = Array.from(files);
+  const archives = selected.filter(file => file.name.toLowerCase().endsWith('.zip'));
+  if (archives.length) {
+    if (selected.length !== 1) throw new Error('Select one ZIP archive, or select the game files together.');
+    const archive = archives[0];
+    if (archive.size > MAX_ARCHIVE_BYTES) throw new Error('The ZIP archive is too large. Please select the original game files.');
+    let extractedSize = 0;
+    try {
+      const entries = unzipSync(new Uint8Array(await archive.arrayBuffer()), {
+        filter: entry => {
+          const name = entry.name.split(/[\\/]/).pop()?.toUpperCase() || '';
+          if (!requiredNames.has(name)) return false;
+          extractedSize += entry.originalSize;
+          if (extractedSize > MAX_EXTRACTED_BYTES) throw new Error('The game files in this ZIP archive are too large.');
+          return true;
+        },
+      });
+      selected = Object.entries(entries).map(([path, data]) =>
+        new File([Uint8Array.from(data)], path.split(/[\\/]/).pop() || path));
+    } catch (error) {
+      if (error instanceof Error && error.message === 'The game files in this ZIP archive are too large.') throw error;
+      throw new Error('Could not read this ZIP archive. Please use an unencrypted ZIP or select the game files directly.');
+    }
+  }
   const validation = validateLemmingsFiles(selected);
   const problems: string[] = [];
   if (validation.missing.length) problems.push(`Missing files: ${validation.missing.join(', ')}`);

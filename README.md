@@ -6,7 +6,7 @@ A browser-based Lemmings player, modernised from [tomsoftware/Lemmings.ts](https
 
 The original DOS Lemmings data files are not included. Use your own compatible copy: the expected filenames are listed in [public/data/lemmings/README.md](public/data/lemmings/README.md). The supplied local copy in `dos/lemmings/` is ignored by Git. Never commit game files or put them in `public/data`; a build-time check rejects unexpected files there.
 
-Open the app and choose **Add your game files** or **Or choose a folder**. Select the original DOS files together; uppercase and lowercase names are accepted. The app validates the required files and stores them in this browser's local IndexedDB; it does not upload them. Import the files separately on each device. You can remove the imported files from the home screen. Clearing browser storage may remove game files and progress.
+Open the app and choose **Add your game files** or **Or choose a folder**. Select the original DOS files together, or choose one unencrypted ZIP archive containing them; uppercase and lowercase names are accepted. The app validates the required files and stores them in this browser's local IndexedDB; it does not upload them. Import the files separately on each device. You can remove the imported files from the home screen. Clearing browser storage may remove game files and progress.
 
 Only the original DOS Lemmings edition is supported by the current import flow. Other editions in the historical configuration have not yet been adapted.
 
