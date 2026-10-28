@@ -294,6 +294,15 @@ export const TESTED_SOLUTIONS: readonly TestedSolution[] = [
   },
   {
     groupIndex: 1,
+    levelIndex: 12,
+    replay: '54=s2&54=l0&120=s5&120=l0&127=s4&127=l1&182=l2&320=s5&320=l0&337=l0&537=l0&553=l0&753=l0&769=l0&969=l0&985=l0&1185=l0&1385=l0&1585=l0&1618=l0&1818=l0&2023=l0&2223=l0&2431=l0&2658=l0&2918=l0&3250=s3&3250=l1&3300=i3&3301=i3&3302=i3&3303=i3&3304=i3&3305=i3&3306=i3&3307=i3&3308=i3&3309=i3&3310=i3&3311=i3&3312=i3&3313=i3&3314=i3&3315=i3&3316=i3&3317=i3&3318=i3&3319=i3&3320=i3&3321=i3&3322=i3&3323=i3&3324=i3&3325=i3&3326=i3&3327=i3&3328=i3&3329=i3&3330=i3&3331=i3&3332=i2&3485=s4&3485=l3',
+    hints: [
+      'Protect the first drop and keep the crowd on the steel while one lemming builds a route.',
+      'Use a Floater to build zigzagging stairs to the upper platforms and bridge the last gap. Release the crowd from the right-hand Blocker, and place another Blocker at the upper turn to guide them onto the next staircase.',
+    ],
+  },
+  {
+    groupIndex: 1,
     levelIndex: 13,
     replay: '140=s4&140=l1&165=s6&165=l0&236=s4&236=l2&302=s6&302=l0&761=l0&1561=l0&1720=s5&1720=l0&1920=l0&2120=l0&2320=l0&2520=l0&2584=s6&2584=l0&2695=s5&2695=l0&2895=l0&3095=l0&3295=l0&3495=l0&3695=l0&3740=s6&3740=l0&3800=s3&3800=l1',
     hints: [
