@@ -110,6 +110,11 @@ describe('local original DOS assets', () => {
           expect(game!.level.triggers.filter(trigger => trigger.getType() === TriggerTypes.KILL)
             .reduce((total, trigger) => total + trigger.getActivationCount(), 0)).toBeGreaterThan(0);
         }
+        if (solution.groupIndex === 0 && solution.levelIndex === 20) {
+          // Fun 21's verified replay exercises the water trigger.
+          expect(game!.level.triggers.filter(trigger => trigger.getType() === TriggerTypes.DROWN)
+            .reduce((total, trigger) => total + trigger.getActivationCount(), 0)).toBeGreaterThan(0);
+        }
       }
 
       // Cross-checked against the supplied DOS executable in DOSBox: on Fun 13,

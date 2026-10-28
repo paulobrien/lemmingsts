@@ -219,9 +219,10 @@ import { TriggerManager } from './trigger-manager';
 
 
         private runTrigger(lem: Lemming): LemmingStateType {
-            // Vaporizing lemmings remain hittable for DOS athlete skills, but
-            // Lemmix does not check objects during their death animation.
-            if (lem.isRemoved() || lem.isDisabled() || lem.action instanceof ActionVaporizingSystem) {
+            // Drowning and vaporizing lemmings remain hittable for permitted
+            // DOS skills, but their death animations do not check objects.
+            if (lem.isRemoved() || lem.isDisabled() || lem.action instanceof ActionVaporizingSystem ||
+                lem.action instanceof ActionDrowningSystem) {
                 return LemmingStateType.NO_STATE_TYPE;
             }
 

@@ -36,8 +36,6 @@ export class ActionDrowningSystem implements IActionSystem {
 
 
     public process(level: Level, lem: Lemming): LemmingStateType {
-        lem.disable();
-
         lem.frameIndex++;
 
         if (lem.frameIndex >= 16) {
@@ -47,9 +45,8 @@ export class ActionDrowningSystem implements IActionSystem {
         if (!level.hasGroundAt(lem.x + (lem.lookRight ? 8 : -8), lem.y)) {
             lem.x += (lem.lookRight ? 1 : -1);
         }
-        else {
-            lem.lookRight = !lem.lookRight;
-        }
+        // A drowning lemming stops at terrain without turning around.
+        // https://github.com/ericlangedijk/Lemmix/blob/master/src/Game.pas#L2970
 
         return LemmingStateType.NO_STATE_TYPE;
     }
