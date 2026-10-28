@@ -451,6 +451,15 @@ export const TESTED_SOLUTIONS: readonly TestedSolution[] = [
   },
   {
     groupIndex: 2,
+    levelIndex: 23,
+    replay: '325=s5&325=l0&354=l1&383=l2&412=l3&441=l4&470=l5&499=l6&525=l0&528=l7&557=l8&600=i49&884=l0&1076=l0&1268=l0&1646=l9',
+    hints: [
+      'Build the crossing in stages and prepare a safe route for the return journey.',
+      'Use several Builders at the first edge to hold the crowd until the bridge is ready, then raise the release rate. On the lower chain, build a landing for the drop from above; add a short step at the far end so everyone can reach the exit.',
+    ],
+  },
+  {
+    groupIndex: 2,
     levelIndex: 29,
     replay: '0=i60&0=s8&585=l0&602=l1&619=l2&636=l3&653=l4&670=l5&687=l6&704=l7&721=l8&738=l9&755=l10&772=l11&789=l12&806=l13&823=l14&840=l15&857=l16&874=l17&891=l18&908=l19&925=l20&942=l21&959=l22&976=l23&993=l24&1010=l25&1027=l26&1044=l27&1061=l28&1078=l29&1095=l30&1112=l31&1129=l32&1146=l33&1163=l34&1180=l35&1197=l36&1214=l37&1231=l38&1248=l39&1265=l40&1282=l41&1299=l42&1316=l43&1333=l44&1350=l45&1367=l46&1384=l47&1401=l48&1418=l49&1435=l50&1452=l51&1469=l52&1486=l53&1503=l54&1520=l55&1537=l56&1554=l57&1571=l58&1588=l59',
     hints: [
