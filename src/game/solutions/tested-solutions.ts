@@ -451,6 +451,15 @@ export const TESTED_SOLUTIONS: readonly TestedSolution[] = [
   },
   {
     groupIndex: 3,
+    levelIndex: 14,
+    replay: '105=s6&105=l0&110=s4&110=l1&150=l3&178=s6&178=l2&204=s4&204=l4&232=l5&373=s5&373=l0&453=l2&573=l0&653=l2&773=l0&853=l2&973=l0&1053=l2&1173=l0&1253=l2&1800=s3&1800=l3&1800=l5',
+    hints: [
+      'Protect both entrances while two scouts make paths to the central exit.',
+      'Hold each group between Blockers, bash the rocks and build inward from both sides. Once both ramps are ready, release the inner Blockers.',
+    ],
+  },
+  {
+    groupIndex: 3,
     levelIndex: 19,
     replay: '90=s4&90=l1&130=s6&130=l0&244=s5&244=l0&531=s7&531=l0&593=s1&593=l49&600=l0&940=s7&940=l49',
     hints: [
