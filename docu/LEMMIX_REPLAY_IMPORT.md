@@ -55,6 +55,21 @@ These further wins use recordings posted in the public [DOS skill challenge](htt
 | Taxing 14 | [attachment 13695](https://www.lemmingsforums.net/index.php?action=dlattach;attach=13695) | `LEMMIX_TAXING14_REPLAY_PATH` | 77 |
 | Mayhem 9 | [attachment 334](https://www.lemmingsforums.net/index.php?action=dlattach;attach=334) | `LEMMIX_MAYHEM9_REPLAY_PATH` | 79 |
 
+The following wins use files from the public [LemmingsWelt challenge replay archive](https://www.camanis.net/lemmings/lemmingswelt/index.php?dir=challenge_replays). For ZIP archives, extract the named `.lrb` entry locally and set the environment variable to its path. Counts describe this engine's run and can differ from the original archive description.
+
+| Level | Archive file and replay entry | Environment variable | Rescued |
+| --- | --- | --- | ---: |
+| Tricky 20 | `Tricky_20_digbuildbash.lrb` | `LEMMIX_TRICKY20_REPLAY_PATH` | 80 |
+| Tricky 23 | `tricky23_save79.zip` / `Tricky23_save79.lrb` | `LEMMIX_TRICKY23_REPLAY_PATH` | 79 |
+| Taxing 17 | `Taxing_17_buildbash.lrb` | `LEMMIX_TAXING17_REPLAY_PATH` | 80 |
+| Taxing 23 | `taxing23_saveall_16builders.zip` / `Taxing23_saveall_16builders.lrb` | `LEMMIX_TAXING23_REPLAY_PATH` | 80 |
+| Mayhem 1 | `Replay7.zip` / `Steel Works.lrb` | `LEMMIX_MAYHEM1_REPLAY_PATH` | 79 |
+| Mayhem 2 | `80mayhem2.zip` / `The Boiler Room.lrb` | `LEMMIX_MAYHEM2_REPLAY_PATH` | 80 |
+| Mayhem 8 | `mayhem8-10_1min.zip` / `mayhem8_1min.lrb` | `LEMMIX_MAYHEM8_REPLAY_PATH` | 72 |
+| Mayhem 10 | `mayhem10.zip` / `Mayhem10_save73.lrb` | `LEMMIX_MAYHEM10_REPLAY_PATH` | 72 |
+| Mayhem 25 | `mayhem25_1min.lrb` | `LEMMIX_MAYHEM25_REPLAY_PATH` | 73 |
+| Mayhem 29 | `Mayhem 29_West_77-80.zip` / `Mayhem 29 Save Me_west_77-80.lrb` | `LEMMIX_MAYHEM29_REPLAY_PATH` | 77 |
+
 To repeat the version 1 parsing check with a locally obtained copy of that replay, without committing it:
 
 ```sh
