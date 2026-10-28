@@ -269,6 +269,16 @@ export const TESTED_SOLUTIONS: readonly TestedSolution[] = [
   },
   {
     groupIndex: 0,
+    levelIndex: 28,
+    replay: '92=s4&92=l0&135=s7&135=l1&260=s6&260=l1&320=l1&735=s5&735=l1&927=l1&1119=l1&1338=s6&1338=l1&1356=s5&1356=l1&1660=s6&1660=l1&2060=s5&2060=l1&2267=l1&2476=l1',
+    hints: [
+      'The route to the exit winds down through several chambers before climbing at the far side.',
+      'Place a Blocker near the starting edge, then mine left and bash through the lower barriers. Build short steps through the next hollow and bash near the top of the slope.',
+      'Build left at the far end of the long tunnel. After turning at the wall, build back right, then turn and build left again to reach the exit.',
+    ],
+  },
+  {
+    groupIndex: 0,
     levelIndex: 29,
     replay: '64=s6&64=l0&131=l0&219=l0',
     hints: [
