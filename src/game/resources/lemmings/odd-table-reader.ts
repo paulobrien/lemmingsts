@@ -9,12 +9,11 @@ export class OddTableReader {
     private levelProperties: LevelProperties[] = []
     private log = new LogHandler('OddTableReader');
 
-    /** return the Level for a given levelNumber 
-     *  LevelNumber is counting all levels from first to last of the game 
+    /** return the Level for a given physical level slot
      *  Odd-Tables are only used for the 'Original Lemmings' Game 
      */
     public getLevelProperties(levelNumber: number): LevelProperties | null {
-        if ((levelNumber >= this.levelProperties.length) && (levelNumber < 0)) {
+        if ((levelNumber >= this.levelProperties.length) || (levelNumber < 0)) {
             return null;
         }
 

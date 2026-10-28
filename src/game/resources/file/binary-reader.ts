@@ -145,7 +145,7 @@ export class BinaryReader {
   /** Read a String */
   public readString(length: number, offset = -1): string {
 
-    if (offset < 0) {
+    if (offset >= 0) {
       this.pos = offset + this.hiddenOffset;
     }
 

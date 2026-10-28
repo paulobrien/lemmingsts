@@ -11,16 +11,7 @@ export class ConfigReader {
 
     constructor(configFile: Promise<string>) {
 
-        this.configs = new Promise<GameConfig[]>((resolve) => {
-
-            configFile.then((jsonString) => {
-
-                const configJson: GameConfig[] = this.parseConfig(jsonString);
-
-                resolve(configJson);
-            }
-            );
-        });
+        this.configs = configFile.then((jsonString) => this.parseConfig(jsonString));
 
     }
 
@@ -52,7 +43,7 @@ export class ConfigReader {
         try {
             config = <any[]>JSON.parse(jsonData);
         } catch (e) {
-            this.log.log('Unable to parse config', e);
+            this.log.log('Unable to parse config', e instanceof Error ? e : new Error(String(e)));
             return gameConfigs;
         }
 
@@ -66,8 +57,9 @@ export class ConfigReader {
             newConfig.gameType = GameTypesHelper.fromString(configData['gametype']);
 
             /// read level config
-            if (configData['level.useoddtable'] != null) {
-                newConfig.level.useOddTable = (!!(<any>configData['level.useoddtable']));
+            const useOddTable = configData['level.useOddTable'] ?? configData['level.useoddtable'];
+            if (useOddTable != null) {
+                newConfig.level.useOddTable = Boolean(useOddTable);
             }
             newConfig.level.order = <any>configData['level.order'];
             newConfig.level.filePrefix = <any>configData['level.filePrefix'];

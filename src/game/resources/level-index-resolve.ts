@@ -11,7 +11,7 @@ export class LevelIndexType {
   /** use the odd table information for this entry */
   public useOddTable: boolean = false;
 
-  /** the number of this level - starting with 0 and counting every level */
+  /** Index into the odd table for the underlying level file and part. */
   public levelNumber: number = 0;
 }
 
@@ -50,13 +50,10 @@ export class LevelIndexResolve {
     liType.partIndex = Math.abs((levelOrderConfig % 10) | 0);
     liType.useOddTable = (levelOrderConfig < 0);
 
-    /// the level number is the sum-index of the level
-    let levelNo = 0;
-    for (let i = 0; i < (levelMode - 1); i++) {
-      levelNo += levelOrderList[i].length;
-    }
-
-    liType.levelNumber = levelNo + levelIndex;
+    // The original DOS odd table contains one record per physical level slot,
+    // with eight slots in each LEVELnnn.DAT container. Negative order entries
+    // refer back to those physical slots, not the displayed difficulty order.
+    liType.levelNumber = liType.fileId * 8 + liType.partIndex;
 
 
     return liType;

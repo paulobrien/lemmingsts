@@ -16,7 +16,7 @@ export class LevelConfig {
     public order: number[][] = [];
 
     public getGroupLength(groupIndex: number): number {
-        if ((groupIndex < 0) || (groupIndex > this.order.length)) {
+        if ((groupIndex < 0) || (groupIndex >= this.order.length)) {
             return 0;
         }
 

@@ -37,15 +37,12 @@ export class GameResources {
             return this.mainDat;
         }
 
-        this.mainDat = new Promise<FileContainer>((resolve) => {
-
-            this.fileProvider.loadBinary(this.config.path, 'MAIN.DAT')
-                .then((data) => {
-
-                    /// split the file in it's parts
-                    resolve(new FileContainer(data));
-                });
-        });
+        this.mainDat = this.fileProvider.loadBinary(this.config.path, 'MAIN.DAT')
+            .then((data) => new FileContainer(data))
+            .catch((error) => {
+                this.mainDat = null;
+                throw error;
+            });
 
         return this.mainDat;
     }
@@ -96,21 +93,15 @@ export class GameResources {
             return this.soundImage;
         }
 
-        this.soundImage = new Promise<SoundImageManager>((resolve) => {
-
-            /// load the adlib file
-            this.fileProvider.loadBinary(this.config.path, 'ADLIB.DAT')
-                .then((data) => {
-
-                    /// unpack the file
-                    const container = new FileContainer(data);
-
-                    /// create Sound Image
-                    const soundImage = new SoundImageManager(container.getPart(0), this.config.audioConfig);
-
-                    resolve(soundImage);
-                });
-        });
+        this.soundImage = this.fileProvider.loadBinary(this.config.path, 'ADLIB.DAT')
+            .then((data) => {
+                const container = new FileContainer(data);
+                return new SoundImageManager(container.getPart(0), this.config.audioConfig);
+            })
+            .catch((error) => {
+                this.soundImage = null;
+                throw error;
+            });
 
         return this.soundImage;
     }
