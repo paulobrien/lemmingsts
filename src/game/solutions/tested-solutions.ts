@@ -532,6 +532,16 @@ export const TESTED_SOLUTIONS: readonly TestedSolution[] = [
   },
   {
     groupIndex: 2,
+    levelIndex: 2,
+    replay: '198=s5&198=l0&200=s8&200=l1&274=s5&274=l1&300=i3&301=i3&302=i3&303=i3&304=i3&305=i3&306=i3&307=i3&308=i3&309=i3&310=i3&311=i3&312=i3&313=i3&314=i3&315=i3&316=i3&317=i3&318=i3&319=i3&320=i3&321=i3&322=i3&323=i3&324=i3&325=i3&326=i3&327=i3&328=i3&329=i3&330=i3&331=i3&332=i3&390=l0&582=l0&774=l0&966=l0&1158=l0&1320=s6&1320=l1&1350=s5&1350=l0&1416=l1',
+    hints: [
+      'Send one lemming to build a long staircase and hold the others until it is nearly ready.',
+      'Dig a shallow holding pit, interrupt the Digger with a Builder when the pit is deep enough to contain the crowd, and raise the release rate.',
+      'Bash towards the staircase while the leader finishes it, then use a Builder to connect the tunnel to the steps.',
+    ],
+  },
+  {
+    groupIndex: 2,
     levelIndex: 5,
     replay: '90=s6&90=l0&95=l1&95=l2&180=s4&180=l3&650=s3&650=l3',
     hints: [
