@@ -7,6 +7,7 @@
           <p class="eyebrow"><span aria-hidden="true">✦</span> A LITTLE ADVENTURE AWAITS</p>
           <h1 id="welcome-title">Let's get them <em>home.</em></h1>
           <p class="intro">A little bit of chaos, a lot of tiny lemmings, and a whole world of puzzles to solve.</p>
+          <p class="preview-note">Early preview · Gameplay and level solutions are still being verified.</p>
           <div v-if="ready" class="actions">
             <div class="level-picker" v-if="groups.length">
               <label>Difficulty <select v-model.number="selectedGroup" @change="selectedLevel = 0"><option v-for="(group, index) in groups" :key="group.name" :value="index">{{ group.name }}</option></select></label>
@@ -98,6 +99,7 @@ async function removeFiles() {
 .eyebrow, .section-label { color: #648171; font-size: 11px; font-weight: 800; letter-spacing: .18em; }.eyebrow span { color: #d99d4d; margin-right: 7px; }
 h1 { font-family: Georgia, serif; font-size: clamp(52px, 6.3vw, 82px); font-weight: 400; letter-spacing: -.065em; line-height: 1.04; margin: 24px 0; max-width: 620px; } h1 em { color: #36785a; font-weight: 400; }
 .intro { color: #718177; font-size: 17px; line-height: 1.7; max-width: 405px; }.actions { margin-top: 34px; }
+.preview-note { color: #7b6b47; font-size: 12px; line-height: 1.5; }
 .level-picker { display: flex; gap: 12px; margin-bottom: 18px; }.level-picker label { display: flex; flex-direction: column; gap: 5px; color: #648171; font-size: 12px; font-weight: 700; }.level-picker select { min-width: 120px; min-height: 44px; padding: 8px; border: 1px solid #becdbd; border-radius: 6px; background: #fff; color: #1e3028; font: inherit; }
 .primary-button { display: inline-flex; align-items: center; justify-content: space-between; gap: 48px; background: #286d4e; color: #fff; padding: 18px 22px; min-height: 58px; border: 0; border-radius: 8px; font: inherit; font-size: 15px; font-weight: 750; text-decoration: none; cursor: pointer; box-shadow: 0 6px 0 #d6e2d3; }.primary-button:hover { background: #205a41; }.primary-button:disabled { opacity: .6; cursor: wait; }
 .ready-note, .hint { color: #849087; font-size: 12px; margin-top: 18px; }.ready-note span { color: #6aaf78; margin-right: 5px; }.status-message { color: #315d47; font-size: 14px; line-height: 1.5; }
