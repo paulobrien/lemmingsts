@@ -287,12 +287,20 @@ import { TriggerManager } from './trigger-manager';
             if (needsGround && (lem.action instanceof ActionFallSystem || lem.action instanceof ActionFloatingSystem)) {
                 return false;
             }
+            // A blocker remains committed until it is freed by terrain changes
+            // or assigned a bomber countdown. Reassigning its main action
+            // would also leave behind the blocker field it owns.
+            if (lem.action instanceof ActionBlockerSystem && skillType !== SkillTypes.BOMBER) {
+                return false;
+            }
 
             let actionSystem = this.skillActions[skillType];
             if (!actionSystem) {
                 this.logging.log(lem.id + " Unknown Action: " + skillType);
                 return false;
             }
+
+            if (lem.action === actionSystem) return false;
 
             return actionSystem.triggerLemAction(lem);
         }
