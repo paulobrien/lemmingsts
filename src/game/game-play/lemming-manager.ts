@@ -282,6 +282,12 @@ import { TriggerManager } from './trigger-manager';
                 return false;
             }
 
+            const needsGround = skillType === SkillTypes.BLOCKER || skillType === SkillTypes.BUILDER ||
+                skillType === SkillTypes.BASHER || skillType === SkillTypes.MINER || skillType === SkillTypes.DIGGER;
+            if (needsGround && (lem.action instanceof ActionFallSystem || lem.action instanceof ActionFloatingSystem)) {
+                return false;
+            }
+
             let actionSystem = this.skillActions[skillType];
             if (!actionSystem) {
                 this.logging.log(lem.id + " Unknown Action: " + skillType);

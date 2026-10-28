@@ -7,6 +7,8 @@ import { Lemming } from '../lemming';
 import { LemmingStateType } from '../lemming-state-type';
 import { SoundSystem } from '../sound-system';
 import { Animation } from './../../resources/animation';
+import { ActionFallSystem } from './action-fall-system';
+import { ActionFloatingSystem } from './action-floating-system';
 
 export class ActionBuildSystem implements IActionSystem {
 
@@ -26,6 +28,11 @@ export class ActionBuildSystem implements IActionSystem {
 
 
     public triggerLemAction(lem: Lemming): boolean {
+        // A builder needs to be on the ground; assigning it while falling or
+        // floating must not cancel the fall or consume a skill.
+        if (lem.action instanceof ActionFallSystem || lem.action instanceof ActionFloatingSystem) {
+            return false;
+        }
         lem.setAction(this);
 
         return true;
