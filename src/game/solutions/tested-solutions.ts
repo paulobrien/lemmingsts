@@ -265,6 +265,15 @@ export const TESTED_SOLUTIONS: readonly TestedSolution[] = [
       'Assign Bomber to each of the first four as it leaves the hatch; let the remaining six follow the opening.',
     ],
   },
+  {
+    groupIndex: 1,
+    levelIndex: 15,
+    replay: '110=s7&110=l0&220=s6&220=l0&867=s3&867=l0&874=l33&888=l13&904=l34&923=l14&929=l35&949=l36&969=l37&978=l15&994=l38',
+    hints: [
+      'Open the first ledge, then create a descending route through the fences.',
+      'Mine right, switch the Miner to Basher before reaching the bottom, then give ten approaching lemmings Bombers at progressively later points along the fence.',
+    ],
+  },
 ];
 
 /** Unverified levels deliberately return no solution or hints. */
