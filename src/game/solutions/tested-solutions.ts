@@ -578,6 +578,16 @@ export const TESTED_SOLUTIONS: readonly TestedSolution[] = [
   },
   {
     groupIndex: 2,
+    levelIndex: 16,
+    replay: '100=s7&100=l0&220=s5&220=l0&300=s7&300=l0&400=s6&400=l0&750=s7&750=l3&870=s5&870=l3&973=s7&973=l0&1094=s6&1094=l0&1947=s5&1947=l0&2750=s6&2750=l0&3200=l5',
+    hints: [
+      'Use a sloping tunnel to turn the crowd back and send one lemming towards the lower exit.',
+      'Mine right from the entrance and interrupt the tunnel with a Builder. Mine left to begin the route; mine again behind the leader and stop that tunnel to hold the crowd.',
+      'Take the leader down through the next hollow and bash left near the bottom. Build at the far end, then bash from the raised steps; finally bash the crowd through its holding pit.',
+    ],
+  },
+  {
+    groupIndex: 2,
     levelIndex: 18,
     replay: '171=s3&171=l0&310=l1&475=l2&715=l3&889=l4',
     hints: [
