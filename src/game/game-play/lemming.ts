@@ -53,14 +53,14 @@ export class Lemming {
     }
 
     /** return the distance of this lemming to a given position */
-    public getClickDistance(x: number, y: number): number {
+    public getClickDistance(x: number, y: number, hitSlop = 0): number {
         let yCenter = this.y - 5;
         let xCenter = this.x;
 
-        let x1 = xCenter - 5;
-        let y1 = yCenter - 6;
-        let x2 = xCenter + 5;
-        let y2 = yCenter + 7;
+        let x1 = xCenter - 5 - hitSlop;
+        let y1 = yCenter - 6 - hitSlop;
+        let x2 = xCenter + 5 + hitSlop;
+        let y2 = yCenter + 7 + hitSlop;
 
         //console.log(this.id + ' : '+ x1 +'-'+ x2 +'  '+ y1 +'-'+ y2);
 

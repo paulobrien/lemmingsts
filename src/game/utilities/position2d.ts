@@ -3,6 +3,8 @@ export class Position2D {
     public x:number = 0;
     /** Y position in the container */
     public y:number = 0;
+    /** Optional extra targeting radius in this coordinate space. */
+    public hitSlop = 0;
 
     constructor(x:number = 0, y:number = 0) {
         this.x = x;

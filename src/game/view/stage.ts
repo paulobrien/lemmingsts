@@ -11,6 +11,9 @@ export class Stage {
     private guiImgProps: StageImageProperties;
 
     private controller: UserInputManager;
+    private pressedImage: StageImageProperties | null = null;
+    private pressPosition: Position2D | null = null;
+    private dragging = false;
 
 
     constructor(canvasForOutput: HTMLCanvasElement, zoom = 2) {
@@ -19,6 +22,7 @@ export class Stage {
         this.handleOnMouseUp();
         this.handleOnMouseDown();
         this.handleOnMouseMove();
+        this.controller.onCancel.on(() => this.cancelPress());
         this.handleOnDoubleClick();
         this.handelOnZoom();
 
@@ -37,7 +41,10 @@ export class Stage {
         const x = (stageImage.viewPoint.getSceneX(e.x - stageImage.x));
         const y = (stageImage.viewPoint.getSceneY(e.y - stageImage.y));
 
-        return new Position2D(x, y);
+        const result = new Position2D(x, y);
+        // Keep touch assistance bounded so a tap still selects a nearby lemming.
+        result.hitSlop = Math.min(12, e.hitSlop / stageImage.viewPoint.scale);
+        return result;
     }
 
 
@@ -68,7 +75,14 @@ export class Stage {
                 return;
             }
 
-            stageImage.display.onMouseDown.trigger(this.calcPosition2D(stageImage, e));
+            this.pressedImage = stageImage;
+            this.pressPosition = new Position2D(e.x, e.y);
+            this.dragging = false;
+            // The playfield waits until release so a pan doesn't assign a skill.
+            // The panel still receives down immediately for held release-rate buttons.
+            if (stageImage !== this.gameImgProps) {
+                stageImage.display.onMouseDown.trigger(this.calcPosition2D(stageImage, e));
+            }
         });
     }
 
@@ -80,14 +94,18 @@ export class Stage {
                 return;
             }
 
-            const stageImage = this.getStageImageAt(e.x, e.y);
-            if ((stageImage == null) || (stageImage.display == null)) {
-                return;
+            const stageImage = this.pressedImage;
+            const pressPosition = this.pressPosition;
+            this.pressedImage = null;
+            this.pressPosition = null;
+            if (!stageImage || !stageImage.display || !pressPosition) return;
+
+            const distance = Math.hypot(e.x - pressPosition.x, e.y - pressPosition.y);
+            if (stageImage === this.gameImgProps && !this.dragging && distance < 12
+                && this.getStageImageAt(e.x, e.y) === stageImage) {
+                stageImage.display.onMouseDown.trigger(this.calcPosition2D(stageImage, e));
             }
-
-            const pos = this.calcPosition2D(stageImage, e);
-
-            stageImage.display.onMouseUp.trigger(pos);
+            stageImage.display.onMouseUp.trigger(this.calcPosition2D(stageImage, e));
         });
     }
 
@@ -100,13 +118,19 @@ export class Stage {
             }
 
             if (e.button) {
-                const stageImage = this.getStageImageAt(e.mouseDownX, e.mouseDownY);
+                const stageImage = this.pressedImage;
                 if (stageImage == null) {
                     return;
                 }
 
                 if (stageImage == this.gameImgProps) {
-                    this.updateViewPoint(stageImage, e.deltaX, e.deltaY, 0);
+                    if (!this.dragging && this.pressPosition &&
+                        Math.hypot(e.x - this.pressPosition.x, e.y - this.pressPosition.y) >= 12) {
+                        this.dragging = true;
+                        this.updateViewPoint(stageImage, this.pressPosition.x - e.x, this.pressPosition.y - e.y, 0);
+                    } else if (this.dragging) {
+                        this.updateViewPoint(stageImage, e.deltaX, e.deltaY, 0);
+                    }
                 }
             }
             else {
@@ -136,6 +160,37 @@ export class Stage {
             }
             this.updateViewPoint(stageImage, 0, 0, e.deltaZoom);
         });
+    }
+
+    private cancelPress(): void {
+        if (this.pressedImage && this.pressedImage.display && this.pressPosition) {
+            this.pressedImage.display.onMouseUp.trigger(this.calcPosition2D(this.pressedImage, this.pressPosition));
+        }
+        this.pressedImage = null;
+        this.pressPosition = null;
+        this.dragging = false;
+    }
+
+    public zoomGame(delta: number): void {
+        this.updateViewPoint(this.gameImgProps, 0, 0, delta);
+    }
+
+    /** Remove listeners belonging to the previous game before attaching a new one. */
+    public clearInputBindings(): void {
+        this.cancelPress();
+        for (const image of [this.gameImgProps.display, this.guiImgProps.display]) {
+            if (!image) continue;
+            image.onMouseDown.dispose();
+            image.onMouseUp.dispose();
+            image.onMouseMove.dispose();
+            image.onDoubleClick.dispose();
+        }
+    }
+
+    public dispose(): void {
+        this.cancelPress();
+        this.controller.dispose();
+        this.resetFade();
     }
 
 
@@ -300,7 +355,7 @@ export class Stage {
 
         this.resetFade();
 
-        this.fadeTimer = setInterval(() => {
+        this.fadeTimer = window.setInterval(() => {
             this.fadeAlpha = Math.min(this.fadeAlpha + 0.02, 1);
 
             if (this.fadeAlpha <= 0) {
