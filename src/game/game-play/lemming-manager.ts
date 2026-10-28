@@ -6,6 +6,7 @@ import { MaskProvider } from '../resources/mask-provider';
 import { ParticleTable } from '../resources/particle-table';
 import { LogHandler } from '../utilities/log-handler';
 import { DisplayImage } from '../view/display-image';
+import { EventHandler } from '../utilities/event-handler';
 import { IActionSystem } from './action-system';
 import { ActionBashSystem } from './actions/action-bash-system';
 import { ActionBlockerSystem } from './actions/action-blocker-system';
@@ -29,9 +30,12 @@ import { GameVictoryCondition } from './game-victory-condition';
 import { Lemming } from './lemming';
 import { LemmingStateType } from './lemming-state-type';
 import { SkillTypes } from './skill-types';
+import { SoundEffect } from './sound-effects';
 import { TriggerManager } from './trigger-manager';
 
     export class LemmingManager {
+
+        public readonly onSoundEffect = new EventHandler<SoundEffect>();
 
         /** list of all Lemming in the game */
         private lemmings: Lemming[] = [];
@@ -284,6 +288,10 @@ import { TriggerManager } from './trigger-manager';
             }
 
             lem.setAction(actionSystem);
+            // Sound events are observational and do not affect simulation.
+            if (stateType === LemmingStateType.EXITING) this.onSoundEffect.trigger(SoundEffect.Exit);
+            else if (stateType === LemmingStateType.SPLATTING) this.onSoundEffect.trigger(SoundEffect.Splat);
+            else if (stateType === LemmingStateType.EXPLODING) this.onSoundEffect.trigger(SoundEffect.Explosion);
             // Original DOS/Lemmix starts its fall counter at three pixels.
             // A later custom-DOS variant starts at zero; this engine targets
             // the classic original rules rather than identifying executables.

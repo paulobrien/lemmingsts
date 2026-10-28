@@ -22,18 +22,21 @@ const mock = vi.hoisted(() => {
     const stage = { getGameDisplay: vi.fn(() => display), getGuiDisplay: vi.fn(() => display), resetFade: vi.fn(), clearInputBindings: vi.fn(), dispose: vi.fn(), zoomGame: vi.fn() };
     const skills = { getSkill: vi.fn(() => 10), getSelectedSkill: vi.fn(() => 1) };
     const endEvent: { handler?: (result: { state: number; survivorPercentage: number }) => void } = {};
+    const soundEvent: { handler?: (effect: number) => void } = {};
+    const effects = { play: vi.fn(async () => undefined), stop: vi.fn() };
     const game = {
         getGameTimer: vi.fn(() => timer), getGameSkills: vi.fn(() => skills),
         getVictoryCondition: vi.fn(() => ({ getCurrentReleaseRate: () => 50 })),
         setGameDisplay: vi.fn(), setGuiDisplay: vi.fn(), start: vi.fn(() => timer.continue()),
         stop: vi.fn(() => timer.suspend()), queueCommand: vi.fn(),
         onGameEnd: { on: vi.fn((handler: (result: { state: number; survivorPercentage: number }) => void) => { endEvent.handler = handler; }) },
+        onSoundEffect: { on: vi.fn((handler: (effect: number) => void) => { soundEvent.handler = handler; }) },
     };
-    const resources = { getLevel: vi.fn(async () => level) };
+    const resources = { getLevel: vi.fn(async () => level), getSoundTrack: vi.fn() };
     const config = { level: { groups: ['Fun'], order: [[0, 1]], getGroupLength: () => 2 } };
     const getGame = vi.fn(async () => game);
     const replace = vi.fn(async () => undefined);
-    return { timer, level, stage, game, resources, config, getGame, replace, endEvent };
+    return { timer, level, stage, game, resources, config, getGame, replace, endEvent, soundEvent, effects };
 });
 
 vi.mock('vue-router', () => ({
@@ -41,6 +44,7 @@ vi.mock('vue-router', () => ({
     useRouter: () => ({ replace: mock.replace }),
 }));
 vi.mock('@/game/view/stage', () => ({ Stage: vi.fn(function () { return mock.stage; }) }));
+vi.mock('@/game/resources/sound/sound-effects-player', () => ({ SoundEffectsPlayer: vi.fn(function () { return mock.effects; }) }));
 vi.mock('@/game/game-factory', () => ({ GameFactory: vi.fn(function () {
     return { getConfig: async () => mock.config, getGameResources: async () => mock.resources, getGame: mock.getGame };
 }) }));
@@ -71,6 +75,32 @@ describe('game view lifecycle', () => {
         localStorage.clear();
         mock.timer.running = false;
         mock.getGame.mockImplementation(async () => mock.game);
+    });
+
+    it('persists the sound toggle and silences effects on pause and teardown', async () => {
+        const wrapper = mountView();
+        await flushPromises();
+        button(wrapper.container, 'Start level').click();
+        await flushPromises();
+        mock.soundEvent.handler?.(3);
+        expect(mock.effects.play).not.toHaveBeenCalled();
+
+        button(wrapper.container, 'Sound off').click();
+        await nextTick();
+        expect(JSON.parse(localStorage.getItem('lemmings.settings.v1')!).soundEnabled).toBe(true);
+        mock.soundEvent.handler?.(3);
+        expect(mock.effects.play).toHaveBeenCalledWith(3);
+        button(wrapper.container, 'Pause').click();
+        await nextTick();
+        expect(mock.effects.stop).toHaveBeenCalled();
+        mock.effects.play.mockClear();
+        mock.soundEvent.handler?.(15);
+        expect(mock.effects.play).not.toHaveBeenCalled();
+        button(wrapper.container, 'Sound on').click();
+        await nextTick();
+        expect(JSON.parse(localStorage.getItem('lemmings.settings.v1')!).soundEnabled).toBe(false);
+        wrapper.unmount();
+        expect(mock.effects.stop).toHaveBeenCalled();
     });
 
     it('pauses, resumes, and stops the old game before changing level', async () => {

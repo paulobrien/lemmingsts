@@ -20,8 +20,8 @@ describe('local game progress', () => {
         localStorage.setItem('lemmings.progress.v1', '{invalid');
         localStorage.setItem('lemmings.settings.v1', JSON.stringify({ speed: 0, musicEnabled: true }));
         expect(readProgress()).toEqual([]);
-        expect(readSettings()).toEqual({ speed: 1, musicEnabled: true });
-        saveSettings({ speed: 2, musicEnabled: false });
-        expect(readSettings()).toEqual({ speed: 2, musicEnabled: false });
+        expect(readSettings()).toEqual({ speed: 1, musicEnabled: true, soundEnabled: false });
+        saveSettings({ speed: 2, musicEnabled: false, soundEnabled: true });
+        expect(readSettings()).toEqual({ speed: 2, musicEnabled: false, soundEnabled: true });
     });
 });

@@ -54,6 +54,16 @@ test('imports the local DOS files, plays, and reloads offline', async ({ page, c
 test('completes the first level with a canvas interaction and keeps progress', async ({ page }, testInfo) => {
   test.skip(process.env.RUN_PRIVATE_GAME_TESTS !== '1', 'Requires local, untracked original game files')
   test.setTimeout(60_000)
+  // Observe real Web Audio lifetimes without exposing application internals.
+  await page.addInitScript(() => {
+    const Original = window.AudioContext
+    const counts = { opened: 0, closed: 0 }
+    ;(window as unknown as { audioTestCounts: typeof counts }).audioTestCounts = counts
+    window.AudioContext = class extends Original {
+      constructor() { super(); counts.opened++ }
+      async close() { await super.close(); counts.closed++ }
+    }
+  })
   const files = (await readdir(resolve('dos/lemmings')))
     .filter(name => name.toLowerCase().endsWith('.dat'))
     .map(name => resolve('dos/lemmings', name))
@@ -62,6 +72,8 @@ test('completes the first level with a canvas interaction and keeps progress', a
   await page.locator('input[type=file]').first().setInputFiles(files)
   await page.getByRole('link', { name: 'Play Lemmings' }).click()
   await expect(page.getByRole('heading', { name: 'Just dig!' })).toBeVisible()
+  await page.getByRole('button', { name: 'Sound off' }).click()
+  await expect(page.getByRole('button', { name: 'Sound on' })).toHaveAttribute('aria-pressed', 'true')
   await page.getByRole('button', { name: 'Start level' }).click()
   await page.getByRole('button', { name: /^Dig\b/ }).click()
   // Pause with two lemmings on the upper platform so the canvas tap remains
@@ -98,6 +110,11 @@ test('completes the first level with a canvas interaction and keeps progress', a
   await page.getByRole('button', { name: 'Resume', exact: true }).click()
   await expect(page.getByRole('button', { name: /^Dig\b/ })).toContainText('9')
   await expect(page.getByRole('status')).toContainText('Level complete!', { timeout: 30_000 })
+  await expect.poll(() => page.evaluate(() => (window as unknown as { audioTestCounts: { opened: number } }).audioTestCounts.opened)).toBeGreaterThan(0)
+  await expect.poll(() => page.evaluate(() => {
+    const counts = (window as unknown as { audioTestCounts: { opened: number; closed: number } }).audioTestCounts
+    return counts.opened - counts.closed
+  })).toBe(0)
 
   await page.getByRole('link', { name: '← Levels' }).click()
   await page.reload()

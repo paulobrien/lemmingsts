@@ -22,9 +22,10 @@ function setup() {
             actions.push(`assign:${lemming.id}:${skill}`); return true;
         },
     };
-    const game = { getGameSkills: () => skills, getLemmingManager: () => manager } as unknown as Game;
+    const sound = { trigger: vi.fn() };
+    const game = { getGameSkills: () => skills, getLemmingManager: () => manager, onSoundEffect: sound } as unknown as Game;
     const timer = new GameTimer({ timeLimit: 5 } as Level);
-    return { timer, actions, commands: new CommandManager(game, timer) };
+    return { timer, actions, sound, commands: new CommandManager(game, timer) };
 }
 
 describe('replay commands', () => {
@@ -33,6 +34,7 @@ describe('replay commands', () => {
         original.commands.queueCommand(new CommandSelectSkill(SkillTypes.BUILDER));
         original.commands.queueCommand(new CommandLemmingsAction(7));
         expect(original.actions).toEqual(['select:5', 'assign:7:5']);
+        expect(original.sound.trigger).toHaveBeenCalledWith(3);
         expect(original.commands.serialize()).toBe('0=s5&0=l7');
 
         const playback = setup();

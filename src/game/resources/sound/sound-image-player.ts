@@ -49,6 +49,11 @@ export class SoundImagePlayer {
     return this.sampleRateFactor / 210;
   }
 
+  /** Sound effects end when every sound-image channel has stopped. */
+  public isFinished(): boolean {
+    return this.channelCount > 0 && this.channels.every(channel => channel.isFinished());
+  }
+
   /** init for a sound */
   public initSound(soundIndex: number) {
     ///- reset

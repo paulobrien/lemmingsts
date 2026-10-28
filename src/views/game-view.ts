@@ -14,6 +14,7 @@ import { readSettings, recordCompletion, saveSettings } from '@/game/progress';
 import { getTestedSolution } from '@/game/solutions/tested-solutions';
 import { Level } from '@/game/resources/level';
 import { AudioPlayer } from '@/game/resources/sound/audio-player';
+import { SoundEffectsPlayer } from '@/game/resources/sound/sound-effects-player';
 import { Stage } from '@/game/view/stage';
 
 const skillButtons = [
@@ -47,12 +48,14 @@ export default defineComponent({
         const settings = readSettings();
         const speed = ref(settings.speed);
         const musicEnabled = ref(settings.musicEnabled);
+        const soundEnabled = ref(settings.soundEnabled);
         const gameType = (Number(route.params.gameType) || GameTypes.LEMMINGS) as GameTypes;
         const factory = new GameFactory(`${import.meta.env.BASE_URL}data`);
         let resources: GameResources | null = null;
         let game: Game | null = null;
         let stage: Stage | null = null;
         let music: AudioPlayer | null = null;
+        let effects: SoundEffectsPlayer | null = null;
         let disposed = false;
         let loadGeneration = 0;
         let musicGeneration = 0;
@@ -80,6 +83,8 @@ export default defineComponent({
         }
 
         function disposeGame() {
+            effects?.stop();
+            effects = null;
             game?.stop();
             game = null;
             stage?.clearInputBindings();
@@ -144,13 +149,18 @@ export default defineComponent({
                     return;
                 }
                 game = nextGame;
+                const activeResources = resources;
+                effects = activeResources ? new SoundEffectsPlayer(index => activeResources.getSoundTrack(index)) : null;
+                game.onSoundEffect.on(effect => {
+                    if (effect !== undefined && soundEnabled.value && playing.value && !paused.value) void effects?.play(effect);
+                });
                 stage.clearInputBindings();
                 game.setGameDisplay(stage.getGameDisplay());
                 game.setGuiDisplay(stage.getGuiDisplay());
                 stage.getGuiDisplay().onMouseDown.on(() => {
                     if (game && !finished.value) {
                         paused.value = !game.getGameTimer().isRunning();
-                        if (paused.value) music?.suspend();
+                        if (paused.value) { music?.suspend(); effects?.stop(); }
                         else music?.play();
                     }
                 });
@@ -159,6 +169,7 @@ export default defineComponent({
                 game.onGameEnd.on(result => {
                     if (!result || !game) return;
                     game.getGameTimer().suspend();
+                    effects?.stop();
                     stopMusic();
                     playing.value = false;
                     paused.value = false;
@@ -186,7 +197,7 @@ export default defineComponent({
             if (!game || finished.value) return;
             game.getGameTimer().toggle();
             paused.value = !game.getGameTimer().isRunning();
-            if (paused.value) music?.suspend();
+            if (paused.value) { music?.suspend(); effects?.stop(); }
             else music?.play();
         }
 
@@ -212,7 +223,7 @@ export default defineComponent({
         function setSpeed(value: number) {
             speed.value = value;
             if (game) game.getGameTimer().speedFactor = value;
-            saveSettings({ speed: value, musicEnabled: musicEnabled.value });
+            saveSettings({ speed: value, musicEnabled: musicEnabled.value, soundEnabled: soundEnabled.value });
         }
 
         function onSpeedChange(event: Event) {
@@ -232,16 +243,22 @@ export default defineComponent({
             } catch {
                 if (generation === musicGeneration) {
                     musicEnabled.value = false;
-                    saveSettings({ speed: speed.value, musicEnabled: false });
+                    saveSettings({ speed: speed.value, musicEnabled: false, soundEnabled: soundEnabled.value });
                 }
             }
         }
 
         function toggleMusic() {
             musicEnabled.value = !musicEnabled.value;
-            saveSettings({ speed: speed.value, musicEnabled: musicEnabled.value });
+            saveSettings({ speed: speed.value, musicEnabled: musicEnabled.value, soundEnabled: soundEnabled.value });
             if (musicEnabled.value) void playMusic();
             else stopMusic();
+        }
+
+        function toggleSound() {
+            soundEnabled.value = !soundEnabled.value;
+            saveSettings({ speed: speed.value, musicEnabled: musicEnabled.value, soundEnabled: soundEnabled.value });
+            if (!soundEnabled.value) effects?.stop();
         }
 
         function zoom(delta: number) { stage?.zoomGame(delta); }
@@ -250,6 +267,7 @@ export default defineComponent({
             if (document.hidden && game && game.getGameTimer().isRunning()) {
                 game.getGameTimer().suspend();
                 music?.suspend();
+                effects?.stop();
                 paused.value = true;
             }
         }
@@ -301,7 +319,7 @@ export default defineComponent({
 
         return { gameCanvas, level, levelIndex, groupName, title, error, loading, playing, paused,
             finished, resultMessage, hints, visibleHintCount, nukeArmed, selectedSkill, skillCounts, releaseRate, gameTime, speed,
-            musicEnabled, skillButtons, canPlay, start, togglePause, selectSkill, changeReleaseRate,
-            setSpeed, onSpeedChange, toggleMusic, zoom, changeLevel, loadLevel, confirmNuke };
+            musicEnabled, soundEnabled, skillButtons, canPlay, start, togglePause, selectSkill, changeReleaseRate,
+            setSpeed, onSpeedChange, toggleMusic, toggleSound, zoom, changeLevel, loadLevel, confirmNuke };
     },
 });

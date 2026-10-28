@@ -159,6 +159,11 @@ export class GameResources {
         return this.soundPlayer;
     }
 
+    /** Decode a sound effect without allocating a Web Audio graph. */
+    public async getSoundTrack(soundIndex: number): Promise<SoundImagePlayer> {
+        return (await this.initSoundImage()).getSoundTrack(soundIndex);
+    }
+
 
 }
 

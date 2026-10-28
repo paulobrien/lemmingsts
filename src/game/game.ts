@@ -9,6 +9,7 @@ import { GameVictoryCondition } from './game-play/game-victory-condition';
 import { LemmingManager } from './game-play/lemming-manager';
 import { ObjectManager } from './game-play/object-manager';
 import { TriggerManager } from './game-play/trigger-manager';
+import { SoundEffect } from './game-play/sound-effects';
 import { LemmingsSprite } from './resources/lemmings-sprite';
 import { Level } from './resources/level';
 import { MaskProvider } from './resources/mask-provider';
@@ -44,6 +45,7 @@ export class Game {
     private showDebug = false;
 
     public onGameEnd = new EventHandler<GameResult>();
+    public readonly onSoundEffect = new EventHandler<SoundEffect>();
 
     private finalGameState: GameStateTypes = GameStateTypes.UNKNOWN;
 
@@ -75,6 +77,9 @@ export class Game {
         const particleTable = new ParticleTable(level.colorPalette);
 
         this.lemmingManager = new LemmingManager(level, lemSprite, this.triggerManager, this.gameVictoryCondition, masks, particleTable);
+        this.lemmingManager.onSoundEffect.on(effect => {
+            if (effect !== undefined) this.onSoundEffect.trigger(effect);
+        });
 
         /// setup gui
         this.gameGui = new GameGui(this, skillPanelSprites, this.skills, this.gameTimer, this.gameVictoryCondition);
@@ -156,6 +161,7 @@ export class Game {
         }
 
         this.onGameEnd.dispose();
+        this.onSoundEffect.dispose();
     }
 
 

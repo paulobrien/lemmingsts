@@ -50,6 +50,10 @@ export class SoundImageChannels {
 
   private fileConfig: AudioConfig
 
+  public isFinished(): boolean {
+    return this.playingState === SoundImagChannelState.NONE;
+  }
+
   constructor(reader: BinaryReader,
     audioConfig: AudioConfig) {
 

@@ -9,6 +9,9 @@
       <button class="quiet" type="button" :aria-pressed="musicEnabled" @click="toggleMusic">
         Music {{ musicEnabled ? 'on' : 'off' }}
       </button>
+      <button class="quiet" type="button" :aria-pressed="soundEnabled" @click="toggleSound">
+        Sound {{ soundEnabled ? 'on' : 'off' }}
+      </button>
     </header>
 
     <div v-if="error" class="notice error" role="alert">{{ error }}</div>

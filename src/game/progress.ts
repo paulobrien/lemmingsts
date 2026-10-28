@@ -9,6 +9,7 @@ export interface LevelCompletion {
 export interface GameSettings {
     speed: number;
     musicEnabled: boolean;
+    soundEnabled: boolean;
 }
 
 const PROGRESS_KEY = 'lemmings.progress.v1';
@@ -54,6 +55,7 @@ export function readSettings(): GameSettings {
     return {
         speed: value && [1, 2, 4].includes(value.speed as number) ? value.speed as number : 1,
         musicEnabled: value?.musicEnabled === true,
+        soundEnabled: value?.soundEnabled === true,
     };
 }
 

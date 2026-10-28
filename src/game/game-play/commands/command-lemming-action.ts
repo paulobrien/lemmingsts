@@ -1,5 +1,6 @@
 import { Game } from '@/game/game';
 import { LogHandler } from '@/game/utilities/log-handler';
+import { SoundEffect } from '../sound-effects';
 import { ICommand } from './command';
 
     /** Commands actions on lemmings the user has given */
@@ -57,7 +58,9 @@ import { ICommand } from './command';
             }
 
             /// reduce the available skill count
-            return skills.decreaseSkill(selectedSkill);
+            if (!skills.decreaseSkill(selectedSkill)) return false;
+            game.onSoundEffect.trigger(SoundEffect.Assign);
+            return true;
 
         }
     }
