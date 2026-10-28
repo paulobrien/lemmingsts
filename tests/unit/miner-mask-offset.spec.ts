@@ -6,6 +6,8 @@ import { ColorPalette } from '../../src/game/resources/lemmings/color-palette';
 import { LevelProperties } from '../../src/game/resources/lemmings/level-properties';
 import { MaskProvider } from '../../src/game/resources/mask-provider';
 import { MaskTypes } from '../../src/game/resources/mask-types';
+import { LemmingsSprite } from '../../src/game/resources/lemmings-sprite';
+import { SpriteTypes } from '../../src/game/resources/sprite-types';
 import { SolidLayer } from '../../src/game/resources/solid-layer';
 
 describe('mining mask placement', () => {
@@ -24,5 +26,11 @@ describe('mining mask placement', () => {
       expect(level.hasGroundAt(12, 7)).toBe(false);
       expect(level.hasGroundAt(12, 8)).toBe(true);
     }
+  });
+
+  it('aligns both mining animations with the same foot position', () => {
+    const sprites = new LemmingsSprite(new BinaryReader(new Uint8Array(200_000)), new ColorPalette());
+    expect(sprites.getAnimation(SpriteTypes.MINEING, true).getFrame(0).offsetY).toBe(-13);
+    expect(sprites.getAnimation(SpriteTypes.MINEING, false).getFrame(0).offsetY).toBe(-13);
   });
 });
