@@ -12,37 +12,37 @@ import { CommandSelectSkill } from './command-select-skill';
 export class CommandManager {
 
     private log = new LogHandler('CommandManager');
-    private runCommands: { [tick: number]: ICommand } = {};
-    private loggedCommands: { [tick: number]: ICommand } = {};
+    private runCommands: { [tick: number]: ICommand[] } = {};
+    private loggedCommands: { tick: number; command: ICommand }[] = [];
 
     public constructor(private game: Game, private gameTimer: GameTimer) {
 
         this.gameTimer.onBeforeGameTick.on((tick?: number) => {
-            if (!tick) {
+            if (tick === undefined) {
                 return;
             }
 
-            let command = this.runCommands[tick];
-            if (!command) return;
-
-            this.queueCommand(command);
+            for (const command of this.runCommands[tick] || []) {
+                this.queueCommand(command);
+            }
         });
 
     }
 
     /** load parameters for this command from serializer */
     public loadReplay(replayString: string): void {
-
+        this.runCommands = {};
         let parts = replayString.split('&');
         for (let i = 0; i < parts.length; i++) {
             let commandStr = parts[i].split('=', 2);
             if (commandStr.length != 2) continue;
 
-            let tick = (+commandStr[0]) | 0;
+            const tick = Number(commandStr[0]);
+            if (commandStr[0].trim() === '' || !Number.isSafeInteger(tick) || tick < 0) continue;
             let newCmd = this.parseCommand(commandStr[1]);
 
             if (newCmd) {
-                this.runCommands[tick] = newCmd;
+                (this.runCommands[tick] ||= []).push(newCmd);
             }
         }
     }
@@ -86,22 +86,14 @@ export class CommandManager {
 
         if (newCommand.execute(this.game)) {
             // only log commands that are executable
-            this.loggedCommands[currentTick] = newCommand;
+            this.loggedCommands.push({ tick: currentTick, command: newCommand });
         }
     }
 
 
     public serialize(): string {
-        let result: string[] = [];
-
-        Object.keys(this.loggedCommands).forEach((key) => {
-            let command = this.loggedCommands[+key];
-
-            result.push(key + '=' + command.getCommandKey() + command.save().join(':'));
-
-        });
-
-        return result.join('&');
+        return this.loggedCommands.map(({ tick, command }) =>
+            tick + '=' + command.getCommandKey() + command.save().join(':')).join('&');
 
     }
 
