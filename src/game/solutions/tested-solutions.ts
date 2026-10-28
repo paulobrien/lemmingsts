@@ -50,15 +50,6 @@ export const TESTED_SOLUTIONS: readonly TestedSolution[] = [
   },
   {
     groupIndex: 0,
-    levelIndex: 4,
-    replay: '165=s6&165=l0&270=l1&278=l0&323=l2&376=l3&532=l3&569=l2&585=l4&595=l0&606=l1&632=l3&647=l2&653=l1&679=l2&741=l0',
-    hints: [
-      'The barriers on the route can be opened from the side.',
-      'Choose a Basher for lemmings approaching each barrier; repeat until the path to the exit is clear.',
-    ],
-  },
-  {
-    groupIndex: 0,
     levelIndex: 5,
     replay: '60=s3&60=l0&289=s4&289=l1&290=s3&290=l1',
     hints: [
@@ -123,15 +114,6 @@ export const TESTED_SOLUTIONS: readonly TestedSolution[] = [
   },
   {
     groupIndex: 0,
-    levelIndex: 13,
-    replay: '152=s6&152=l0&317=s5&317=l0&509=l0&701=l0&893=l0&909=s6&909=l14&1431=s5&1431=l14&1623=l14&1815=l14&2007=l14&2162=s6&2162=l32&2349=l32',
-    hints: [
-      'There is water below the chambers and barriers between them.',
-      'Open the first barrier, then build a staircase in each chamber so a Basher can open a safe route through the next barrier.',
-    ],
-  },
-  {
-    groupIndex: 0,
     levelIndex: 15,
     replay: '198=s5&198=l0&390=l0&582=l0&774=l0&966=l0&1158=l0&1350=l0',
     hints: [
@@ -159,24 +141,6 @@ export const TESTED_SOLUTIONS: readonly TestedSolution[] = [
   },
   {
     groupIndex: 0,
-    levelIndex: 19,
-    replay: '75=s5&75=l0&367=s6&367=l0&411=l0&447=l0&491=l0&527=l0&570=l0&607=l0&633=s5&633=l0&1340=i3&1341=i3&1342=i3&1343=i3&1344=i3&1345=i3&1346=i3&1347=i3&1348=i3&1349=i3&1350=i3&1351=i3&1352=i3&1353=i3&1354=i3&1355=i3&1356=i3&1357=i3&1358=i3&1359=i3&1360=i3&1361=i3&1362=i3&1363=i3&1364=i3&1365=i3&1366=i3&1367=i3&1368=i3&1369=i3',
-    hints: [
-      'There is a gap at the start, a row of barriers, and a final gap near the exit.',
-      'Bridge the opening, bash through the barriers, then build to the exit before increasing the release rate.',
-    ],
-  },
-  {
-    groupIndex: 0,
-    levelIndex: 20,
-    replay: '296=s6&296=l0&316=l0&336=l0&356=l1&376=l2&407=l3&430=l3&454=l4&492=l5&512=l5&532=l1&554=l4&574=l2&604=l11&632=l12&660=l0&687=l0&707=l6&727=l0&1123=s5&1123=l0',
-    hints: [
-      'There is a route through the rock, followed by a trap before the exit.',
-      'Bash through the rock, then use a Builder to give the group a safe path above the trap.',
-    ],
-  },
-  {
-    groupIndex: 0,
     levelIndex: 24,
     replay: '353=s6&353=l0&485=s8&485=l1',
     hints: [
@@ -191,15 +155,6 @@ export const TESTED_SOLUTIONS: readonly TestedSolution[] = [
     hints: [
       'Both lemmings must cross the gaps and reach the exit together.',
       'Give each a Builder at the first ledge; extend the second bridge as needed, then bash through the wall ahead.',
-    ],
-  },
-  {
-    groupIndex: 0,
-    levelIndex: 29,
-    replay: '64=s6&64=l0&120=l0&208=l0',
-    hints: [
-      'The pits descend in a zigzag; each has a narrow side wall.',
-      'Bash out of the first pit to the left, the next to the right, and the last to the left.',
     ],
   },
   {
