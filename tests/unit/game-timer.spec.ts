@@ -6,7 +6,9 @@ describe('level countdown', () => {
   it('keeps the final partial second playable and reaches zero on the correct tick', () => {
     const timer = new GameTimer({ timeLimit: 1 } as Level);
     expect(timer.getGameLeftTimeString()).toBe('1-00');
-    for (let tick = 0; tick < 999; tick++) timer.tick();
+    for (let tick = 0; tick < 17; tick++) timer.tick();
+    expect(timer.getGameLeftTimeString()).toBe('0-59');
+    for (let tick = 17; tick < 1019; tick++) timer.tick();
     expect(timer.getGameLeftTime()).toBe(1);
     expect(timer.getGameLeftTimeString()).toBe('0-01');
     timer.tick();

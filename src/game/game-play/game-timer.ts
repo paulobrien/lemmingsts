@@ -3,6 +3,10 @@ import { EventHandler } from '../utilities/event-handler';
 
 export class GameTimer {
     readonly TIME_PER_FRAME_MS: number = 60;
+    // DOS counts 17 simulation frames per game-second, independently of the
+    // wall-clock scheduling interval.
+    // https://github.com/ericlangedijk/Lemmix/blob/master/src/Game.pas#L3500
+    private readonly FRAMES_PER_GAME_SECOND: number = 17;
 
     private _speedFactor: number = 1;
 
@@ -117,12 +121,12 @@ export class GameTimer {
 
     /** convert a game-ticks-time to in game-seconds. Returns Float */
     public ticksToSeconds(ticks: number): number {
-        return ticks * (this.TIME_PER_FRAME_MS / 1000);
+        return ticks / this.FRAMES_PER_GAME_SECOND;
     }
 
     /** calc the number ticks form game-time in seconds  */
     public secondsToTicks(seconds: number): number {
-        return seconds * 1000 / this.TIME_PER_FRAME_MS;
+        return seconds * this.FRAMES_PER_GAME_SECOND;
     }
 
     /** return the maximum time in seconds to win the game  */
