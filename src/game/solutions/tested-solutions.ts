@@ -123,6 +123,15 @@ export const TESTED_SOLUTIONS: readonly TestedSolution[] = [
   },
   {
     groupIndex: 0,
+    levelIndex: 13,
+    replay: '152=s6&152=l0&317=s5&317=l0&509=l0&701=l0&893=l0&909=s6&909=l14&1431=s5&1431=l14&1623=l14&1815=l14&2007=l14&2162=s6&2162=l32&2349=l32',
+    hints: [
+      'There is water below the chambers and barriers between them.',
+      'Open the first barrier, then build a staircase in each chamber so a Basher can open a safe route through the next barrier.',
+    ],
+  },
+  {
+    groupIndex: 0,
     levelIndex: 17,
     replay: '243=s4&243=l0&243=s3&243=l0&369=s4&369=l8&369=s3&369=l8&481=s4&481=l12&481=s3&481=l12&600=s4&600=l13&600=s3&600=l13&790=s4&790=l32&790=s3&790=l32',
     hints: [
@@ -182,6 +191,15 @@ export const TESTED_SOLUTIONS: readonly TestedSolution[] = [
     hints: [
       'The pits descend in a zigzag; each has a narrow side wall.',
       'Bash out of the first pit to the left, the next to the right, and the last to the left.',
+    ],
+  },
+  {
+    groupIndex: 1,
+    levelIndex: 1,
+    replay: '0=s8&0=i3&1=i3&2=i3&3=i3&4=i3&5=i3&6=i3&7=i3&8=i3&9=i3&10=i3&11=i1&555=l0&583=l1&611=l2&639=l3&667=l4&695=l5&723=l6&751=l7&779=l8&807=l9&835=l10&863=l11&891=l12&919=l13&947=l14&975=l15&1003=l16&1031=l17&1059=l18&1087=l19&1115=l20&1143=l21&1171=l22&1199=l23&1227=l24&1255=l25&1283=l26&1311=l27&1339=l28&1367=l29&1395=l30&1423=l31&1451=l32&1479=l33&1507=l34&1535=l35&1563=l36&1591=l37&1619=l38&1647=l39',
+    hints: [
+      'The drop becomes safe if each lemming can descend through the platform first.',
+      'Raise the release rate, then assign each lemming a Digger, starting on the right and moving left across the platform.',
     ],
   },
 ];
