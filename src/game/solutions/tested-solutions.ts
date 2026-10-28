@@ -561,6 +561,16 @@ export const TESTED_SOLUTIONS: readonly TestedSolution[] = [
   },
   {
     groupIndex: 2,
+    levelIndex: 6,
+    replay: '54=l0&320=s4&320=l1&630=s5&630=l0&860=s6&860=l0&900=i3&901=i3&902=i3&903=i3&904=i3&905=i3&906=i3&907=i3&908=i3&909=i3&910=i3&911=i3&912=i3&913=i3&914=i3&1390=s5&1390=l0&1582=l0&1800=s3&1800=l1&1834=s5&1834=l0&2026=l0&2262=l0',
+    hints: [
+      'Hold the crowd while a climber prepares a path through the one-way wall and across the water.',
+      'Turn the climber around with a Builder at the small bump beyond the wall, then bash back through the arrowed wall. Raise the release rate while the scout works.',
+      'Use two Builders from the first rock and two from the next, then a final bridge to the exit. Bomb the Blocker while the second crossing is being prepared.',
+    ],
+  },
+  {
+    groupIndex: 2,
     levelIndex: 8,
     replay: '65=s8&65=l0&82=s2&82=l1&84=i49&188=s7&188=l1',
     hints: [
