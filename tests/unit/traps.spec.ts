@@ -6,6 +6,7 @@ import { LemmingStateType } from '../../src/game/game-play/lemming-state-type';
 import { ActionDiggSystem } from '../../src/game/game-play/actions/action-digg-system';
 import { ActionBuildSystem } from '../../src/game/game-play/actions/action-build-system';
 import { ActionBashSystem } from '../../src/game/game-play/actions/action-bash-system';
+import { ActionMineSystem } from '../../src/game/game-play/actions/action-mine-system';
 import { LemmingsSprite } from '../../src/game/resources/lemmings-sprite';
 import { MaskProvider } from '../../src/game/resources/mask-provider';
 import { Trigger } from '../../src/game/game-play/trigger';
@@ -27,6 +28,38 @@ function emptyLevel(): Level {
 }
 
 describe('triggered traps', () => {
+    it.each([
+        { priorFrame: 0, waitFrames: 2, expectedX: 8, expectedY: 7 },
+        { priorFrame: 3, waitFrames: 11, expectedX: 8, expectedY: 6 },
+        { priorFrame: 14, waitFrames: 0, expectedX: 8, expectedY: 6 },
+        { priorFrame: 15, waitFrames: 8, expectedX: 6, expectedY: 7 },
+        { priorFrame: 23, waitFrames: 0, expectedX: 6, expectedY: 7 },
+    ])('checks miners after movement on source frame following $priorFrame', ({ priorFrame, waitFrames, expectedX, expectedY }) => {
+        let tick = 1;
+        const triggers = new TriggerManager({ getGameTicks: () => tick } as GameTimer);
+        triggers.add(new Trigger(TriggerTypes.TRAP, 5, 5, 9, 9));
+        const manager = Object.create(LemmingManager.prototype) as LemmingManager;
+        const first = new Lemming(6, 6, 0);
+        const sprites = { getAnimation: () => ({}) } as unknown as LemmingsSprite;
+        const masks = { GetMask: () => ({ getMask: () => ({}) }) } as unknown as MaskProvider;
+        first.setAction(new ActionMineSystem(sprites, masks));
+        first.frameIndex = priorFrame;
+        const level = { width: 32, height: 32, hasGroundAt: () => true,
+            clearGroundWithMask: () => undefined, isMinerProtectedAt: () => false } as unknown as Level;
+        const removeOne = vi.fn();
+        Object.assign(manager, { level, lemmings: [first], triggerManager: triggers,
+            gameVictoryCondition: { getLeftCount: () => 0, removeOne }, nextNukingLemmingsIndex: -1 });
+        for (let i = 0; i < waitFrames; i++) {
+            manager.tick();
+            expect(first.removed).toBe(false);
+            tick++;
+        }
+        manager.tick();
+        expect([first.x, first.y]).toEqual([expectedX, expectedY]);
+        expect(first.removed).toBe(true);
+        expect(removeOne).toHaveBeenCalledOnce();
+    });
+
     it.each([0, 16])('checks a basher only when it starts moving in cycle %i', firstFrame => {
         let tick = 1;
         const triggers = new TriggerManager({ getGameTicks: () => tick } as GameTimer);

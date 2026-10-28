@@ -139,6 +139,12 @@ import { TriggerManager } from './trigger-manager';
                     // frames in each half of the basher animation.
                     // https://github.com/ericlangedijk/Lemmix/blob/master/src/Game.pas#L3053
                     checkObjects = !countdownFinishes && lem.frameIndex % 16 >= 11;
+                } else if (previousAction instanceof ActionMineSystem) {
+                    // Miners check objects after moving on frames 0, 3 and 15;
+                    // their mask and idle frames do not check objects.
+                    // https://github.com/ericlangedijk/Lemmix/blob/master/src/Game.pas#L3123
+                    checkObjects = !countdownFinishes &&
+                        (lem.frameIndex === 0 || lem.frameIndex === 3 || lem.frameIndex === 15);
                 }
                 this.processNewAction(lem, newAction);
 
