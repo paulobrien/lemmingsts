@@ -431,6 +431,15 @@ export const TESTED_SOLUTIONS: readonly TestedSolution[] = [
   },
   {
     groupIndex: 1,
+    levelIndex: 19,
+    replay: '68=s4&68=l0&233=s6&233=l1&300=s1&300=l1&300=l2&300=s2&300=l1&300=l2&301=s5&301=l1&630=s4&630=l2&819=s6&819=l1&1583=s7&1583=l1&1615=s5&1615=l1',
+    hints: [
+      'Hold the left side safe and approach the arrowed wall from its far side.',
+      'Bash the first pillar, then send two athletes over the one-way wall. Hold one beyond it so the other turns back and bashes left. Mine beneath the far Blocker and switch to Builder to stop the mine.',
+    ],
+  },
+  {
+    groupIndex: 1,
     levelIndex: 20,
     replay: '85=s6&85=l0&97=s4&97=l1&183=s5&183=l0&375=l0&478=s6&478=l0&633=l0&725=s5&725=l0&917=s6&917=l0&1197=s7&1197=l2&1229=s5&1229=l2',
     hints: [
