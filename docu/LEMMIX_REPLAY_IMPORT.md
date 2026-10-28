@@ -16,10 +16,12 @@ The binary layout and event mapping are based on the public [Lemmix source](http
 RUN_PRIVATE_GAME_TESTS=1 npx vitest run tests/integration/lemmix-import-private.spec.ts
 ```
 
-A public [DOS Tricky 7 replay](https://www.lemmingsforums.net/index.php?topic=1490.45) was separately examined: it is an older version 1 replay with pause and rate actions. The prototype parses it, but it does **not** verify against this engine: the first recorded lemming position differs at tick 2545. The positive version 3 cases have only been tested with synthetic LRB data; no real version 3 replay has yet been verified.
+A public [DOS Tricky 7 replay](https://www.lemmingsforums.net/index.php?topic=1490.45) was separately examined: it is an older version 1 replay with pause and rate actions. With the locally supplied game data, its recorded positions and actions verify and it wins with 75 lemmings rescued. This is one replay, not a general proof of equivalent physics. The positive version 3 cases have only been tested with synthetic LRB data; no real version 3 replay has yet been verified.
 
 To repeat the version 1 parsing check with a locally obtained copy of that replay, without committing it:
 
 ```sh
 LEMMIX_V1_REPLAY_PATH=/absolute/path/to/replay.lrb npx vitest run tests/integration/lemmix-import-external.spec.ts
 ```
+
+To also run the replay against local game data, set `RUN_PRIVATE_GAME_TESTS=1` in that command. Neither the replay nor the game files are included in the repository.
