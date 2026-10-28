@@ -95,6 +95,15 @@ export const TESTED_SOLUTIONS: readonly TestedSolution[] = [
   },
   {
     groupIndex: 0,
+    levelIndex: 12,
+    replay: '0=s8&633=l0&727=l1&821=l2&915=l3&1009=l4&1103=l5&1197=l6&1291=l7&1385=l8&1479=l9&1573=l10&1667=l11&1761=l12&1855=l13&1949=l14&2043=l15&2137=l16&2231=l17&2325=l18&2419=l19',
+    hints: [
+      'The drop is too far from the top of the platform, but shorter from inside it.',
+      'Make each lemming dig its own hole, starting towards the right and placing each next hole just to the left.',
+    ],
+  },
+  {
+    groupIndex: 0,
     levelIndex: 23,
     replay: '240=s6&240=l0',
     hints: [
