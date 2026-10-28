@@ -16,6 +16,7 @@ export default defineConfig({
   projects: [
     { name: 'desktop', use: { ...devices['Desktop Chrome'] } },
     { name: 'android-phone', use: { ...devices['Pixel 7'] } },
+    { name: 'android-tablet', use: { ...devices['Galaxy Tab S9'] } },
   ],
   webServer: {
     command: 'npm run build && npm run preview -- --host 127.0.0.1 --port 4179 --strictPort',

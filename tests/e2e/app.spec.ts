@@ -91,7 +91,7 @@ test('completes the first level with a canvas interaction and keeps progress', a
   const box = await canvas.boundingBox()
   expect(box).not.toBeNull()
   const position = { x: target!.x * box!.width / 800, y: target!.y * box!.height / 480 }
-  if (testInfo.project.name === 'android-phone') await canvas.tap({ position })
+  if (testInfo.project.name.startsWith('android-')) await canvas.tap({ position })
   else await canvas.click({ position })
 
   await page.getByLabel('Speed').selectOption('4')
