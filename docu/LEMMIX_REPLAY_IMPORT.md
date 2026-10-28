@@ -2,7 +2,7 @@
 
 `parseLemmixReplay` and `verifyLemmixCandidate` in `src/game/solutions/lemmix-replay-import.ts` are offline TypeScript APIs for experimenting with `.lrb` recordings. They do not import, download, or distribute third-party replay files.
 
-The parser accepts version 1 and version 3 LRB files with the corresponding DOS-original mechanics flags. It supports skill-selection and skill-assignment records, paired pauses within a single simulation iteration, instantaneous paused release-rate changes, and held release-rate buttons whose changes and stopping point are fully represented. Held buttons are expanded into per-frame rate changes using Lemmix's update order; a hold with an unknown future effect is rejected. It rejects other versions, physics flags, nuke and glitch actions, invalid sizes, a different level title or initial release rate, and other unsupported records. Version 1 predates a Lemmix trap-timing fix, so verification rejects version 1 candidates for levels with triggered traps. The parser retains a version 3 source level hash but does **not** verify it against the game data. This narrow subset is not expected to accept every DOS replay.
+The parser accepts version 1 and version 3 LRB files with the corresponding DOS-original mechanics flags. It supports skill-selection and skill-assignment records, pause annotations, instantaneous paused release-rate changes, and held release-rate buttons whose changes and stopping point are fully represented. Lemmix playback ignores pause annotations, including pauses spanning several iterations or incomplete pause markers; actions remain at their recorded iterations. Held buttons are expanded into per-frame rate changes using Lemmix's update order; a hold with an unknown future effect is rejected. It rejects other versions, physics flags, nuke and glitch actions, invalid sizes, a different level title or initial release rate, and other unsupported records. Version 1 predates a Lemmix trap-timing fix, so verification rejects version 1 candidates for levels with triggered traps. The parser retains a version 3 source level hash but does **not** verify it against the game data. This narrow subset is not expected to accept every DOS replay.
 
 Parsing produces a **candidate**, not a verified solution. Pass the candidate and a fresh, stopped `Game` for the intended original level to `verifyLemmixCandidate`. Verification consumes the game by running it to completion and checks the source-recorded lemming positions, successful assignments, victory and executed command sequence. Even a passing replay does not establish full physics equivalence with DOS or prove the source and target files are identical.
 
@@ -33,6 +33,7 @@ The following recordings from the public [minimum-skills challenge](https://www.
 | Fun 19 | [attachment 11977](https://www.lemmingsforums.net/index.php?action=dlattach;attach=11977) | `LEMMIX_FUN19_REPLAY_PATH` | 80 |
 | Fun 23 | [attachment 11966](https://www.lemmingsforums.net/index.php?action=dlattach;attach=11966) | `LEMMIX_FUN23_REPLAY_PATH` | 80 |
 | Fun 28 | [attachment 11971](https://www.lemmingsforums.net/index.php?action=dlattach;attach=11971) | `LEMMIX_FUN28_REPLAY_PATH` | 80 |
+| Fun 29 | [attachment 11](https://www.lemmingsforums.net/index.php?action=dlattach;attach=11) | `LEMMIX_FUN29_REPLAY_PATH` | 80 |
 | Tricky 12 | [attachment 11972](https://www.lemmingsforums.net/index.php?action=dlattach;attach=11972) | `LEMMIX_TRICKY12_REPLAY_PATH` | 50 |
 | Tricky 24 | [attachment 11973](https://www.lemmingsforums.net/index.php?action=dlattach;attach=11973) | `LEMMIX_TRICKY24_REPLAY_PATH` | 80 |
 | Tricky 28 | [attachment 11974](https://www.lemmingsforums.net/index.php?action=dlattach;attach=11974) | `LEMMIX_TRICKY28_REPLAY_PATH` | 80 |
@@ -50,6 +51,7 @@ These further wins use recordings posted in the public [DOS skill challenge](htt
 | --- | --- | --- | ---: |
 | Tricky 8 | [attachment 13667](https://www.lemmingsforums.net/index.php?action=dlattach;attach=13667) | `LEMMIX_TRICKY8_REPLAY_PATH` | 58 |
 | Tricky 11 | [attachment 13656](https://www.lemmingsforums.net/index.php?action=dlattach;attach=13656) | `LEMMIX_TRICKY11_REPLAY_PATH` | 48 |
+| Tricky 18 | [attachment 371](https://www.lemmingsforums.net/index.php?action=dlattach;attach=371) | `LEMMIX_TRICKY18_REPLAY_PATH` | 9 |
 | Tricky 29 | [attachment 13659](https://www.lemmingsforums.net/index.php?action=dlattach;attach=13659) | `LEMMIX_TRICKY29_REPLAY_PATH` | 80 |
 | Tricky 30 | [attachment 13660](https://www.lemmingsforums.net/index.php?action=dlattach;attach=13660) | `LEMMIX_TRICKY30_REPLAY_PATH` | 74 |
 | Taxing 14 | [attachment 13695](https://www.lemmingsforums.net/index.php?action=dlattach;attach=13695) | `LEMMIX_TAXING14_REPLAY_PATH` | 77 |
