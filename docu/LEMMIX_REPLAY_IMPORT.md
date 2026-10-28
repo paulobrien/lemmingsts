@@ -104,8 +104,11 @@ The following wins use files from the public [LemmingsWelt challenge replay arch
 | Mayhem 8 | `mayhem8-10_1min.zip` / `mayhem8_1min.lrb` | `LEMMIX_MAYHEM8_REPLAY_PATH` | 74 |
 | Mayhem 10 | `mayhem10.zip` / `Mayhem10_save73.lrb` | `LEMMIX_MAYHEM10_REPLAY_PATH` | 73 |
 | Mayhem 12 | `mayhem12_1min.lrb` | `LEMMIX_MAYHEM12_REPLAY_PATH` | 75 |
+| Mayhem 18 | `mayhem18_1min.lrb` | `LEMMIX_MAYHEM18_REPLAY_PATH` | 72 |
 | Mayhem 25 | `mayhem25_1min.lrb` | `LEMMIX_MAYHEM25_REPLAY_PATH` | 73 |
 | Mayhem 29 | `Mayhem 29_West_77-80.zip` / `Mayhem 29 Save Me_west_77-80.lrb` | `LEMMIX_MAYHEM29_REPLAY_PATH` | 77 |
+
+The Mayhem 18 run reaches the rescue requirement but finishes when this engine's level timer expires; its passing check does not verify the archive filename's one-minute claim.
 
 To repeat the version 1 parsing check with a locally obtained copy of that replay, without committing it:
 
