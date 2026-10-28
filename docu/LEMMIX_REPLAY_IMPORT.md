@@ -57,6 +57,7 @@ These further wins use recordings posted in the public [DOS skill challenge](htt
 | Tricky 23 (nuke) | [attachment 13662](https://www.lemmingsforums.net/index.php?action=dlattach;attach=13662) | `LEMMIX_TRICKY23_NUKE_REPLAY_PATH` | 50 |
 | Tricky 29 | [attachment 13659](https://www.lemmingsforums.net/index.php?action=dlattach;attach=13659) | `LEMMIX_TRICKY29_REPLAY_PATH` | 80 |
 | Tricky 30 | [attachment 13660](https://www.lemmingsforums.net/index.php?action=dlattach;attach=13660) | `LEMMIX_TRICKY30_REPLAY_PATH` | 74 |
+| Taxing 7 | [attachment 13687](https://www.lemmingsforums.net/index.php?action=dlattach;attach=13687) | `LEMMIX_TAXING7_REPLAY_PATH` | 78 |
 | Taxing 14 | [attachment 13695](https://www.lemmingsforums.net/index.php?action=dlattach;attach=13695) | `LEMMIX_TAXING14_REPLAY_PATH` | 77 |
 | Mayhem 9 | [attachment 334](https://www.lemmingsforums.net/index.php?action=dlattach;attach=334) | `LEMMIX_MAYHEM9_REPLAY_PATH` | 79 |
 | Mayhem 21 | [attachment 352](https://www.lemmingsforums.net/index.php?action=dlattach;attach=352) | `LEMMIX_MAYHEM21_REPLAY_PATH` | 50 |
@@ -68,7 +69,9 @@ The following wins use files from the public [LemmingsWelt challenge replay arch
 | Tricky 20 | `Tricky_20_digbuildbash.lrb` | `LEMMIX_TRICKY20_REPLAY_PATH` | 80 |
 | Tricky 23 | `tricky23_save79.zip` / `Tricky23_save79.lrb` | `LEMMIX_TRICKY23_REPLAY_PATH` | 79 |
 | Taxing 17 | `Taxing_17_buildbash.lrb` | `LEMMIX_TAXING17_REPLAY_PATH` | 80 |
+| Taxing 18 | `taxing18.zip` / `Taxing_18.lrb` | `LEMMIX_TAXING18_REPLAY_PATH` | 74 |
 | Taxing 23 | `taxing23_saveall_16builders.zip` / `Taxing23_saveall_16builders.lrb` | `LEMMIX_TAXING23_REPLAY_PATH` | 80 |
+| Taxing 27 | `taxing27_1min.lrb` | `LEMMIX_TAXING27_REPLAY_PATH` | 77 |
 | Mayhem 1 | `Replay7.zip` / `Steel Works.lrb` | `LEMMIX_MAYHEM1_REPLAY_PATH` | 79 |
 | Mayhem 2 | `80mayhem2.zip` / `The Boiler Room.lrb` | `LEMMIX_MAYHEM2_REPLAY_PATH` | 80 |
 | Mayhem 8 | `mayhem8-10_1min.zip` / `mayhem8_1min.lrb` | `LEMMIX_MAYHEM8_REPLAY_PATH` | 72 |
