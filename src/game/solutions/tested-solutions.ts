@@ -412,6 +412,15 @@ export const TESTED_SOLUTIONS: readonly TestedSolution[] = [
   },
   {
     groupIndex: 1,
+    levelIndex: 21,
+    replay: '75=s3&75=l0&86=l1',
+    hints: [
+      'Two carefully timed explosions can redirect the group without a Blocker.',
+      'Make the first two lemmings Bombers shortly after landing, spacing their explosions to shape a pit the others can climb out of toward the exit.',
+    ],
+  },
+  {
+    groupIndex: 1,
     levelIndex: 24,
     replay: '54=s2&54=l0&86=l8&86=s1&86=l8&118=s2&118=l16&150=l24&182=l32&214=l40&246=l48&278=l56&310=l64&342=l72&515=s8&515=l0&567=s5&567=l8&588=l0&767=s6&767=l8&872=s5&872=l8&1110=l0&1158=l0&1238=l0&1377=l0',
     hints: [
