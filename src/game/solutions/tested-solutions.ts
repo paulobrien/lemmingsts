@@ -516,6 +516,15 @@ export const TESTED_SOLUTIONS: readonly TestedSolution[] = [
   },
   {
     groupIndex: 3,
+    levelIndex: 21,
+    replay: '234=s5&234=l0&271=s4&271=l12&308=l13&434=s5&434=l10&636=l10&838=l10&940=s6&940=l10&948=s5&948=l10&1192=s6&1192=l10&1442=s5&1442=l10&1644=l10&1846=l10&2048=l10&2265=s6&2265=l10&2398=l10&2523=l10&2559=s7&2559=l14&2591=s5&2591=l14&4500=s3&4500=l13',
+    hints: [
+      'Hold the crowd near the entrance while the early lemmings prepare a route across the chasms.',
+      'Build across the low gaps and bash through the trees. Once the route reaches the exit, mine beneath the right-hand Blocker and stop the Miner with a Builder; the other Blocker can be removed after the crowd escapes.',
+    ],
+  },
+  {
+    groupIndex: 3,
     levelIndex: 23,
     replay: '65=s6&65=l0&109=l0&197=l0',
     hints: [
