@@ -141,6 +141,15 @@ export const TESTED_SOLUTIONS: readonly TestedSolution[] = [
   },
   {
     groupIndex: 0,
+    levelIndex: 14,
+    replay: '405=s6&405=l0&625=s1&625=l0&625=s2&625=l0&1370=s5&1370=l0&1562=l0&1754=l0&1863=s7&1863=l1&1946=s5&1946=l0&2098=s4&2098=l1&2278=s5&2278=l0&2400=s3&2400=l1&2470=s5&2470=l0&2852=s6&2852=l2',
+    hints: [
+      'Let a scout prepare both gaps while the group works its way through the columns.',
+      'Bash the first column, mine the second from its upper step, and use a temporary Blocker at the next staircase. Complete the bridges before opening the final column.',
+    ],
+  },
+  {
+    groupIndex: 0,
     levelIndex: 15,
     replay: '198=s5&198=l0&390=l0&582=l0&774=l0&966=l0&1158=l0&1350=l0',
     hints: [
