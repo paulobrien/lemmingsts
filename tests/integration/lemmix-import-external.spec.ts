@@ -69,6 +69,7 @@ for (const { name, env, group, level, saved } of [
   { name: 'Tricky 22 (alternate)', env: 'LEMMIX_TRICKY22_ALT_REPLAY_PATH', group: 1, level: 21, saved: 80 },
   { name: 'Taxing 3', env: 'LEMMIX_TAXING3_REPLAY_PATH', group: 2, level: 2, saved: 80 },
   { name: 'Taxing 11', env: 'LEMMIX_TAXING11_REPLAY_PATH', group: 2, level: 10, saved: 50 },
+  { name: 'Taxing 15', env: 'LEMMIX_TAXING15_REPLAY_PATH', group: 2, level: 14, saved: 80 },
   { name: 'Taxing 16', env: 'LEMMIX_TAXING16_REPLAY_PATH', group: 2, level: 15, saved: 80 },
   { name: 'Taxing 20', env: 'LEMMIX_TAXING20_REPLAY_PATH', group: 2, level: 19, saved: 70 },
 ]) {
