@@ -10,6 +10,7 @@ import { ActionMineSystem } from '../../src/game/game-play/actions/action-mine-s
 import { ActionFloatingSystem } from '../../src/game/game-play/actions/action-floating-system';
 import { ActionCountdownSystem } from '../../src/game/game-play/actions/action-countdown-system';
 import { ActionOhNoSystem } from '../../src/game/game-play/actions/action-ohno-system';
+import { ActionFallSystem } from '../../src/game/game-play/actions/action-fall-system';
 import { LemmingsSprite } from '../../src/game/resources/lemmings-sprite';
 import { MaskProvider } from '../../src/game/resources/mask-provider';
 import { Trigger } from '../../src/game/game-play/trigger';
@@ -31,6 +32,35 @@ function emptyLevel(): Level {
 }
 
 describe('triggered traps', () => {
+    it.each([false, true])('ignores a faller inside an exit but permits a landing (fatal=$0)', fatal => {
+        const triggers = new TriggerManager({ getGameTicks: () => 1 } as GameTimer);
+        triggers.add(new Trigger(TriggerTypes.EXIT_LEVEL, 5, 5, 8, 12));
+        const manager = Object.create(LemmingManager.prototype) as LemmingManager;
+        const lem = new Lemming(6, 6, 0);
+        const sprites = { getAnimation: () => ({}) } as unknown as LemmingsSprite;
+        const falling = new ActionFallSystem(sprites);
+        lem.setAction(falling);
+        lem.state = fatal ? 61 : 3;
+        let grounded = false;
+        const level = { width: 32, height: 32, hasGroundAt: () => grounded } as unknown as Level;
+        const standIn = (name: string) => ({ process: () => LemmingStateType.NO_STATE_TYPE, getActionName: () => name,
+            draw: () => undefined, triggerLemAction: () => false });
+        const actions = [];
+        actions[LemmingStateType.WALKING] = standIn('walk');
+        actions[LemmingStateType.SPLATTING] = standIn('splatter');
+        const exiting = standIn('exiting');
+        actions[LemmingStateType.EXITING] = exiting;
+        Object.assign(manager, { level, actions, onSoundEffect: { trigger: vi.fn() }, logging: { debug: vi.fn() },
+            lemmings: [lem], triggerManager: triggers,
+            gameVictoryCondition: { getLeftCount: () => 0, removeOne: vi.fn() }, nextNukingLemmingsIndex: -1 });
+        manager.tick();
+        expect(lem.y).toBe(9);
+        expect(lem.action).toBe(falling);
+        grounded = true;
+        manager.tick();
+        expect(lem.action).toBe(exiting);
+    });
+
     it('does not check objects when the Oh No animation becomes an explosion', () => {
         const triggers = new TriggerManager({ getGameTicks: () => 1 } as GameTimer);
         triggers.add(new Trigger(TriggerTypes.TRAP, 5, 5, 8, 8));

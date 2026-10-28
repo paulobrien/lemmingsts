@@ -239,7 +239,11 @@ import { TriggerManager } from './trigger-manager';
                 case TriggerTypes.DROWN:
                     return LemmingStateType.DROWNING;
                 case TriggerTypes.EXIT_LEVEL:
-                    return LemmingStateType.EXITING;
+                    // A falling lemming cannot enter midair. A lemming that
+                    // just landed and became a splatter can still enter: the
+                    // original DOS "direct drop" behavior checks afterward.
+                    // https://github.com/ericlangedijk/Lemmix/blob/master/src/Game.pas#L2371
+                    return lem.action instanceof ActionFallSystem ? LemmingStateType.NO_STATE_TYPE : LemmingStateType.EXITING;
                 case TriggerTypes.KILL:
                     return LemmingStateType.FRYING;
                 case TriggerTypes.TRAP:
