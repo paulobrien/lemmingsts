@@ -3,6 +3,8 @@ import type { Game } from '../../src/game/game';
 import { GameStateTypes } from '../../src/game/game-state-types';
 import { GameTypes } from '../../src/game/game-types';
 import { SkillTypes } from '../../src/game/game-play/skill-types';
+import { Trigger } from '../../src/game/game-play/trigger';
+import { TriggerTypes } from '../../src/game/resources/lemmings/trigger-types';
 import { parseLemmixReplay, verifyLemmixCandidate } from '../../src/game/solutions/lemmix-replay-import';
 
 interface RecordData { tick: number; flags: number; assigned?: number; button?: number; rate?: number; id?: number; x?: number; y?: number; glitch?: number }
@@ -169,14 +171,23 @@ describe('Lemmix replay conversion (synthetic inputs)', () => {
     ]), target)).toThrow('hold has no recorded end');
   });
 
-  it('rejects legacy candidates on levels with triggered traps', () => {
+  it('allows legacy candidates past dormant traps and rejects an activated trap', () => {
     const bytes = lrb([{ tick: 1, flags: 0x80, assigned: 3 }]);
     bytes[3] = 1;
     new DataView(bytes.buffer).setUint16(10, 0x01df, true);
     const candidate = parseLemmixReplay(bytes, target);
     const game = fakeGame();
-    game.level.triggers = [{ getType: () => 4 } as never];
-    expect(verifyLemmixCandidate(game, candidate)).toEqual({ ok: false, reason: 'legacy triggered-trap physics are unsupported' });
+    const trap = new Trigger(TriggerTypes.TRAP, 1, 1, 3, 3, 5);
+    game.level.triggers = [trap];
+    expect(trap.trigger(0, 0, 0)).toBe(TriggerTypes.NO_TRIGGER);
+    expect(verifyLemmixCandidate(game, candidate)).toEqual({ ok: true, replay: candidate.replay });
+
+    const activatedGame = fakeGame();
+    const activatedTrap = new Trigger(TriggerTypes.TRAP, 1, 1, 3, 3, 5);
+    activatedGame.level.triggers = [activatedTrap];
+    const timer = activatedGame.getGameTimer(), advance = timer.tick.bind(timer);
+    timer.tick = () => { advance(); if (timer.getGameTicks() === 3) activatedTrap.trigger(2, 2, 3); };
+    expect(verifyLemmixCandidate(activatedGame, candidate)).toEqual({ ok: false, reason: 'legacy triggered-trap physics are unsupported at tick 3' });
   });
 
   it.each([

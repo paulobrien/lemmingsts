@@ -11,6 +11,7 @@ export class Trigger {
     private type: TriggerTypes = TriggerTypes.NO_TRIGGER;
     private disableTicksCount: number = 0;
     private disabledUntilTick: number = 0;
+    private activationCount: number = 0;
     private soundIndex: number;
 
     constructor(type: TriggerTypes, x1: number, y1: number, x2: number, y2: number, disableTicksCount: number = 0, soundIndex: number = -1, owner: any = null, private onTrigger?: (tick: number) => void) {
@@ -28,6 +29,11 @@ export class Trigger {
         return this.type;
     }
 
+    /** Number of successful activations, excluding misses and cooldowns. */
+    public getActivationCount(): number {
+        return this.activationCount;
+    }
+
 
     public contains(x: number, y: number): boolean {
         return x >= this.x1 && y >= this.y1 && x <= this.x2 && y <= this.y2;
@@ -37,6 +43,7 @@ export class Trigger {
         if (this.disabledUntilTick <= tick) {
             if (this.contains(x, y)) {
                 this.disabledUntilTick = tick + this.disableTicksCount;
+                this.activationCount++;
                 this.onTrigger?.(tick);
                 return this.type;
             }

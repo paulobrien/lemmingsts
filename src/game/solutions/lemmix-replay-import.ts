@@ -183,7 +183,13 @@ export function verifyLemmixCandidate(game: Game, candidate: LemmixCandidate): {
   const fail = (reason: string) => ({ ok: false as const, reason });
   if (game.getGameTimer().getGameTicks() !== 0 || game.getGameTimer().isRunning() || game.getCommandManager().serialize() !== '' || game.getGameState() !== GameStateTypes.RUNNING) return fail('game must be fresh and stopped');
   if (game.level.gameType !== GameTypes.LEMMINGS || game.level.name.trim() !== candidate.levelTitle || game.getVictoryCondition().getCurrentReleaseRate() !== candidate.initialReleaseRate) return fail('game level or starting release rate differs');
-  if (candidate.sourceVersion === 1 && game.level.triggers.some(trigger => trigger.getType() === TriggerTypes.TRAP)) return fail('legacy triggered-trap physics are unsupported');
+  // v1 starts a triggered trap one animation frame later than the fixed
+  // mechanics. Until a trap activates, that difference has no effect.
+  // https://github.com/ericlangedijk/Lemmix/blob/master/src/Game.pas#L2353
+  const legacyTraps = candidate.sourceVersion === 1
+    ? game.level.triggers.filter(trigger => trigger.getType() === TriggerTypes.TRAP) : [];
+  const legacyTrapActivated = () => legacyTraps.some(trigger => trigger.getActivationCount() > 0);
+  if (legacyTrapActivated()) return fail('legacy triggered-trap physics are unsupported');
   if (game.getGameSkills().getSelectedSkill() !== SkillTypes.CLIMBER) return fail('unexpected initial selected skill');
   let next = 0;
   const timer = game.getGameTimer();
@@ -216,6 +222,7 @@ export function verifyLemmixCandidate(game: Game, candidate: LemmixCandidate): {
       }
     }
     timer.tick();
+    if (legacyTrapActivated()) return fail(`legacy triggered-trap physics are unsupported at tick ${timer.getGameTicks()}`);
   }
   if (next !== candidate.events.length) return fail('game ended before all replay actions');
   if (game.getGameState() !== GameStateTypes.SUCCEEDED) return fail('replay did not win');
