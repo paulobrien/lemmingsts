@@ -337,6 +337,15 @@ export const TESTED_SOLUTIONS: readonly TestedSolution[] = [
       'Bomb one lemming on the top ledge, then bomb another while it walks right along the next ledge so the group can descend toward the exit.',
     ],
   },
+  {
+    groupIndex: 1,
+    levelIndex: 17,
+    replay: '82=s2&82=l1&170=s8&170=l0&230=s3&230=l0',
+    hints: [
+      'Use the third pillar to make the long drop safer, and protect the one who gets past the hole.',
+      'Make the first lemming dig into the third pillar, give the next a Floater, then bomb the Digger to open the side of the shaft.',
+    ],
+  },
 ];
 
 /** Unverified levels deliberately return no solution or hints. */
