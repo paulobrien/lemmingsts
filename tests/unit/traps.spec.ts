@@ -7,6 +7,8 @@ import { ActionDiggSystem } from '../../src/game/game-play/actions/action-digg-s
 import { ActionBuildSystem } from '../../src/game/game-play/actions/action-build-system';
 import { ActionBashSystem } from '../../src/game/game-play/actions/action-bash-system';
 import { ActionMineSystem } from '../../src/game/game-play/actions/action-mine-system';
+import { ActionFloatingSystem } from '../../src/game/game-play/actions/action-floating-system';
+import { ActionCountdownSystem } from '../../src/game/game-play/actions/action-countdown-system';
 import { LemmingsSprite } from '../../src/game/resources/lemmings-sprite';
 import { MaskProvider } from '../../src/game/resources/mask-provider';
 import { Trigger } from '../../src/game/game-play/trigger';
@@ -28,6 +30,32 @@ function emptyLevel(): Level {
 }
 
 describe('triggered traps', () => {
+    it.each([false, true])('checks floating objects unless its countdown expires (expires=$0)', expires => {
+        const triggers = new TriggerManager({ getGameTicks: () => 1 } as GameTimer);
+        triggers.add(new Trigger(TriggerTypes.TRAP, 5, 5, 8, 8));
+        const manager = Object.create(LemmingManager.prototype) as LemmingManager;
+        const first = new Lemming(6, 6, 0);
+        const sprites = { getAnimation: () => ({}) } as unknown as LemmingsSprite;
+        first.setAction(new ActionFloatingSystem(sprites));
+        first.state = 5; // Floater frame with zero vertical movement.
+        const ohno = { process: () => LemmingStateType.NO_STATE_TYPE, getActionName: () => 'ohno',
+            draw: () => undefined, triggerLemAction: () => false };
+        const actions = []; actions[LemmingStateType.OHNO] = ohno;
+        if (expires) {
+            const masks = { GetMask: () => ({}) } as unknown as MaskProvider;
+            first.countdownAction = new ActionCountdownSystem(masks);
+            first.countdown = 1;
+        }
+        const level = { hasGroundAt: () => false } as unknown as Level;
+        const removeOne = vi.fn();
+        Object.assign(manager, { level, actions, logging: { debug: vi.fn() }, lemmings: [first], triggerManager: triggers,
+            gameVictoryCondition: { getLeftCount: () => 0, removeOne }, nextNukingLemmingsIndex: -1 });
+        manager.tick();
+        expect(first.removed).toBe(!expires);
+        expect(removeOne).toHaveBeenCalledTimes(expires ? 0 : 1);
+        if (expires) expect(first.action).toBe(ohno);
+    });
+
     it.each([
         { priorFrame: 0, waitFrames: 2, expectedX: 8, expectedY: 7 },
         { priorFrame: 3, waitFrames: 11, expectedX: 8, expectedY: 6 },

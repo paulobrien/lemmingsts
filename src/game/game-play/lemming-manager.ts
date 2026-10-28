@@ -125,26 +125,28 @@ import { TriggerManager } from './trigger-manager';
                 // seven intervening animation frames. The initial digging
                 // frame remains 0; later frames increment before processing.
                 // https://github.com/ericlangedijk/Lemmix/blob/master/src/Game.pas#L2907
-                let checkObjects = true;
-                if (previousAction instanceof ActionDiggSystem) {
-                    checkObjects = !countdownFinishes && (lem.frameIndex === 0 || lem.frameIndex === 8);
-                } else if (previousAction instanceof ActionBuildSystem) {
+                // Lemmix skips both the action and its object check when the
+                // bomber countdown reaches zero, for every lemming action.
+                // https://github.com/ericlangedijk/Lemmix/blob/master/src/Game.pas#L4440
+                let checkObjects = !countdownFinishes;
+                if (checkObjects && previousAction instanceof ActionDiggSystem) {
+                    checkObjects = lem.frameIndex === 0 || lem.frameIndex === 8;
+                } else if (checkObjects && previousAction instanceof ActionBuildSystem) {
                     // Lemmix skips object checks on brick-laying frame 9 and
                     // the extra frame 10 when three bricks are complete.
                     // https://github.com/ericlangedijk/Lemmix/blob/master/src/Game.pas#L2996
-                    checkObjects = !countdownFinishes && lem.frameIndex !== 9 &&
+                    checkObjects = lem.frameIndex !== 9 &&
                         !(lem.frameIndex === 10 && lem.state === 3);
-                } else if (previousAction instanceof ActionBashSystem) {
+                } else if (checkObjects && previousAction instanceof ActionBashSystem) {
                     // Lemmix checks objects only during the five moving
                     // frames in each half of the basher animation.
                     // https://github.com/ericlangedijk/Lemmix/blob/master/src/Game.pas#L3053
-                    checkObjects = !countdownFinishes && lem.frameIndex % 16 >= 11;
-                } else if (previousAction instanceof ActionMineSystem) {
+                    checkObjects = lem.frameIndex % 16 >= 11;
+                } else if (checkObjects && previousAction instanceof ActionMineSystem) {
                     // Miners check objects after moving on frames 0, 3 and 15;
                     // their mask and idle frames do not check objects.
                     // https://github.com/ericlangedijk/Lemmix/blob/master/src/Game.pas#L3123
-                    checkObjects = !countdownFinishes &&
-                        (lem.frameIndex === 0 || lem.frameIndex === 3 || lem.frameIndex === 15);
+                    checkObjects = lem.frameIndex === 0 || lem.frameIndex === 3 || lem.frameIndex === 15;
                 }
                 this.processNewAction(lem, newAction);
 
