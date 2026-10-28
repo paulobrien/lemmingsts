@@ -522,6 +522,16 @@ export const TESTED_SOLUTIONS: readonly TestedSolution[] = [
   },
   {
     groupIndex: 1,
+    levelIndex: 28,
+    replay: '270=s8&270=l2&453=s6&453=l2&580=s4&580=l7&620=s8&620=l2&720=s7&720=l2&1097=s6&1097=l2&1350=l2&1500=s3&1500=l7',
+    hints: [
+      'Guide the crowd down through the arches while keeping them away from the traps.',
+      'Dig through the upper arch, then bash right into the next. Hold the crowd there while a scout prepares a safer descent.',
+      'Dig and mine diagonally down through the next arch, then bash through the lower barriers. Release the crowd once the path to the exit is open.',
+    ],
+  },
+  {
+    groupIndex: 1,
     levelIndex: 29,
     replay: '54=l0&54=s2&54=l0&97=s1&97=l1&97=s2&97=l1&235=s7&235=l2&300=i3&301=i3&302=i3&303=i3&304=i3&305=i3&306=i3&307=i3&308=i3&309=i3&310=i3&311=i3&312=i3&313=i3&314=i3&315=i3&316=i3&317=i3&318=i3&319=i3&320=i3&321=i3&322=i3&323=i3&324=i3&325=i3&326=i3&800=s4&800=l0&1060=s7&1060=l1&1600=s3&1600=l0&1640=s7&1640=l3&1900=s1&1900=l3&1900=s2&1900=l3&2354=s5&2354=l3&2553=s7&2553=l3&3115=l2',
     hints: [
