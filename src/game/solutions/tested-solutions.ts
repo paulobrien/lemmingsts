@@ -141,6 +141,15 @@ export const TESTED_SOLUTIONS: readonly TestedSolution[] = [
   },
   {
     groupIndex: 0,
+    levelIndex: 20,
+    replay: '296=s6&296=l0&316=l0&336=l0&356=l1&376=l2&407=l3&430=l3&454=l4&492=l5&512=l5&532=l1&554=l4&574=l2&604=l11&632=l12&660=l0&687=l0&707=l6&727=l0&1148=s5&1148=l0',
+    hints: [
+      'There is a route through the rock, followed by a trap before the exit.',
+      'Bash through the rock, then use a Builder to give the group a safe path above the trap.',
+    ],
+  },
+  {
+    groupIndex: 0,
     levelIndex: 24,
     replay: '353=s6&353=l0&485=s8&485=l1',
     hints: [
@@ -155,6 +164,15 @@ export const TESTED_SOLUTIONS: readonly TestedSolution[] = [
     hints: [
       'Both lemmings must cross the gaps and reach the exit together.',
       'Give each a Builder at the first ledge; extend the second bridge as needed, then bash through the wall ahead.',
+    ],
+  },
+  {
+    groupIndex: 0,
+    levelIndex: 29,
+    replay: '64=s6&64=l0&131=l0&219=l0',
+    hints: [
+      'The pits descend in a zigzag; each has a narrow side wall.',
+      'Bash out of the first pit to the left, the next to the right, and the last to the left.',
     ],
   },
   {
