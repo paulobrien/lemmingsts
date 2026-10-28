@@ -10,6 +10,7 @@ import { SoundSystem } from '../sound-system';
 import { ActionFallSystem } from './action-fall-system';
 import { ActionFloatingSystem } from './action-floating-system';
 import { ActionDrowningSystem } from './action-drowning-system';
+import { ActionVaporizingSystem } from './action-vaporizing-system';
 
 export class ActionCountdownSystem implements IActionSystem {
 
@@ -57,7 +58,7 @@ export class ActionCountdownSystem implements IActionSystem {
             // DOS/Lemmix skips Oh No for airborne or drowning bombers.
             // https://github.com/ericlangedijk/Lemmix/blob/master/src/Game.pas#L2218
             if (lem.action instanceof ActionFallSystem || lem.action instanceof ActionFloatingSystem ||
-                lem.action instanceof ActionDrowningSystem) return LemmingStateType.EXPLODING;
+                lem.action instanceof ActionDrowningSystem || lem.action instanceof ActionVaporizingSystem) return LemmingStateType.EXPLODING;
             return LemmingStateType.OHNO;
         }
 

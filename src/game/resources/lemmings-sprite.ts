@@ -40,7 +40,7 @@ export class LemmingsSprite {
         this.registerAnimation(SpriteTypes.UMBRELLA, -1, fr, 3, 16, 16, -8, -16, 8); //- umbrella (r)
         this.registerAnimation(SpriteTypes.SPLATTING, 0, fr, 2, 16, 10, -8, -10, 16); //- splatting
         this.registerAnimation(SpriteTypes.EXITING, 0, fr, 2, 16, 13, -8, -13, 8); //- exiting
-        this.registerAnimation(SpriteTypes.FRYING, 1, fr, 4, 16, 14, -8, -10, 14); //- fried
+        this.registerAnimation(SpriteTypes.FRYING, 0, fr, 4, 16, 14, -8, -14, 14); //- vaporizing (both directions)
         this.registerAnimation(SpriteTypes.BLOCKING, 0, fr, 2, 16, 10, -8, -10, 16); //- blocking
         this.registerAnimation(SpriteTypes.SHRUGGING, 1, fr, 2, 16, 10, -8, -10, 8); //- shrugging (r)
         this.registerAnimation(SpriteTypes.SHRUGGING, 0, fr, 2, 16, 10, -8, -10, 8); //- shrugging (l)

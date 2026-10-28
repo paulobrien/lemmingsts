@@ -4,6 +4,7 @@ import { ActionFallSystem } from '../../src/game/game-play/actions/action-fall-s
 import { ActionFloatingSystem } from '../../src/game/game-play/actions/action-floating-system';
 import { ActionDrowningSystem } from '../../src/game/game-play/actions/action-drowning-system';
 import { ActionWalkSystem } from '../../src/game/game-play/actions/action-walk-system';
+import { ActionVaporizingSystem } from '../../src/game/game-play/actions/action-vaporizing-system';
 import { Lemming } from '../../src/game/game-play/lemming';
 import { LemmingStateType } from '../../src/game/game-play/lemming-state-type';
 import type { Level } from '../../src/game/resources/level';
@@ -15,6 +16,7 @@ describe('DOS bomber countdown', () => {
     ['falling', ActionFallSystem, LemmingStateType.EXPLODING],
     ['floating', ActionFloatingSystem, LemmingStateType.EXPLODING],
     ['drowning', ActionDrowningSystem, LemmingStateType.EXPLODING],
+    ['vaporizing', ActionVaporizingSystem, LemmingStateType.EXPLODING],
     ['walking', ActionWalkSystem, LemmingStateType.OHNO],
   ])('chooses the DOS transition for a %s bomber', (_name, Action, expected) => {
     const sprites = { getAnimation: () => ({}) } as unknown as LemmingsSprite;

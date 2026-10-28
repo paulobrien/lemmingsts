@@ -26,6 +26,7 @@ import { ActionOhNoSystem } from './actions/action-ohno-system';
 import { ActionShrugSystem } from './actions/action-shrug-system';
 import { ActionSplatterSystem } from './actions/action-splatter-system';
 import { ActionWalkSystem } from './actions/action-walk-system';
+import { ActionVaporizingSystem } from './actions/action-vaporizing-system';
 import { GameVictoryCondition } from './game-victory-condition';
 import { Lemming } from './lemming';
 import { LemmingStateType } from './lemming-state-type';
@@ -78,6 +79,7 @@ import { TriggerManager } from './trigger-manager';
             this.actions[LemmingStateType.OHNO] = new ActionOhNoSystem(lemmingsSprite);
             this.actions[LemmingStateType.SPLATTING] = new ActionSplatterSystem(lemmingsSprite);
             this.actions[LemmingStateType.DROWNING] = new ActionDrowningSystem(lemmingsSprite);
+            this.actions[LemmingStateType.FRYING] = new ActionVaporizingSystem(lemmingsSprite);
 
 
             this.skillActions[SkillTypes.DIGGER] = this.actions[LemmingStateType.DIGGING];
@@ -231,7 +233,7 @@ import { TriggerManager } from './trigger-manager';
                 case TriggerTypes.EXIT_LEVEL:
                     return LemmingStateType.EXITING;
                 case TriggerTypes.KILL:
-                    return LemmingStateType.SPLATTING;
+                    return LemmingStateType.FRYING;
                 case TriggerTypes.TRAP:
                     return LemmingStateType.OUT_OFF_LEVEL;
                 case TriggerTypes.BLOCKER_LEFT:
@@ -336,6 +338,9 @@ import { TriggerManager } from './trigger-manager';
             if (lem == null || lem.removed || lem.isDisabled()) {
                 return false;
             }
+
+            // A lemming already vaporizing cannot receive a new bomber.
+            if (skillType === SkillTypes.BOMBER && lem.action instanceof ActionVaporizingSystem) return false;
 
             // DOS accepts blockers and builders only from these active ground
             // states; a jump, climb or hoist is not an assignable ground state.

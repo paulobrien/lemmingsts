@@ -8,6 +8,7 @@ import { indexedDB } from 'fake-indexeddb';
 import { GameFactory } from '../../src/game/game-factory';
 import { GameTypes } from '../../src/game/game-types';
 import { GameStateTypes } from '../../src/game/game-state-types';
+import { TriggerTypes } from '../../src/game/resources/lemmings/trigger-types';
 import { getTestedSolution, TESTED_SOLUTIONS } from '../../src/game/solutions/tested-solutions';
 import { clearLemmingsFiles, importLemmingsFiles } from '../../src/game/resources/file/game-file-store';
 
@@ -104,6 +105,11 @@ describe('local original DOS assets', () => {
         expect.soft(game!.getGameState(), label).toBe(GameStateTypes.SUCCEEDED);
         expect.soft(game!.getVictoryCondition().getSurvivorsCount(), label).toBeGreaterThan(0);
         expect.soft(game!.getCommandManager().serialize(), `${label} must execute every recorded command`).toBe(solution.replay);
+        if (solution.groupIndex === 0 && solution.levelIndex === 8) {
+          // Fun 9's verified replay actually sends lemmings through fire.
+          expect(game!.level.triggers.filter(trigger => trigger.getType() === TriggerTypes.KILL)
+            .reduce((total, trigger) => total + trigger.getActivationCount(), 0)).toBeGreaterThan(0);
+        }
       }
 
       // Cross-checked against the supplied DOS executable in DOSBox: on Fun 13,
