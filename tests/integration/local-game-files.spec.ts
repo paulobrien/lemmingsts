@@ -103,6 +103,7 @@ describe('local original DOS assets', () => {
         }
         expect(game!.getGameState(), label).toBe(GameStateTypes.SUCCEEDED);
         expect(game!.getVictoryCondition().getSurvivorsCount(), label).toBeGreaterThan(0);
+        expect(game!.getCommandManager().serialize(), `${label} must execute every recorded command`).toBe(solution.replay);
       }
     } finally {
       await clearLemmingsFiles();
