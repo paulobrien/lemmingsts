@@ -542,6 +542,15 @@ export const TESTED_SOLUTIONS: readonly TestedSolution[] = [
   },
   {
     groupIndex: 2,
+    levelIndex: 11,
+    replay: '89=s5&89=l0&133=s4&133=l1&203=l2&281=s5&281=l0&310=s6&310=l0&385=s5&385=l0&612=l0&838=l0&1063=l0&1287=l0&1550=s3&1550=l1',
+    hints: [
+      'Keep the group safely on the starting platform while one lemming prepares the route.',
+      'Build and bash through the first obstacle, then use one well-timed staircase at each gap. Once the scout reaches the exit, remove the right-hand Blocker.',
+    ],
+  },
+  {
+    groupIndex: 2,
     levelIndex: 18,
     replay: '171=s3&171=l0&310=l1&475=l2&715=l3&889=l4',
     hints: [
