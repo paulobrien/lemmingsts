@@ -168,6 +168,15 @@ export const TESTED_SOLUTIONS: readonly TestedSolution[] = [
   },
   {
     groupIndex: 0,
+    levelIndex: 23,
+    replay: '400=s8&400=l0',
+    hints: [
+      'Look for a way down from the lower platform.',
+      'After the first lemming drops to the lower platform, make it dig through the floor.',
+    ],
+  },
+  {
+    groupIndex: 0,
     levelIndex: 24,
     replay: '353=s6&353=l0&485=s8&485=l1',
     hints: [
