@@ -62,6 +62,7 @@ it.skipIf(!taxing9Path || process.env.RUN_PRIVATE_GAME_TESTS !== '1')('verifies 
 
 // Optional replay sources are documented in docu/LEMMIX_REPLAY_IMPORT.md.
 for (const { name, env, group, level, saved } of [
+  { name: 'Fun 12', env: 'LEMMIX_FUN12_REPLAY_PATH', group: 0, level: 11, saved: 80 },
   { name: 'Fun 25', env: 'LEMMIX_FUN25_REPLAY_PATH', group: 0, level: 24, saved: 73 },
   { name: 'Tricky 5', env: 'LEMMIX_TRICKY5_REPLAY_PATH', group: 1, level: 4, saved: 70 },
   { name: 'Tricky 10', env: 'LEMMIX_TRICKY10_REPLAY_PATH', group: 1, level: 9, saved: 80 },
@@ -69,6 +70,7 @@ for (const { name, env, group, level, saved } of [
   { name: 'Taxing 3', env: 'LEMMIX_TAXING3_REPLAY_PATH', group: 2, level: 2, saved: 80 },
   { name: 'Taxing 11', env: 'LEMMIX_TAXING11_REPLAY_PATH', group: 2, level: 10, saved: 50 },
   { name: 'Taxing 16', env: 'LEMMIX_TAXING16_REPLAY_PATH', group: 2, level: 15, saved: 80 },
+  { name: 'Taxing 20', env: 'LEMMIX_TAXING20_REPLAY_PATH', group: 2, level: 19, saved: 70 },
 ]) {
   const replayPath = process.env[env];
   it.skipIf(!replayPath || process.env.RUN_PRIVATE_GAME_TESTS !== '1')(`verifies the public ${name} replay against local game data`, async () => {
