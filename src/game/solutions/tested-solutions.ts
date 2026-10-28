@@ -571,6 +571,16 @@ export const TESTED_SOLUTIONS: readonly TestedSolution[] = [
   },
   {
     groupIndex: 2,
+    levelIndex: 4,
+    replay: '100=s5&100=l0&105=s4&105=l1&292=s5&292=l0&484=l0&500=l0&692=l0&884=l0&1076=l0&1268=l0&1460=l0&1547=l0&1739=l0&1931=l0&1967=s6&1967=l0&2004=l0&2020=s5&2020=l0&2212=l0&2404=l0&2596=s6&2596=l0&2638=l0&2700=s3&2700=l1',
+    hints: [
+      'Keep the crowd safe while one lemming finds a route above the flames.',
+      'Build towards the right wall, turn back and build up to the left wall, then start a higher staircase to the right.',
+      'Bash through the pipes, bridge over the upper flames and clear the route to the upper exit before releasing the crowd.',
+    ],
+  },
+  {
+    groupIndex: 2,
     levelIndex: 5,
     replay: '90=s6&90=l0&95=l1&95=l2&180=s4&180=l3&650=s3&650=l3',
     hints: [
