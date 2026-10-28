@@ -72,6 +72,8 @@ for (const { name, env, group, level, saved } of [
   { name: 'Taxing 15', env: 'LEMMIX_TAXING15_REPLAY_PATH', group: 2, level: 14, saved: 80 },
   { name: 'Taxing 16', env: 'LEMMIX_TAXING16_REPLAY_PATH', group: 2, level: 15, saved: 80 },
   { name: 'Taxing 20', env: 'LEMMIX_TAXING20_REPLAY_PATH', group: 2, level: 19, saved: 70 },
+  { name: 'Taxing 25', env: 'LEMMIX_TAXING25_REPLAY_PATH', group: 2, level: 24, saved: 80 },
+  { name: 'Mayhem 27', env: 'LEMMIX_MAYHEM27_REPLAY_PATH', group: 3, level: 26, saved: 50 },
 ]) {
   const replayPath = process.env[env];
   it.skipIf(!replayPath || process.env.RUN_PRIVATE_GAME_TESTS !== '1')(`verifies the public ${name} replay against local game data`, async () => {
