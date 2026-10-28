@@ -222,6 +222,15 @@ export const TESTED_SOLUTIONS: readonly TestedSolution[] = [
   },
   {
     groupIndex: 1,
+    levelIndex: 2,
+    replay: '130=s4&130=l1&160=s8&160=l0&215=s4&215=l2&560=s7&560=l0&744=s5&744=l0&944=l0&1144=l0&1344=l0&1544=l0&1744=l0&1944=l0&2144=l0&2160=s6&2160=l0&2400=s3&2400=l1',
+    hints: [
+      'Keep the group at the entrance while one lemming creates a safe route down and back up.',
+      'Dig near the right edge and mine out to the lower platform. Build a staircase from its left end to the far ledge, then release the group.',
+    ],
+  },
+  {
+    groupIndex: 1,
     levelIndex: 3,
     replay: '54=l0&80=l1&106=l2&132=l3&158=l4&184=l5&210=l6&236=l7&262=l8&288=l9&314=l10&340=l11&366=l12&392=l13&418=l14&444=l15&470=l16&496=l17&522=l18&548=l19&574=l20&600=l21&600=s4&600=l1&626=s1&626=l22&652=l23&678=l24&704=l25&710=s5&710=l0&730=s1&730=l26&756=l27&782=l28&808=l29&834=l30&848=s4&848=l2&860=s1&860=l31&886=l32&910=s5&910=l0&912=s1&912=l33&938=l34&964=l35&990=l36&1016=l37&1042=l38&1068=l39&1162=s5&1162=l0&1362=l0&1562=l0&1700=s6&1700=l0&1730=s5&1730=l0&2000=s3&2000=l1',
     hints: [
