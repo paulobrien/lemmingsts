@@ -211,6 +211,15 @@ export const TESTED_SOLUTIONS: readonly TestedSolution[] = [
       'Give the crowd Climber, use Blockers on both sides of the wall, then build across the gaps. At the small platform, interrupt the bridge so the leader can drop onto it before building again; remove the right Blocker when the route is ready.',
     ],
   },
+  {
+    groupIndex: 1,
+    levelIndex: 5,
+    replay: '54=l0&54=s2&54=l0&215=s5&215=l0&415=l0&615=l0&800=s6&800=l0&903=s5&903=l0&1103=l0&1315=l0&1515=l0&1700=s1&1700=l2&1700=s2&1700=l2&1701=s1&1701=l4&1701=s2&1701=l4&1702=s1&1702=l1&1702=s2&1702=l1&1704=s1&1704=l3&1704=s2&1704=l3',
+    hints: [
+      'Send one lemming ahead and prepare a safe route before letting the others follow.',
+      'Give the leader Climber and Floater, build across the gaps using the lower island, then give the others the same two abilities while they face right.',
+    ],
+  },
 ];
 
 /** Unverified levels deliberately return no solution or hints. */
