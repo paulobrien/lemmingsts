@@ -238,6 +238,15 @@ export const TESTED_SOLUTIONS: readonly TestedSolution[] = [
       'Give the leader Climber and Floater, build across the gaps using the lower island, then give the others the same two abilities while they face right.',
     ],
   },
+  {
+    groupIndex: 1,
+    levelIndex: 8,
+    replay: '100=s4&100=l0&250=l2&337=s5&337=l1&537=l1&737=l1&840=s7&840=l1&960=s5&960=l1&1160=l1&1360=l1&1430=s7&1430=l1&1530=s6&1530=l1&1798=s5&1798=l1&1998=l1&2198=l1&3000=s3&3000=l2',
+    hints: [
+      'Keep the crowd in place and send one lemming along the left route.',
+      'Build towards each left ledge, mine through the bridges near the far wall to descend safely, then bash right through the mound and bridge the last gap. Release the left Blocker when ready.',
+    ],
+  },
 ];
 
 /** Unverified levels deliberately return no solution or hints. */
