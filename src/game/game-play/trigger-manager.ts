@@ -44,6 +44,13 @@ export class TriggerManager {
         }
     }
 
+    /** A blocker replaces the underlying DOS object-map cell, including steel. */
+    public hasBlockerFieldAt(x: number, y: number): boolean {
+        return this.triggers.some(trigger => trigger.owner && trigger.contains(x, y) &&
+            (trigger.getType() === TriggerTypes.BLOCKER_LEFT || trigger.getType() === TriggerTypes.BLOCKER_CENTER ||
+             trigger.getType() === TriggerTypes.BLOCKER_RIGHT));
+    }
+
     public renderDebug(gameDisplay: DisplayImage) {
         for (let i = 0; i < this.triggers.length; i++) {
             this.triggers[i].draw(gameDisplay);
@@ -58,7 +65,12 @@ export class TriggerManager {
         // A busy trap still owns its cells: a lemming passes through rather
         // than activating an unrelated object hidden underneath the trap.
         for (let i = this.triggers.length - 1; i >= 0; i--) {
-            if (this.triggers[i].contains(x, y)) return this.triggers[i].trigger(x, y, tick);
+            if (this.triggers[i].contains(x, y)) {
+                // The central blocker cell owns the map location but has no
+                // turning effect; it still hides the object underneath.
+                if (this.triggers[i].getType() === TriggerTypes.BLOCKER_CENTER) return TriggerTypes.NO_TRIGGER;
+                return this.triggers[i].trigger(x, y, tick);
+            }
         }
 
         return TriggerTypes.NO_TRIGGER;

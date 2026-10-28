@@ -178,10 +178,10 @@ export const TESTED_SOLUTIONS: readonly TestedSolution[] = [
   {
     groupIndex: 0,
     levelIndex: 23,
-    replay: '400=s8&400=l0',
+    replay: '424=s8&424=l0&498=s4&498=l1',
     hints: [
-      'Look for a way down from the lower platform.',
-      'After the first lemming drops to the lower platform, make it dig through the floor.',
+      'Look for a way down from the lower platform and a way to turn the group away from the trap.',
+      'Make a lemming dig through the lower floor, then place a Blocker before the right-hand trap to turn the others back toward the shaft.',
     ],
   },
   {
@@ -391,15 +391,6 @@ export const TESTED_SOLUTIONS: readonly TestedSolution[] = [
       'Bring both groups down to the shared lower area and keep them away from the traps.',
       'Dig briefly below each entrance, then mine to make descending paths. Send a climber past the lower rocks.',
       'Build left over the bear trap and toward the exit, then bash through the remaining rock to release the crowd.',
-    ],
-  },
-  {
-    groupIndex: 2,
-    levelIndex: 5,
-    replay: '75=s8&75=l2&117=s6&117=l2',
-    hints: [
-      'A lower passage can make the final drop safer.',
-      'Make a lemming near the left side dig briefly, then switch it to Basher while it faces right.',
     ],
   },
   {

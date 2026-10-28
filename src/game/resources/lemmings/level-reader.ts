@@ -160,11 +160,13 @@ export class LevelReader {
         continue;
       }
 
-      newRange.x = (pos & 0x01FF) * 4 - 16;
-      newRange.y = ((pos >> 9) & 0x007F) * 4;
+      // X occupies the first nine bits; Y occupies the remaining seven.
+      // https://github.com/ericlangedijk/Lemmix/blob/master/src/Level.Loader.pas#L150
+      newRange.x = ((pos >> 7) & 0x01FF) * 4 - 16;
+      newRange.y = (pos & 0x007F) * 4;
 
-      newRange.width = (size & 0x0F) * 4 + 4;
-      newRange.height = ((size >> 4) & 0x0F) * 4 + 4;
+      newRange.width = ((size >> 4) & 0x0F) * 4 + 4;
+      newRange.height = (size & 0x0F) * 4 + 4;
 
       this.steel.push(newRange);
     }

@@ -23,6 +23,7 @@ export class Level {
     // Lemmix's ReadObjectMap / InitializeObjectMap document its alignment and
     // overwrite order: https://github.com/ericlangedijk/Lemmix/blob/master/src/Game.pas
     private terrainProtection: Uint8Array;
+    private blockerFieldAt: ((x: number, y: number) => boolean) | null = null;
     private readonly protectionWidth: number;
     private readonly protectionHeight: number;
     private steelAreas: ProtectionRegion[] = [];
@@ -166,6 +167,11 @@ export class Level {
         this.rebuildProtection();
     }
 
+    /** Overlay live blocker object-map cells on static steel and objects. */
+    public setBlockerFieldLookup(lookup: (x: number, y: number) => boolean): void {
+        this.blockerFieldAt = lookup;
+    }
+
     private rebuildProtection(): void {
         this.terrainProtection.fill(0);
         // Interactive objects are applied after steel and replace overlapping cells.
@@ -186,6 +192,7 @@ export class Level {
     /** Steel blocks every destructive skill; arrows restrict horizontal digging only. */
     public isProtectedAt(x: number, y: number, direction: -1 | 0 | 1 = 0): boolean {
         if (x < 0 || x >= this.width || y < 0 || y >= this.height) return false;
+        if (this.blockerFieldAt?.(x, y)) return false;
         const flags = this.terrainProtection[Math.floor(y / 4) * this.protectionWidth + Math.floor(x / 4)];
         return flags === 1 || (direction === 1 && flags === 2) || (direction === -1 && flags === 4);
     }
@@ -193,6 +200,7 @@ export class Level {
     /** The DOS bomber removes no terrain when its centre is in steel or water. */
     public isExplosionProtectedAt(x: number, y: number): boolean {
         if (x < 0 || x >= this.width || y < 0 || y >= this.height) return false;
+        if (this.blockerFieldAt?.(x, y)) return false;
         const flag = this.terrainProtection[Math.floor(y / 4) * this.protectionWidth + Math.floor(x / 4)];
         return flag === 1 || flag === 8;
     }
@@ -200,6 +208,7 @@ export class Level {
     /** DOS original's miner also turns back on right-pointing arrows when facing right. */
     public isMinerProtectedAt(x: number, y: number, direction: -1 | 1): boolean {
         if (x < 0 || x >= this.width || y < 0 || y >= this.height) return false;
+        if (this.blockerFieldAt?.(x, y)) return false;
         const flags = this.terrainProtection[Math.floor(y / 4) * this.protectionWidth + Math.floor(x / 4)];
         return flags === 1 || flags === 4 || (direction === 1 && flags === 2);
     }

@@ -71,6 +71,7 @@ export class Game {
 
         this.triggerManager = new TriggerManager(this.gameTimer);
         this.triggerManager.addRange(level.triggers);
+        level.setBlockerFieldLookup((x, y) => this.triggerManager.hasBlockerFieldAt(x, y));
 
 
         /// setup Lemmings

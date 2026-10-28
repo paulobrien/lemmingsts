@@ -40,7 +40,7 @@ The public [Taxing 25](https://www.lemmingsforums.net/index.php?topic=4539.45) a
 
 The public [Mayhem 19 DOS recording](https://www.lemmingsforums.net/index.php?topic=1383.105) verifies with 48 rescued when supplied as `LEMMIX_MAYHEM19_REPLAY_PATH` alongside `RUN_PRIVATE_GAME_TESTS=1`.
 
-The following recordings from the public [minimum-skills challenge](https://www.lemmingsforums.net/index.php?topic=1068.0) also verify on the local original game files. Their environment variables enable the matching opt-in integration tests. Rescue counts are measured in this engine; the Taxing 22 recording's filename describes a save-all solution, but this engine saves 49.
+The following recordings from the public [minimum-skills challenge](https://www.lemmingsforums.net/index.php?topic=1068.0) also verify on the local original game files. Their environment variables enable the matching opt-in integration tests. Rescue counts are measured in this engine.
 
 | Level | Recording | Environment variable | Rescued |
 | --- | --- | --- | ---: |
@@ -53,12 +53,14 @@ The following recordings from the public [minimum-skills challenge](https://www.
 | Tricky 28 | [attachment 11974](https://www.lemmingsforums.net/index.php?action=dlattach;attach=11974) | `LEMMIX_TRICKY28_REPLAY_PATH` | 80 |
 | Taxing 8 | [attachment 12043](https://www.lemmingsforums.net/index.php?action=dlattach;attach=12043) | `LEMMIX_TAXING8_REPLAY_PATH` | 80 |
 | Taxing 4 | [attachment 8](https://www.lemmingsforums.net/index.php?action=dlattach;attach=8) | `LEMMIX_TAXING4_REPLAY_PATH` | 40 |
+| Taxing 6 | [attachment 11963](https://www.lemmingsforums.net/index.php?action=dlattach;attach=11963) | `LEMMIX_TAXING6_REPLAY_PATH` | 50 |
 | Taxing 13 | [attachment 9](https://www.lemmingsforums.net/index.php?action=dlattach;attach=9) | `LEMMIX_TAXING13_REPLAY_PATH` | 80 |
-| Taxing 22 | [attachment 11967](https://www.lemmingsforums.net/index.php?action=dlattach;attach=11967) | `LEMMIX_TAXING22_REPLAY_PATH` | 49 |
+| Taxing 22 | [attachment 11967](https://www.lemmingsforums.net/index.php?action=dlattach;attach=11967) | `LEMMIX_TAXING22_REPLAY_PATH` | 50 |
 | Taxing 26 | [attachment 12815](https://www.lemmingsforums.net/index.php?action=dlattach;attach=12815) | `LEMMIX_TAXING26_REPLAY_PATH` | 80 |
 | Taxing 29 | [attachment 11975](https://www.lemmingsforums.net/index.php?action=dlattach;attach=11975) | `LEMMIX_TAXING29_REPLAY_PATH` | 80 |
 | Mayhem 4 | [attachment 11964](https://www.lemmingsforums.net/index.php?action=dlattach;attach=11964) | `LEMMIX_MAYHEM4_REPLAY_PATH` | 50 |
 | Mayhem 5 | [attachment 12175](https://www.lemmingsforums.net/index.php?action=dlattach;attach=12175) | `LEMMIX_MAYHEM5_REPLAY_PATH` | 76 |
+| Mayhem 6 | [attachment 12173](https://www.lemmingsforums.net/index.php?action=dlattach;attach=12173) | `LEMMIX_MAYHEM6_REPLAY_PATH` | 75 |
 | Mayhem 7 | [attachment 12189](https://www.lemmingsforums.net/index.php?action=dlattach;attach=12189) | `LEMMIX_MAYHEM7_REPLAY_PATH` | 50 |
 | Mayhem 14 | [attachment 12190](https://www.lemmingsforums.net/index.php?action=dlattach;attach=12190) | `LEMMIX_MAYHEM14_REPLAY_PATH` | 80 |
 | Mayhem 26 | [attachment 12](https://www.lemmingsforums.net/index.php?action=dlattach;attach=12) | `LEMMIX_MAYHEM26_REPLAY_PATH` | 76 |
@@ -77,6 +79,7 @@ These further wins use recordings posted in the public [DOS skill challenge](htt
 | Tricky 30 | [attachment 13660](https://www.lemmingsforums.net/index.php?action=dlattach;attach=13660) | `LEMMIX_TRICKY30_REPLAY_PATH` | 74 |
 | Taxing 7 | [attachment 13687](https://www.lemmingsforums.net/index.php?action=dlattach;attach=13687) | `LEMMIX_TAXING7_REPLAY_PATH` | 78 |
 | Taxing 2 | [attachment 13683](https://www.lemmingsforums.net/index.php?action=dlattach;attach=13683) | `LEMMIX_TAXING2_REPLAY_PATH` | 76 |
+| Taxing 5 | [attachment 13686](https://www.lemmingsforums.net/index.php?action=dlattach;attach=13686) | `LEMMIX_TAXING5_REPLAY_PATH` | 53 |
 | Taxing 12 | [attachment 13694](https://www.lemmingsforums.net/index.php?action=dlattach;attach=13694) | `LEMMIX_TAXING12_REPLAY_PATH` | 8 |
 | Taxing 14 | [attachment 13695](https://www.lemmingsforums.net/index.php?action=dlattach;attach=13695) | `LEMMIX_TAXING14_REPLAY_PATH` | 77 |
 | Mayhem 9 | [attachment 334](https://www.lemmingsforums.net/index.php?action=dlattach;attach=334) | `LEMMIX_MAYHEM9_REPLAY_PATH` | 79 |
@@ -92,13 +95,15 @@ The following wins use files from the public [LemmingsWelt challenge replay arch
 | Tricky 27 | `tricky27_1min.lrb` | `LEMMIX_TRICKY27_REPLAY_PATH` | 73 |
 | Taxing 17 | `Taxing_17_buildbash.lrb` | `LEMMIX_TAXING17_REPLAY_PATH` | 80 |
 | Taxing 18 | `taxing18.zip` / `Taxing_18.lrb` | `LEMMIX_TAXING18_REPLAY_PATH` | 74 |
+| Taxing 21 | `Taxing_21.lrb` | `LEMMIX_TAXING21_REPLAY_PATH` | 20 |
 | Taxing 23 | `taxing23_saveall_16builders.zip` / `Taxing23_saveall_16builders.lrb` | `LEMMIX_TAXING23_REPLAY_PATH` | 80 |
 | Taxing 27 | `taxing27_1min.lrb` | `LEMMIX_TAXING27_REPLAY_PATH` | 77 |
 | Taxing 28 | `70taxing28.zip` / `POOR WEE CREATURES!.lrb` | `LEMMIX_TAXING28_REPLAY_PATH` | 70 |
-| Mayhem 1 | `Replay7.zip` / `Steel Works.lrb` | `LEMMIX_MAYHEM1_REPLAY_PATH` | 79 |
+| Mayhem 1 | `Replay7.zip` / `Steel Works.lrb` | `LEMMIX_MAYHEM1_REPLAY_PATH` | 80 |
 | Mayhem 2 | `80mayhem2.zip` / `The Boiler Room.lrb` | `LEMMIX_MAYHEM2_REPLAY_PATH` | 80 |
-| Mayhem 8 | `mayhem8-10_1min.zip` / `mayhem8_1min.lrb` | `LEMMIX_MAYHEM8_REPLAY_PATH` | 72 |
-| Mayhem 10 | `mayhem10.zip` / `Mayhem10_save73.lrb` | `LEMMIX_MAYHEM10_REPLAY_PATH` | 72 |
+| Mayhem 8 | `mayhem8-10_1min.zip` / `mayhem8_1min.lrb` | `LEMMIX_MAYHEM8_REPLAY_PATH` | 74 |
+| Mayhem 10 | `mayhem10.zip` / `Mayhem10_save73.lrb` | `LEMMIX_MAYHEM10_REPLAY_PATH` | 73 |
+| Mayhem 12 | `mayhem12_1min.lrb` | `LEMMIX_MAYHEM12_REPLAY_PATH` | 75 |
 | Mayhem 25 | `mayhem25_1min.lrb` | `LEMMIX_MAYHEM25_REPLAY_PATH` | 73 |
 | Mayhem 29 | `Mayhem 29_West_77-80.zip` / `Mayhem 29 Save Me_west_77-80.lrb` | `LEMMIX_MAYHEM29_REPLAY_PATH` | 77 |
 

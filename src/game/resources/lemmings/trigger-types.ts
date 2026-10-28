@@ -14,6 +14,7 @@
 
         BLOCKER_LEFT,
         BLOCKER_RIGHT,
+        BLOCKER_CENTER,
     }
    
 
