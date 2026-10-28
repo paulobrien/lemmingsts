@@ -44,6 +44,17 @@ The following recordings from the public [minimum-skills challenge](https://www.
 | Mayhem 7 | [attachment 12189](https://www.lemmingsforums.net/index.php?action=dlattach;attach=12189) | `LEMMIX_MAYHEM7_REPLAY_PATH` | 50 |
 | Mayhem 14 | [attachment 12190](https://www.lemmingsforums.net/index.php?action=dlattach;attach=12190) | `LEMMIX_MAYHEM14_REPLAY_PATH` | 80 |
 
+These further wins use recordings posted in the public [DOS skill challenge](https://www.lemmingsforums.net/index.php?topic=1084.0). Some run until the level timer expires; the counts below are the result actually verified in this engine.
+
+| Level | Recording | Environment variable | Rescued |
+| --- | --- | --- | ---: |
+| Tricky 8 | [attachment 13667](https://www.lemmingsforums.net/index.php?action=dlattach;attach=13667) | `LEMMIX_TRICKY8_REPLAY_PATH` | 58 |
+| Tricky 11 | [attachment 13656](https://www.lemmingsforums.net/index.php?action=dlattach;attach=13656) | `LEMMIX_TRICKY11_REPLAY_PATH` | 48 |
+| Tricky 29 | [attachment 13659](https://www.lemmingsforums.net/index.php?action=dlattach;attach=13659) | `LEMMIX_TRICKY29_REPLAY_PATH` | 80 |
+| Tricky 30 | [attachment 13660](https://www.lemmingsforums.net/index.php?action=dlattach;attach=13660) | `LEMMIX_TRICKY30_REPLAY_PATH` | 74 |
+| Taxing 14 | [attachment 13695](https://www.lemmingsforums.net/index.php?action=dlattach;attach=13695) | `LEMMIX_TAXING14_REPLAY_PATH` | 77 |
+| Mayhem 9 | [attachment 334](https://www.lemmingsforums.net/index.php?action=dlattach;attach=334) | `LEMMIX_MAYHEM9_REPLAY_PATH` | 79 |
+
 To repeat the version 1 parsing check with a locally obtained copy of that replay, without committing it:
 
 ```sh
