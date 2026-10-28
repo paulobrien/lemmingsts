@@ -314,6 +314,15 @@ export const TESTED_SOLUTIONS: readonly TestedSolution[] = [
   },
   {
     groupIndex: 1,
+    levelIndex: 4,
+    replay: '340=s6&340=l0&380=s5&380=l0&572=l0&600=s6&600=l0&640=l0&800=l0&1000=l0&1078=s5&1078=l0&1270=l0&1462=l0&1722=l0&1914=l0&2200=s6&2200=l1&2480=l1&2600=l1',
+    hints: [
+      'Send a leader through the hanging obstacles and prepare the way across the gaps.',
+      'Bash the first string, build over the next sphere, and bash through the remaining barriers. Bridge from the far edge to the crystal and build towards the exit, then bash the trapped crowd through the lower spheres.',
+    ],
+  },
+  {
+    groupIndex: 1,
     levelIndex: 5,
     replay: '54=l0&54=s2&54=l0&215=s5&215=l0&415=l0&615=l0&800=s6&800=l0&903=s5&903=l0&1103=l0&1315=l0&1515=l0&1700=s1&1700=l2&1700=s2&1700=l2&1701=s1&1701=l4&1701=s2&1701=l4&1702=s1&1702=l1&1702=s2&1702=l1&1704=s1&1704=l3&1704=s2&1704=l3',
     hints: [
