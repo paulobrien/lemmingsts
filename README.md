@@ -41,7 +41,7 @@ Serve the production build over HTTPS (localhost also works for development). In
 
 Progress and settings are stored locally per browser. They do not sync between devices. A static host must serve `index.html` as a fallback for application routes such as `/game/1`. The production build is in `dist/` and contains the app but no original game files.
 
-Hints are available only for levels with a verified solution and are revealed one at a time on request. Loading a level successfully does not prove it is completable; the optional local integration tests exercise the recorded solutions as they are added. Completion coverage is still incomplete, and some original DOS physics details, including the animation frames on which triggers are checked, need further verification.
+Hints are available only for levels with a verified solution and are revealed one at a time on request. Loading a level successfully does not prove it is completable; the optional local integration tests exercise the recorded solutions as they are added. Completion coverage is still incomplete, and some original DOS physics details, including the animation frames on which triggers are checked, need further verification. The game supports optional music, but the original gameplay sound effects are not yet wired up.
 
 ## Licence and acknowledgements
 
