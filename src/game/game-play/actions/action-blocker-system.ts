@@ -53,10 +53,13 @@ export class ActionBlockerSystem implements IActionSystem {
     public process(level: Level, lem: Lemming): LemmingStateType {
 
         lem.frameIndex++;
-        if (!level.hasGroundAt(lem.x, lem.y + 1)) {
+        // Lemmix releases the blocker to walking when the foot pixel is
+        // removed; the walking action handles falling on the following frame.
+        // https://github.com/ericlangedijk/Lemmix/blob/master/src/Game.pas#L3319
+        if (!level.hasGroundAt(lem.x, lem.y)) {
             this.triggerManager.removeByOwner(lem);
 
-            return LemmingStateType.FALLING;
+            return LemmingStateType.WALKING;
         }
 
         return LemmingStateType.NO_STATE_TYPE;
