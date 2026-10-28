@@ -713,6 +713,16 @@ export const TESTED_SOLUTIONS: readonly TestedSolution[] = [
   },
   {
     groupIndex: 2,
+    levelIndex: 28,
+    replay: '80=s2&80=l0&89=s4&89=l1&291=s5&291=l0&452=s6&452=l2&483=s5&483=l0&770=l0&962=l0&1000=s1&1000=l2&1545=s8&1545=l2&1610=s5&1610=l2&1658=s7&1658=l2',
+    hints: [
+      'A scout can make the lower route safe while the crowd waits.',
+      'Bridge the water from both sides, then open a path below the starting hill.',
+      'Send a Climber up the exit hill. Dig near the top, turn around, and mine back down to meet the crowd.',
+    ],
+  },
+  {
+    groupIndex: 2,
     levelIndex: 29,
     replay: '0=i60&0=s8&585=l0&602=l1&619=l2&636=l3&653=l4&670=l5&687=l6&704=l7&721=l8&738=l9&755=l10&772=l11&789=l12&806=l13&823=l14&840=l15&857=l16&874=l17&891=l18&908=l19&925=l20&942=l21&959=l22&976=l23&993=l24&1010=l25&1027=l26&1044=l27&1061=l28&1078=l29&1095=l30&1112=l31&1129=l32&1146=l33&1163=l34&1180=l35&1197=l36&1214=l37&1231=l38&1248=l39&1265=l40&1282=l41&1299=l42&1316=l43&1333=l44&1350=l45&1367=l46&1384=l47&1401=l48&1418=l49&1435=l50&1452=l51&1469=l52&1486=l53&1503=l54&1520=l55&1537=l56&1554=l57&1571=l58&1588=l59',
     hints: [
