@@ -768,6 +768,16 @@ export const TESTED_SOLUTIONS: readonly TestedSolution[] = [
   },
   {
     groupIndex: 3,
+    levelIndex: 16,
+    replay: '148=s5&148=l0&150=s4&150=l1&340=s5&340=l0&532=l0&747=l0&939=l0&1131=l0&1291=s6&1291=l0&1314=s5&1314=l0&1506=l0&1698=l0&1858=s6&1858=l0&2051=s5&2051=l2',
+    hints: [
+      'Hold the crowd while a scout builds between the tiny stepping stones.',
+      'Use successive Builders to reach each stone. On the later crossings, interrupt the final staircase with a Basher so the scout drops onto the landing.',
+      'Once the route reaches the exit, use the remaining Builder to bridge over the Blocker and release the crowd. The Blocker remains until time runs out.',
+    ],
+  },
+  {
+    groupIndex: 3,
     levelIndex: 19,
     replay: '90=s4&90=l1&130=s6&130=l0&244=s5&244=l0&531=s7&531=l0&593=s1&593=l49&600=l0&940=s7&940=l49',
     hints: [
