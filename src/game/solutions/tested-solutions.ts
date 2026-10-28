@@ -383,6 +383,16 @@ export const TESTED_SOLUTIONS: readonly TestedSolution[] = [
       'Once the tunnel and exit stairs are ready, release the lower Blocker and let the crowd follow.',
     ],
   },
+  {
+    groupIndex: 2,
+    levelIndex: 1,
+    replay: '65=s8&65=l0&79=l1&146=s7&146=l0&152=l1&1079=s6&1079=l1&1179=s1&1179=l1&1315=s5&1315=l1&1515=l1&1715=l1&1915=l1&2115=l1&2251=s6&2251=l0',
+    hints: [
+      'Bring both groups down to the shared lower area and keep them away from the traps.',
+      'Dig briefly below each entrance, then mine to make descending paths. Send a climber past the lower rocks.',
+      'Build left over the bear trap and toward the exit, then bash through the remaining rock to release the crowd.',
+    ],
+  },
 ];
 
 /** Unverified levels deliberately return no solution or hints. */
