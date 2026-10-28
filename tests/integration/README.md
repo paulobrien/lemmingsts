@@ -16,7 +16,7 @@ To verify all 120 levels using the project-authored replays where available and 
 RUN_PRIVATE_GAME_TESTS=1 REQUIRE_ALL_LEVEL_COMPLETIONS=1 npx vitest run tests/integration/lemmix-import-external.spec.ts
 ```
 
-This strict combined gate reports every missing replay path and actually runs one completion replay per level. The community files are not included in Git, and their recorded positions and actions are checked before a win is accepted. It does not add hints for those levels.
+This strict combined gate reports every missing replay path and actually runs one completion replay per level. The community files are not included in Git, and their recorded positions and actions are checked before a win is accepted. It does not add hints for those levels. If this checkout has the ignored `dos/replay-research-env.sh` and its corresponding local recordings, source that file from the repository root to set the replay paths before running the gate.
 
 To require all 120 levels to have **project-authored** replay solutions and hints, run:
 
