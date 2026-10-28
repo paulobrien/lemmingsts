@@ -70,12 +70,14 @@ These further wins use recordings posted in the public [DOS skill challenge](htt
 | --- | --- | --- | ---: |
 | Tricky 8 | [attachment 13667](https://www.lemmingsforums.net/index.php?action=dlattach;attach=13667) | `LEMMIX_TRICKY8_REPLAY_PATH` | 58 |
 | Tricky 11 | [attachment 13656](https://www.lemmingsforums.net/index.php?action=dlattach;attach=13656) | `LEMMIX_TRICKY11_REPLAY_PATH` | 48 |
+| Tricky 14 | [attachment 13669](https://www.lemmingsforums.net/index.php?action=dlattach;attach=13669) | `LEMMIX_TRICKY14_REPLAY_PATH` | 70 |
 | Tricky 18 | [attachment 371](https://www.lemmingsforums.net/index.php?action=dlattach;attach=371) | `LEMMIX_TRICKY18_REPLAY_PATH` | 9 |
 | Tricky 23 (nuke) | [attachment 13662](https://www.lemmingsforums.net/index.php?action=dlattach;attach=13662) | `LEMMIX_TRICKY23_NUKE_REPLAY_PATH` | 50 |
 | Tricky 29 | [attachment 13659](https://www.lemmingsforums.net/index.php?action=dlattach;attach=13659) | `LEMMIX_TRICKY29_REPLAY_PATH` | 80 |
 | Tricky 30 | [attachment 13660](https://www.lemmingsforums.net/index.php?action=dlattach;attach=13660) | `LEMMIX_TRICKY30_REPLAY_PATH` | 74 |
 | Taxing 7 | [attachment 13687](https://www.lemmingsforums.net/index.php?action=dlattach;attach=13687) | `LEMMIX_TAXING7_REPLAY_PATH` | 78 |
 | Taxing 2 | [attachment 13683](https://www.lemmingsforums.net/index.php?action=dlattach;attach=13683) | `LEMMIX_TAXING2_REPLAY_PATH` | 76 |
+| Taxing 12 | [attachment 13694](https://www.lemmingsforums.net/index.php?action=dlattach;attach=13694) | `LEMMIX_TAXING12_REPLAY_PATH` | 8 |
 | Taxing 14 | [attachment 13695](https://www.lemmingsforums.net/index.php?action=dlattach;attach=13695) | `LEMMIX_TAXING14_REPLAY_PATH` | 77 |
 | Mayhem 9 | [attachment 334](https://www.lemmingsforums.net/index.php?action=dlattach;attach=334) | `LEMMIX_MAYHEM9_REPLAY_PATH` | 79 |
 | Mayhem 3 | [attachment 13668](https://www.lemmingsforums.net/index.php?action=dlattach;attach=13668) | `LEMMIX_MAYHEM3_REPLAY_PATH` | 25 |
