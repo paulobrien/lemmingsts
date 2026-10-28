@@ -26,6 +26,24 @@ Additional public recordings verified on local files are [Tricky 5](https://www.
 
 The public [Taxing 25](https://www.lemmingsforums.net/index.php?topic=4539.45) and [Mayhem 27](https://www.lemmingsforums.net/index.php?topic=4539.105) recordings also verify, saving 80 and 50 respectively.
 
+The following recordings from the public [minimum-skills challenge](https://www.lemmingsforums.net/index.php?topic=1068.0) also verify on the local original game files. Their environment variables enable the matching opt-in integration tests. Rescue counts are measured in this engine; the Taxing 22 recording's filename describes a save-all solution, but this engine saves 49.
+
+| Level | Recording | Environment variable | Rescued |
+| --- | --- | --- | ---: |
+| Fun 19 | [attachment 11977](https://www.lemmingsforums.net/index.php?action=dlattach;attach=11977) | `LEMMIX_FUN19_REPLAY_PATH` | 80 |
+| Fun 23 | [attachment 11966](https://www.lemmingsforums.net/index.php?action=dlattach;attach=11966) | `LEMMIX_FUN23_REPLAY_PATH` | 80 |
+| Fun 28 | [attachment 11971](https://www.lemmingsforums.net/index.php?action=dlattach;attach=11971) | `LEMMIX_FUN28_REPLAY_PATH` | 80 |
+| Tricky 12 | [attachment 11972](https://www.lemmingsforums.net/index.php?action=dlattach;attach=11972) | `LEMMIX_TRICKY12_REPLAY_PATH` | 50 |
+| Tricky 24 | [attachment 11973](https://www.lemmingsforums.net/index.php?action=dlattach;attach=11973) | `LEMMIX_TRICKY24_REPLAY_PATH` | 80 |
+| Tricky 28 | [attachment 11974](https://www.lemmingsforums.net/index.php?action=dlattach;attach=11974) | `LEMMIX_TRICKY28_REPLAY_PATH` | 80 |
+| Taxing 8 | [attachment 12043](https://www.lemmingsforums.net/index.php?action=dlattach;attach=12043) | `LEMMIX_TAXING8_REPLAY_PATH` | 80 |
+| Taxing 22 | [attachment 11967](https://www.lemmingsforums.net/index.php?action=dlattach;attach=11967) | `LEMMIX_TAXING22_REPLAY_PATH` | 49 |
+| Taxing 26 | [attachment 12815](https://www.lemmingsforums.net/index.php?action=dlattach;attach=12815) | `LEMMIX_TAXING26_REPLAY_PATH` | 80 |
+| Taxing 29 | [attachment 11975](https://www.lemmingsforums.net/index.php?action=dlattach;attach=11975) | `LEMMIX_TAXING29_REPLAY_PATH` | 80 |
+| Mayhem 4 | [attachment 11964](https://www.lemmingsforums.net/index.php?action=dlattach;attach=11964) | `LEMMIX_MAYHEM4_REPLAY_PATH` | 50 |
+| Mayhem 7 | [attachment 12189](https://www.lemmingsforums.net/index.php?action=dlattach;attach=12189) | `LEMMIX_MAYHEM7_REPLAY_PATH` | 50 |
+| Mayhem 14 | [attachment 12190](https://www.lemmingsforums.net/index.php?action=dlattach;attach=12190) | `LEMMIX_MAYHEM14_REPLAY_PATH` | 80 |
+
 To repeat the version 1 parsing check with a locally obtained copy of that replay, without committing it:
 
 ```sh
