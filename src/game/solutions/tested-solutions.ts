@@ -607,6 +607,16 @@ export const TESTED_SOLUTIONS: readonly TestedSolution[] = [
   },
   {
     groupIndex: 2,
+    levelIndex: 21,
+    replay: '54=s2&54=l0&107=l1&250=s4&250=l0&296=s5&296=l1&488=l1&680=l1&713=l10&762=l11&813=l12&867=l13&905=l10&920=l14&973=l15',
+    hints: [
+      'The fall is too long until you make a landing closer to the entrance.',
+      'Send two Floaters down: use one to turn the other back, then build towards the falling crowd.',
+      'As the crowd reaches the new landing, build a second bridge over the Blocker; several closely timed Builders can keep the early arrivals moving.',
+    ],
+  },
+  {
+    groupIndex: 2,
     levelIndex: 22,
     replay: '220=s5&220=l0&249=l1&278=l2&333=l3&362=l4&391=l5&420=l6&633=l2&690=l1&720=l7&825=l2&1000=i59&1246=l2&1310=l2&1502=l2&1901=l2&1986=l2&2178=l2&2608=l2&2720=l2&2912=l2',
     hints: [
