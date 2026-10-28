@@ -38,9 +38,9 @@ describe('triggered traps', () => {
         const sprites = { getAnimation: () => ({}) } as unknown as LemmingsSprite;
         first.setAction(new ActionFloatingSystem(sprites));
         first.state = 5; // Floater frame with zero vertical movement.
-        const ohno = { process: () => LemmingStateType.NO_STATE_TYPE, getActionName: () => 'ohno',
+        const exploding = { process: () => LemmingStateType.NO_STATE_TYPE, getActionName: () => 'exploding',
             draw: () => undefined, triggerLemAction: () => false };
-        const actions = []; actions[LemmingStateType.OHNO] = ohno;
+        const actions = []; actions[LemmingStateType.EXPLODING] = exploding;
         if (expires) {
             const masks = { GetMask: () => ({}) } as unknown as MaskProvider;
             first.countdownAction = new ActionCountdownSystem(masks);
@@ -48,12 +48,12 @@ describe('triggered traps', () => {
         }
         const level = { hasGroundAt: () => false } as unknown as Level;
         const removeOne = vi.fn();
-        Object.assign(manager, { level, actions, logging: { debug: vi.fn() }, lemmings: [first], triggerManager: triggers,
+        Object.assign(manager, { level, actions, logging: { debug: vi.fn() }, onSoundEffect: { trigger: vi.fn() }, lemmings: [first], triggerManager: triggers,
             gameVictoryCondition: { getLeftCount: () => 0, removeOne }, nextNukingLemmingsIndex: -1 });
         manager.tick();
         expect(first.removed).toBe(!expires);
         expect(removeOne).toHaveBeenCalledTimes(expires ? 0 : 1);
-        if (expires) expect(first.action).toBe(ohno);
+        if (expires) expect(first.action).toBe(exploding);
     });
 
     it.each([
