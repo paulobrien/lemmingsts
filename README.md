@@ -42,7 +42,7 @@ Serve the production build over HTTPS (localhost also works for development). In
 
 Progress and settings are stored locally per browser. They do not sync between devices. A static host must serve `index.html` as a fallback for application routes such as `/game/1`. The production build is in `dist/` and contains the app but no original game files.
 
-Hints are available only for levels with a verified solution and are revealed one at a time on request. Loading a level successfully does not prove it is completable; the optional local integration tests exercise the recorded solutions as they are added. Completion coverage is still incomplete, and some original DOS physics details, including the animation frames on which triggers are checked, need further verification.
+Hints are available only for levels with a verified solution and are revealed one at a time on request. Loading a level successfully does not prove it is completable; the optional local integration tests exercise the recorded solutions as they are added. All 120 original levels have passed a local completion replay; some of those checks require separately obtained community recordings. The project-authored solution and hint collection is still incomplete, and some original DOS physics details need further verification.
 
 Music and sound effects have separate switches and start off by default. The optional effects currently cover successful skill assignments, exits, splats, and explosions using the locally imported DOS AdLib data; other gameplay effects are not yet connected. Effects are monophonic: a newer effect replaces the previous one. The existing AdLib interpreter uses a legacy Web Audio processor, and browsers may require a user interaction before audio can play.
 
