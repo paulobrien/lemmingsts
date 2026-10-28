@@ -321,11 +321,29 @@ export const TESTED_SOLUTIONS: readonly TestedSolution[] = [
   },
   {
     groupIndex: 1,
+    levelIndex: 18,
+    replay: '54=l0&54=s2&54=l0&250=s6&250=l0&1196=s8&1196=l0&1253=s5&1253=l0&1301=s7&1301=l0',
+    hints: [
+      'Send an athlete ahead and create a route that the rest can walk.',
+      'Bash into the pit, let the athlete climb out, then dig near the exit. Build inside the hole to turn around and mine back towards the pit to connect the route.',
+    ],
+  },
+  {
+    groupIndex: 1,
     levelIndex: 24,
     replay: '54=s2&54=l0&86=l8&86=s1&86=l8&118=s2&118=l16&150=l24&182=l32&214=l40&246=l48&278=l56&310=l64&342=l72&515=s8&515=l0&567=s5&567=l8&588=l0&767=s6&767=l8&872=s5&872=l8&1110=l0&1158=l0&1238=l0&1377=l0',
     hints: [
       'There are exactly enough Floaters to meet the target; spread them through the crowd.',
       'Dig a shallow holding cell in the pillar, send an athlete ahead to bridge and bash toward the exit, then build the waiting Floaters out.',
+    ],
+  },
+  {
+    groupIndex: 1,
+    levelIndex: 25,
+    replay: '68=s4&68=l1&116=s6&116=l0&380=s8&380=l79&389=s5&389=l79',
+    hints: [
+      'Keep the group away from the left trap while the first lemming opens the pillar.',
+      'Put a Blocker under the entrance and bash right through the pillar. Once the last lemming emerges, dig under the Blocker to release it, then build to stop the Digger.',
     ],
   },
 ];
