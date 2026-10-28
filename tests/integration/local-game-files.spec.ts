@@ -105,6 +105,16 @@ describe('local original DOS assets', () => {
         expect.soft(game!.getVictoryCondition().getSurvivorsCount(), label).toBeGreaterThan(0);
         expect.soft(game!.getCommandManager().serialize(), `${label} must execute every recorded command`).toBe(solution.replay);
       }
+
+      // Cross-checked against the supplied DOS executable in DOSBox: on Fun 13,
+      // lemmings die without intervention and the 100% target becomes impossible.
+      const fallLevel = await factory.getGame(GameTypes.LEMMINGS, 0, 12);
+      expect(fallLevel).toBeDefined();
+      for (let tick = 0; tick <= fallLevel!.getGameTimer().getGameTimeLimit() && fallLevel!.getGameState() === GameStateTypes.RUNNING; tick++) {
+        fallLevel!.getGameTimer().tick();
+      }
+      expect(fallLevel!.getGameState()).not.toBe(GameStateTypes.SUCCEEDED);
+      expect(fallLevel!.getVictoryCondition().getSurvivorsCount()).toBeLessThan(fallLevel!.getVictoryCondition().getNeedCount());
     } finally {
       await clearLemmingsFiles();
       vi.unstubAllGlobals();

@@ -59,6 +59,24 @@ export const TESTED_SOLUTIONS: readonly TestedSolution[] = [
   },
   {
     groupIndex: 0,
+    levelIndex: 5,
+    replay: '40=s3&40=l0&295=s4&295=l1&296=s3&296=l1',
+    hints: [
+      'The crowd needs an opening in its starting chamber and a way past the narrow post.',
+      'Bomb the first lemming to open the floor; make a lemming block beside the post, then give that Blocker a Bomber.',
+    ],
+  },
+  {
+    groupIndex: 0,
+    levelIndex: 6,
+    replay: '203=s5&203=l0&655=l0',
+    hints: [
+      'The crowd needs a way up to the higher ground, and then across a narrow gap.',
+      'Use the first lemming to build towards the right-hand ledge; assign it another Builder near the far edge before it steps into the gap.',
+    ],
+  },
+  {
+    groupIndex: 0,
     levelIndex: 7,
     replay: '21=s4&21=l0',
     hints: [
