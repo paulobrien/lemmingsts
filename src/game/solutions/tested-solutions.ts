@@ -722,6 +722,16 @@ export const TESTED_SOLUTIONS: readonly TestedSolution[] = [
   },
   {
     groupIndex: 3,
+    levelIndex: 1,
+    replay: '180=s4&180=l1&184=s5&184=l0&376=l0&568=l0&761=s2&761=l0&1090=s5&1090=l0&1282=l0&1430=s3&1430=l1&1500=s4&1500=l0&1850=s5&1850=l2&2042=l2&2186=l2&2287=s4&2287=l3&2378=s5&2378=l2&2554=l2&2746=l2&2762=l2&2824=s4&2824=l2&2825=s3&2825=l2&2900=s5&2900=l4&3092=l4&3188=l4&3251=l4&3315=l4&3409=s4&3409=l4&3410=s3&3410=l4&3550=s4&3550=l17&3551=s5&3551=l19&3645=s4&3645=l19&3646=s3&3646=l19&3750=s5&3750=l29&3942=l29&4134=l29&4300=s1&4300=l52',
+    hints: [
+      'Use a scout to prepare a safe landing before releasing the crowd.',
+      'Build a landing beneath the long drop, then use stairs and Blockers to guide the group upwards on the left.',
+      'Open the ceiling near the exit with well-placed Bombers, rebuilding the stairs as needed; use a Climber if a lemming remains trapped below the exit.',
+    ],
+  },
+  {
+    groupIndex: 3,
     levelIndex: 3,
     replay: '360=s6&360=l0&375=l1&386=l0&397=l1&408=l0&419=l5&452=l1',
     hints: [
