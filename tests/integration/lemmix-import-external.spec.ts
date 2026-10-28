@@ -102,6 +102,7 @@ for (const { name, env, group, level, saved } of [
   { name: 'Mayhem 9', env: 'LEMMIX_MAYHEM9_REPLAY_PATH', group: 3, level: 8, saved: 79 },
   { name: 'Mayhem 10', env: 'LEMMIX_MAYHEM10_REPLAY_PATH', group: 3, level: 9, saved: 72 },
   { name: 'Mayhem 14', env: 'LEMMIX_MAYHEM14_REPLAY_PATH', group: 3, level: 13, saved: 80 },
+  { name: 'Mayhem 21', env: 'LEMMIX_MAYHEM21_REPLAY_PATH', group: 3, level: 20, saved: 50 },
   { name: 'Mayhem 25', env: 'LEMMIX_MAYHEM25_REPLAY_PATH', group: 3, level: 24, saved: 73 },
   { name: 'Mayhem 27', env: 'LEMMIX_MAYHEM27_REPLAY_PATH', group: 3, level: 26, saved: 50 },
   { name: 'Mayhem 29', env: 'LEMMIX_MAYHEM29_REPLAY_PATH', group: 3, level: 28, saved: 77 },

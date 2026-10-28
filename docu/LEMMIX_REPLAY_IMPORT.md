@@ -56,6 +56,7 @@ These further wins use recordings posted in the public [DOS skill challenge](htt
 | Tricky 30 | [attachment 13660](https://www.lemmingsforums.net/index.php?action=dlattach;attach=13660) | `LEMMIX_TRICKY30_REPLAY_PATH` | 74 |
 | Taxing 14 | [attachment 13695](https://www.lemmingsforums.net/index.php?action=dlattach;attach=13695) | `LEMMIX_TAXING14_REPLAY_PATH` | 77 |
 | Mayhem 9 | [attachment 334](https://www.lemmingsforums.net/index.php?action=dlattach;attach=334) | `LEMMIX_MAYHEM9_REPLAY_PATH` | 79 |
+| Mayhem 21 | [attachment 352](https://www.lemmingsforums.net/index.php?action=dlattach;attach=352) | `LEMMIX_MAYHEM21_REPLAY_PATH` | 50 |
 
 The following wins use files from the public [LemmingsWelt challenge replay archive](https://www.camanis.net/lemmings/lemmingswelt/index.php?dir=challenge_replays). For ZIP archives, extract the named `.lrb` entry locally and set the environment variable to its path. Counts describe this engine's run and can differ from the original archive description.
 
