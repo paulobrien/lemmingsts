@@ -2,7 +2,7 @@
 
 `parseLemmixReplay` and `verifyLemmixCandidate` in `src/game/solutions/lemmix-replay-import.ts` are offline TypeScript APIs for experimenting with `.lrb` recordings. They do not import, download, or distribute third-party replay files.
 
-The parser accepts version 1 and version 3 LRB files with the corresponding DOS-original mechanics flags. It supports skill-selection and skill-assignment records, standard standalone nuke records, pause annotations, instantaneous paused release-rate changes, and held release-rate buttons whose changes and stopping point are fully represented. Lemmix playback ignores pause annotations, including pauses spanning several iterations or incomplete pause markers; actions remain at their recorded iterations. Held buttons are expanded into per-frame rate changes using Lemmix's update order; a hold with an unknown future effect is rejected. It rejects other versions, physics flags, nuke-glitch mechanics, duplicate or combined nuke records, other glitch actions, invalid sizes, a different level title or initial release rate, and other unsupported records. Version 1 predates a Lemmix trap-timing fix, so verification rejects version 1 candidates for levels with triggered traps. The parser retains a version 3 source level hash but does **not** verify it against the game data. This narrow subset is not expected to accept every DOS replay.
+The parser accepts version 1 and version 3 LRB files with the corresponding DOS-original mechanics flags. It supports skill-selection and skill-assignment records, standard standalone nuke records, pause annotations, instantaneous paused release-rate changes, and held release-rate buttons whose changes and stopping point are fully represented. Lemmix playback ignores pause annotations, including pauses spanning several iterations or incomplete pause markers; actions remain at their recorded iterations. Held buttons are expanded into per-frame rate changes using Lemmix's update order; a hold with an unknown future effect is rejected. It rejects other versions, physics flags, nuke-glitch mechanics, duplicate or combined nuke records, other glitch actions, invalid sizes, a different level title or initial release rate, and other unsupported records. Version 1 predates a Lemmix trap-timing fix, so verification stops as soon as a triggered trap actually activates; a dormant trap does not by itself prevent verification. The parser retains a version 3 source level hash but does **not** verify it against the game data. This narrow subset is not expected to accept every DOS replay.
 
 Parsing produces a **candidate**, not a verified solution. Pass the candidate and a fresh, stopped `Game` for the intended original level to `verifyLemmixCandidate`. Verification consumes the game by running it to completion and checks the source-recorded lemming positions, successful assignments, victory and executed command sequence. Even a passing replay does not establish full physics equivalence with DOS or prove the source and target files are identical.
 
@@ -40,12 +40,16 @@ The following recordings from the public [minimum-skills challenge](https://www.
 | Tricky 24 | [attachment 11973](https://www.lemmingsforums.net/index.php?action=dlattach;attach=11973) | `LEMMIX_TRICKY24_REPLAY_PATH` | 80 |
 | Tricky 28 | [attachment 11974](https://www.lemmingsforums.net/index.php?action=dlattach;attach=11974) | `LEMMIX_TRICKY28_REPLAY_PATH` | 80 |
 | Taxing 8 | [attachment 12043](https://www.lemmingsforums.net/index.php?action=dlattach;attach=12043) | `LEMMIX_TAXING8_REPLAY_PATH` | 80 |
+| Taxing 4 | [attachment 8](https://www.lemmingsforums.net/index.php?action=dlattach;attach=8) | `LEMMIX_TAXING4_REPLAY_PATH` | 40 |
+| Taxing 13 | [attachment 9](https://www.lemmingsforums.net/index.php?action=dlattach;attach=9) | `LEMMIX_TAXING13_REPLAY_PATH` | 80 |
 | Taxing 22 | [attachment 11967](https://www.lemmingsforums.net/index.php?action=dlattach;attach=11967) | `LEMMIX_TAXING22_REPLAY_PATH` | 49 |
 | Taxing 26 | [attachment 12815](https://www.lemmingsforums.net/index.php?action=dlattach;attach=12815) | `LEMMIX_TAXING26_REPLAY_PATH` | 80 |
 | Taxing 29 | [attachment 11975](https://www.lemmingsforums.net/index.php?action=dlattach;attach=11975) | `LEMMIX_TAXING29_REPLAY_PATH` | 80 |
 | Mayhem 4 | [attachment 11964](https://www.lemmingsforums.net/index.php?action=dlattach;attach=11964) | `LEMMIX_MAYHEM4_REPLAY_PATH` | 50 |
 | Mayhem 7 | [attachment 12189](https://www.lemmingsforums.net/index.php?action=dlattach;attach=12189) | `LEMMIX_MAYHEM7_REPLAY_PATH` | 50 |
 | Mayhem 14 | [attachment 12190](https://www.lemmingsforums.net/index.php?action=dlattach;attach=12190) | `LEMMIX_MAYHEM14_REPLAY_PATH` | 80 |
+| Mayhem 26 | [attachment 12](https://www.lemmingsforums.net/index.php?action=dlattach;attach=12) | `LEMMIX_MAYHEM26_REPLAY_PATH` | 76 |
+| Mayhem 30 | [attachment 12182](https://www.lemmingsforums.net/index.php?action=dlattach;attach=12182) | `LEMMIX_MAYHEM30_REPLAY_PATH` | 80 |
 
 These further wins use recordings posted in the public [DOS skill challenge](https://www.lemmingsforums.net/index.php?topic=1084.0). Some run until the level timer expires; the counts below are the result actually verified in this engine.
 
@@ -58,8 +62,10 @@ These further wins use recordings posted in the public [DOS skill challenge](htt
 | Tricky 29 | [attachment 13659](https://www.lemmingsforums.net/index.php?action=dlattach;attach=13659) | `LEMMIX_TRICKY29_REPLAY_PATH` | 80 |
 | Tricky 30 | [attachment 13660](https://www.lemmingsforums.net/index.php?action=dlattach;attach=13660) | `LEMMIX_TRICKY30_REPLAY_PATH` | 74 |
 | Taxing 7 | [attachment 13687](https://www.lemmingsforums.net/index.php?action=dlattach;attach=13687) | `LEMMIX_TAXING7_REPLAY_PATH` | 78 |
+| Taxing 2 | [attachment 13683](https://www.lemmingsforums.net/index.php?action=dlattach;attach=13683) | `LEMMIX_TAXING2_REPLAY_PATH` | 76 |
 | Taxing 14 | [attachment 13695](https://www.lemmingsforums.net/index.php?action=dlattach;attach=13695) | `LEMMIX_TAXING14_REPLAY_PATH` | 77 |
 | Mayhem 9 | [attachment 334](https://www.lemmingsforums.net/index.php?action=dlattach;attach=334) | `LEMMIX_MAYHEM9_REPLAY_PATH` | 79 |
+| Mayhem 3 | [attachment 13668](https://www.lemmingsforums.net/index.php?action=dlattach;attach=13668) | `LEMMIX_MAYHEM3_REPLAY_PATH` | 25 |
 | Mayhem 21 | [attachment 352](https://www.lemmingsforums.net/index.php?action=dlattach;attach=352) | `LEMMIX_MAYHEM21_REPLAY_PATH` | 50 |
 
 The following wins use files from the public [LemmingsWelt challenge replay archive](https://www.camanis.net/lemmings/lemmingswelt/index.php?dir=challenge_replays). For ZIP archives, extract the named `.lrb` entry locally and set the environment variable to its path. Counts describe this engine's run and can differ from the original archive description.
@@ -72,6 +78,7 @@ The following wins use files from the public [LemmingsWelt challenge replay arch
 | Taxing 18 | `taxing18.zip` / `Taxing_18.lrb` | `LEMMIX_TAXING18_REPLAY_PATH` | 74 |
 | Taxing 23 | `taxing23_saveall_16builders.zip` / `Taxing23_saveall_16builders.lrb` | `LEMMIX_TAXING23_REPLAY_PATH` | 80 |
 | Taxing 27 | `taxing27_1min.lrb` | `LEMMIX_TAXING27_REPLAY_PATH` | 77 |
+| Taxing 28 | `70taxing28.zip` / `POOR WEE CREATURES!.lrb` | `LEMMIX_TAXING28_REPLAY_PATH` | 70 |
 | Mayhem 1 | `Replay7.zip` / `Steel Works.lrb` | `LEMMIX_MAYHEM1_REPLAY_PATH` | 79 |
 | Mayhem 2 | `80mayhem2.zip` / `The Boiler Room.lrb` | `LEMMIX_MAYHEM2_REPLAY_PATH` | 80 |
 | Mayhem 8 | `mayhem8-10_1min.zip` / `mayhem8_1min.lrb` | `LEMMIX_MAYHEM8_REPLAY_PATH` | 72 |
