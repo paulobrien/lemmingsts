@@ -21,7 +21,7 @@ export class ObjectManager {
 
         for (let i = 0; i < objs.length; i++) {
             let obj = objs[i];
-            gameDisplay.drawFrameFlags(obj.animation.getFrame(tick), obj.x, obj.y, obj.drawProperties);
+            gameDisplay.drawFrameFlags(obj.getFrame(tick), obj.x, obj.y, obj.drawProperties);
         }
     }
 

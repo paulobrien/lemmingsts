@@ -52,14 +52,13 @@ export class TriggerManager {
 
     /** test all triggers. Returns the triggered type that matches */
     trigger(x: number, y: number): TriggerTypes {
-        const l = this.triggers.length;
         const tick = this.gameTimer.getGameTicks();
 
-        for (let i = 0; i < l; i++) {
-            const type = this.triggers[i].trigger(x, y, tick);
-
-            if (type != TriggerTypes.NO_TRIGGER)
-                return type;
+        // Later objects replace earlier objects in the original object map.
+        // A busy trap still owns its cells: a lemming passes through rather
+        // than activating an unrelated object hidden underneath the trap.
+        for (let i = this.triggers.length - 1; i >= 0; i--) {
+            if (this.triggers[i].contains(x, y)) return this.triggers[i].trigger(x, y, tick);
         }
 
         return TriggerTypes.NO_TRIGGER;

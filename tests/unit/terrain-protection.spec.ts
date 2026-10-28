@@ -138,6 +138,34 @@ describe('DOS terrain object-map protection', () => {
         expect(protectedCenter.hasGroundAt(8, 8)).toBe(true);
     });
 
+    it('prevents a bomber in water from removing terrain, without treating water as steel for other skills', () => {
+        const triggers = { removeByOwner: () => undefined } as unknown as TriggerManager;
+        const bomber = new ActionExplodingSystem(sprite, masks, triggers, {} as ParticleTable);
+        const water = filledLevel(); addObject(water, TriggerTypes.DROWN, 4, 8, 4, 4);
+        const lem = new Lemming(5, 9, 0);
+        expect(water.isProtectedAt(lem.x, lem.y)).toBe(false);
+        expect(water.isExplosionProtectedAt(lem.x, lem.y)).toBe(true);
+        bomber.process(water, lem);
+        expect(water.hasGroundAt(lem.x, lem.y)).toBe(true);
+
+        const dry = filledLevel();
+        lem.frameIndex = 0;
+        bomber.process(dry, lem);
+        expect(dry.hasGroundAt(lem.x, lem.y)).toBe(false);
+    });
+
+    it('respects a later object that replaces an overlapping water cell', () => {
+        const level = filledLevel();
+        const water = new ObjectImageInfo(new ColorPalette());
+        water.triggerEffectId = TriggerTypes.DROWN; water.triggerWidth = 4; water.triggerHeight = 4;
+        const exit = new ObjectImageInfo(new ColorPalette());
+        exit.triggerEffectId = TriggerTypes.EXIT_LEVEL; exit.triggerWidth = 4; exit.triggerHeight = 4;
+        const objects: ObjectImageInfo[] = []; objects[2] = water; objects[3] = exit;
+        const flags = new DrawProperties(false, false, true, false);
+        level.setMapObjects([new LevelElement(4, 8, 2, flags), new LevelElement(4, 8, 3, flags)], objects);
+        expect(level.isExplosionProtectedAt(5, 9)).toBe(false);
+    });
+
     it('rejects protected or airborne skill assignments before executing the action', () => {
         const level = filledLevel(); steel(level, 12, 0);
         const manager = Object.create(LemmingManager.prototype) as LemmingManager;

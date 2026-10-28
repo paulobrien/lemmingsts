@@ -120,7 +120,8 @@ export class Level {
 
             const flag = objectInfo.triggerEffectId === TriggerTypes.ONWAY_LEFT ? 2
                 : objectInfo.triggerEffectId === TriggerTypes.ONWAY_RIGHT ? 4
-                    : objectInfo.triggerEffectId === TriggerTypes.STEEL ? 1 : 0;
+                    : objectInfo.triggerEffectId === TriggerTypes.STEEL ? 1
+                        : objectInfo.triggerEffectId === TriggerTypes.DROWN ? 8 : 0;
             // Original object origins are aligned to the four-pixel object grid.
             this.objectAreas.push({ x: Math.floor(ob.x / 4) * 4 + objectInfo.triggerLeft,
                 y: Math.floor(ob.y / 4) * 4 + objectInfo.triggerTop,
@@ -135,14 +136,22 @@ export class Level {
 
             /// add triggers
             if (objectInfo.triggerEffectId != 0 && objectInfo.triggerEffectId !== TriggerTypes.ONWAY_LEFT &&
-                objectInfo.triggerEffectId !== TriggerTypes.ONWAY_RIGHT && objectInfo.triggerEffectId !== TriggerTypes.STEEL) {
-                const x1 = ob.x + objectInfo.triggerLeft;
-                const y1 = ob.y + objectInfo.triggerTop;
+                objectInfo.triggerEffectId !== TriggerTypes.ONWAY_RIGHT && objectInfo.triggerEffectId !== TriggerTypes.STEEL &&
+                objectInfo.triggerWidth > 0 && objectInfo.triggerHeight > 0) {
+                // Object-map origins are rounded down to four-pixel cells.
+                const x1 = Math.floor(ob.x / 4) * 4 + objectInfo.triggerLeft;
+                const y1 = Math.floor(ob.y / 4) * 4 + objectInfo.triggerTop;
 
-                const x2 = x1 + objectInfo.triggerWidth;
-                const y2 = y1 + objectInfo.triggerHeight;
+                const x2 = x1 + objectInfo.triggerWidth - 1;
+                const y2 = y1 + objectInfo.triggerHeight - 1;
 
-                const newTrigger = new Trigger(objectInfo.triggerEffectId, x1, y1, x2, y2, 0, objectInfo.trapSoundEffectId);
+                // A triggered trap is busy until its animation finishes. In
+                // DOS it starts at frame 1 and advances after lemmings update.
+                const trap = objectInfo.triggerEffectId === TriggerTypes.TRAP;
+                const duration = trap ? Math.max(1, objectInfo.frameCount - 1) : 0;
+                const newTrigger = new Trigger(objectInfo.triggerEffectId, x1, y1, x2, y2,
+                    duration, objectInfo.trapSoundEffectId, trap ? newMapObject : null,
+                    trap ? tick => newMapObject.activateTrap(tick) : undefined);
 
                 this.triggers.push(newTrigger);
             }
@@ -179,6 +188,13 @@ export class Level {
         if (x < 0 || x >= this.width || y < 0 || y >= this.height) return false;
         const flags = this.terrainProtection[Math.floor(y / 4) * this.protectionWidth + Math.floor(x / 4)];
         return flags === 1 || (direction === 1 && flags === 2) || (direction === -1 && flags === 4);
+    }
+
+    /** The DOS bomber removes no terrain when its centre is in steel or water. */
+    public isExplosionProtectedAt(x: number, y: number): boolean {
+        if (x < 0 || x >= this.width || y < 0 || y >= this.height) return false;
+        const flag = this.terrainProtection[Math.floor(y / 4) * this.protectionWidth + Math.floor(x / 4)];
+        return flag === 1 || flag === 8;
     }
 
     /** DOS original's miner also turns back on right-pointing arrows when facing right. */

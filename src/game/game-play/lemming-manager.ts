@@ -188,7 +188,7 @@ import { TriggerManager } from './trigger-manager';
                 case TriggerTypes.KILL:
                     return LemmingStateType.SPLATTING;
                 case TriggerTypes.TRAP:
-                    return LemmingStateType.HOISTING;
+                    return LemmingStateType.OUT_OFF_LEVEL;
                 case TriggerTypes.BLOCKER_LEFT:
                     if (lem.lookRight) lem.lookRight = false;
                     return LemmingStateType.NO_STATE_TYPE;

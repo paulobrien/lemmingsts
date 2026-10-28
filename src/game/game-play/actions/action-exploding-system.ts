@@ -56,7 +56,7 @@ export class ActionExplodingSystem implements IActionSystem {
         if (lem.frameIndex == 1) {
             this.triggerManager.removeByOwner(lem);
 
-            if (!level.isProtectedAt(lem.x, lem.y)) {
+            if (!level.isExplosionProtectedAt(lem.x, lem.y)) {
                 level.clearGroundWithMask(this.mask.getMask(0), lem.x, lem.y);
             }
         }
