@@ -150,6 +150,15 @@ export const TESTED_SOLUTIONS: readonly TestedSolution[] = [
   },
   {
     groupIndex: 0,
+    levelIndex: 19,
+    replay: '75=s5&75=l0&338=s6&338=l3&371=l3&396=l3&429=l3&454=l3&486=l3&512=l3&530=s5&530=l0&586=s6&586=l3&1340=i3&1341=i3&1342=i3&1343=i3&1344=i3&1345=i3&1346=i3&1347=i3&1348=i3&1349=i3&1350=i3&1351=i3&1352=i3&1353=i3&1354=i3&1355=i3&1356=i3&1357=i3&1358=i3&1359=i3&1360=i3&1361=i3&1362=i3&1363=i3&1364=i3&1365=i3&1366=i3&1367=i3&1368=i3&1369=i3',
+    hints: [
+      'There is a gap at the start, a row of barriers, and a final gap near the exit.',
+      'Bridge the opening, bash through the barriers, then build to the exit before increasing the release rate.',
+    ],
+  },
+  {
+    groupIndex: 0,
     levelIndex: 20,
     replay: '296=s6&296=l0&316=l0&336=l0&356=l1&376=l2&407=l3&430=l3&454=l4&492=l5&512=l5&532=l1&554=l4&574=l2&604=l11&632=l12&660=l0&687=l0&707=l6&727=l0&1148=s5&1148=l0',
     hints: [
