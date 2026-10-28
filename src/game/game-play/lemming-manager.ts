@@ -134,6 +134,11 @@ import { TriggerManager } from './trigger-manager';
                     // https://github.com/ericlangedijk/Lemmix/blob/master/src/Game.pas#L2996
                     checkObjects = !countdownFinishes && lem.frameIndex !== 9 &&
                         !(lem.frameIndex === 10 && lem.state === 3);
+                } else if (previousAction instanceof ActionBashSystem) {
+                    // Lemmix checks objects only during the five moving
+                    // frames in each half of the basher animation.
+                    // https://github.com/ericlangedijk/Lemmix/blob/master/src/Game.pas#L3053
+                    checkObjects = !countdownFinishes && lem.frameIndex % 16 >= 11;
                 }
                 this.processNewAction(lem, newAction);
 

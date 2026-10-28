@@ -5,7 +5,9 @@ import { LemmingManager } from '../../src/game/game-play/lemming-manager';
 import { LemmingStateType } from '../../src/game/game-play/lemming-state-type';
 import { ActionDiggSystem } from '../../src/game/game-play/actions/action-digg-system';
 import { ActionBuildSystem } from '../../src/game/game-play/actions/action-build-system';
+import { ActionBashSystem } from '../../src/game/game-play/actions/action-bash-system';
 import { LemmingsSprite } from '../../src/game/resources/lemmings-sprite';
+import { MaskProvider } from '../../src/game/resources/mask-provider';
 import { Trigger } from '../../src/game/game-play/trigger';
 import { TriggerManager } from '../../src/game/game-play/trigger-manager';
 import { GameTimer } from '../../src/game/game-play/game-timer';
@@ -25,6 +27,55 @@ function emptyLevel(): Level {
 }
 
 describe('triggered traps', () => {
+    it.each([0, 16])('checks a basher only when it starts moving in cycle %i', firstFrame => {
+        let tick = 1;
+        const triggers = new TriggerManager({ getGameTicks: () => tick } as GameTimer);
+        triggers.add(new Trigger(TriggerTypes.TRAP, 5, 5, 8, 8));
+        const manager = Object.create(LemmingManager.prototype) as LemmingManager;
+        const first = new Lemming(6, 6, 0);
+        const sprites = { getAnimation: () => ({}) } as unknown as LemmingsSprite;
+        const masks = { GetMask: () => ({ getMask: () => ({}) }) } as unknown as MaskProvider;
+        first.setAction(new ActionBashSystem(sprites, masks));
+        first.frameIndex = firstFrame;
+        const level = { getGroundMaskLayer: () => ({ hasGroundAt: () => true }),
+            clearGroundWithMask: () => undefined, isProtectedAt: () => false } as unknown as Level;
+        const removeOne = vi.fn();
+        Object.assign(manager, { level, lemmings: [first], triggerManager: triggers,
+            gameVictoryCondition: { getLeftCount: () => 0, removeOne }, nextNukingLemmingsIndex: -1 });
+        for (let i = 1; i <= 10; i++) {
+            manager.tick();
+            expect(first.removed, `frame ${firstFrame + i}`).toBe(false);
+            tick++;
+        }
+        manager.tick();
+        expect(first.x).toBe(7);
+        expect(first.removed).toBe(true);
+        expect(removeOne).toHaveBeenCalledOnce();
+    });
+
+    it('does not check objects when a basher stops during its fifth frame', () => {
+        const triggers = new TriggerManager({ getGameTicks: () => 1 } as GameTimer);
+        triggers.add(new Trigger(TriggerTypes.TRAP, 5, 5, 8, 8));
+        const manager = Object.create(LemmingManager.prototype) as LemmingManager;
+        const first = new Lemming(6, 6, 0);
+        const sprites = { getAnimation: () => ({}) } as unknown as LemmingsSprite;
+        const masks = { GetMask: () => ({ getMask: () => ({}) }) } as unknown as MaskProvider;
+        first.setAction(new ActionBashSystem(sprites, masks));
+        first.frameIndex = 4;
+        const walker = { process: () => LemmingStateType.NO_STATE_TYPE, getActionName: () => 'walk',
+            draw: () => undefined, triggerLemAction: () => false };
+        const actions = []; actions[LemmingStateType.WALKING] = walker;
+        const level = { getGroundMaskLayer: () => ({ hasGroundAt: () => false }),
+            clearGroundWithMask: () => undefined } as unknown as Level;
+        const removeOne = vi.fn();
+        Object.assign(manager, { level, actions, logging: { debug: vi.fn() }, lemmings: [first], triggerManager: triggers,
+            gameVictoryCondition: { getLeftCount: () => 0, removeOne }, nextNukingLemmingsIndex: -1 });
+        manager.tick();
+        expect(first.action).toBe(walker);
+        expect(first.removed).toBe(false);
+        expect(removeOne).not.toHaveBeenCalled();
+    });
+
     it.each([
         { priorFrame: 8, bricks: 0 },
         { priorFrame: 9, bricks: 3 },
