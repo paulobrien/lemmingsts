@@ -422,6 +422,15 @@ export const TESTED_SOLUTIONS: readonly TestedSolution[] = [
   },
   {
     groupIndex: 2,
+    levelIndex: 0,
+    replay: '405=s6&405=l0&625=s1&625=l0&625=s2&625=l0&1370=s5&1370=l0&1562=l0&1754=l0&1863=s7&1863=l1&1946=s5&1946=l0&2098=s4&2098=l1&2278=s5&2278=l0&2400=s3&2400=l1&2470=s5&2470=l0&2852=s6&2852=l2',
+    hints: [
+      'A scout can build a safe path beyond the pillars while the crowd works through them.',
+      'Bash the first pillar; mine through the second from its upper step. A Blocker at the foot of the next staircase can open it when bombed. Bash the third pillar once the bridges are ready.',
+    ],
+  },
+  {
+    groupIndex: 2,
     levelIndex: 1,
     replay: '65=s8&65=l0&79=l1&146=s7&146=l0&152=l1&1079=s6&1079=l1&1179=s1&1179=l1&1315=s5&1315=l1&1515=l1&1715=l1&1915=l1&2115=l1&2251=s6&2251=l0',
     hints: [
