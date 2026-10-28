@@ -24,7 +24,7 @@ pnpm-debug.log*
 *.sw?
 
 # Privately supplied original game files
-/dos/lemmings/
+/dos/
 
 /public/data/**/*.[dD][aA][tT]
 /public/data/**/*.[eE][xX][eE]
