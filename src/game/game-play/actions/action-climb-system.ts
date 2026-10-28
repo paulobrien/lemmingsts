@@ -50,8 +50,12 @@ export class ActionClimbSystem implements IActionSystem {
 
         if (lem.frameIndex < 4) {
             // check for top
-            if (!level.hasGroundAt(lem.x, lem.y - lem.frameIndex - 7)) {
+            // Lemmix clips this probe to row zero at the top of the level.
+            // https://github.com/ericlangedijk/Lemmix/blob/master/src/Game.pas#L2948
+            if (!level.hasGroundAt(lem.x, Math.max(0, lem.y - lem.frameIndex - 7))) {
                 lem.y = lem.y - lem.frameIndex + 2;
+                // The transition has already selected the 12-pixel hoister.
+                lem.checkTopBoundary(12);
                 return LemmingStateType.HOISTING;
             }
 
@@ -60,7 +64,8 @@ export class ActionClimbSystem implements IActionSystem {
         else {
             lem.y--;
 
-            if (level.hasGroundAt(lem.x + (lem.lookRight ? -1 : 1), lem.y - 8)) {
+            if (lem.y - 12 < Lemming.LEM_MIN_Y ||
+                level.hasGroundAt(lem.x + (lem.lookRight ? -1 : 1), lem.y - 8)) {
 
                 lem.lookRight = !lem.lookRight;
                 lem.x += (lem.lookRight ? 2 : -2);
