@@ -1,60 +1,50 @@
-# Lemmings.ts
-A Web Lemmings Clone/Remake in TypeScript - 🎉 Yes it's 100% JavaScript 🎉
+# Lemmings at Home
 
-<p style="text-align:center" align="center">
-<a href="http://lemmings.hmilch.net/">[play the game]</a>
-</p>
+A browser-based Lemmings player, modernised from [tomsoftware/Lemmings.ts](https://github.com/tomsoftware/Lemmings.ts). Play on desktop, Android phone or Android tablet, with mouse or touch. The application can be installed as a progressive web app and, once set up, played offline.
 
-## Feature
-* Browser Game
-* Support all variants of Lemmings Game
-* Read original Lemmings binaries on the fly
-* Support playing of original music by interpreting the adlib.dat file and using an Adlib emulator(s) (DosBox)
+## Game files
 
-## ToDo
-* fix some game issues
-* touch support
+The original DOS Lemmings data files are not included. Use your own compatible copy: the expected filenames are listed in [public/data/lemmings/README.md](public/data/lemmings/README.md). The supplied local copy in `dos/lemmings/` is ignored by Git. Never commit game files or put them in `public/data`; a build-time check rejects unexpected files there.
 
-## How to run
-* download the *Lemmings.ts.zip* from [releases](https://github.com/tomsoftware/Lemmings.ts/releases)
-* copy the original *Lemmings*, *OhNo* and *Holiday* binaries into the directory **run/{version}/**
-* start *lemmings.html* - because of security restrictions you may need to call the lemmings.html via a webserver e.g. [nginx](https://www.nginx.com/)
+Open the app and choose **Add your game files** or **Or choose a folder**. Select the original DOS files together; uppercase and lowercase names are accepted. The app validates the required files and stores them in this browser's local IndexedDB; it does not upload them. Import the files separately on each device. You can remove the imported files from the home screen. Clearing browser storage may remove game files and progress.
 
+Only the original DOS Lemmings edition is supported by the current import flow. Other editions in the historical configuration have not yet been adapted.
 
+## Develop
 
-## How to compile
-the project uses VUE as UI Framework [VUE](https://vuejs.org/)
-the game source can be found in `src\game`
+Requires Node.js 22.12 or newer and npm:
 
-* install [node.js](https://nodejs.org/en/download/)
-* run `npm i` in a console to load package needed to build
-* run `npm run build` in a console to build the web-app-game to `.\dist\` folder
+```sh
+npm ci
+npm run dev
+```
 
+Open the local URL printed by Vite. Import your original game files through the app; they should not be copied into the public directory.
 
-## How to develop
-* install [node.js](https://nodejs.org/en/download/)
-* run `npm i` in a console to load package needed to build
-* run `npm run dev` in *Visual Studio Code* to start the live-server
+```sh
+npm run typecheck
+npm test
+npm run build
+npm run preview
+```
 
-### How to debug using *Visual Studio Code*
-* install [Visual Studio Code](https://code.visualstudio.com/)
-* open project folder (root folder of the project) in *Visual Studio Code*
-* press *Ctrl+Shift+B* to start the live-server
-* use *F5* to run the debugger
+The default tests and CI use synthetic fixtures and need no original game files. Browser smoke tests use Playwright; install Chromium once with `npx playwright install chromium`, then run `npm run test:e2e`. To run the optional integration and browser tests against the ignored local copy:
 
+```sh
+RUN_PRIVATE_GAME_TESTS=1 npx vitest run tests/integration/local-game-files.spec.ts
+RUN_PRIVATE_GAME_TESTS=1 npm run test:e2e
+```
 
-## State
+## Install and play offline
 
-![main](docu/examples/main.png "Main Menu")
-![demo1](docu/examples/demo_01.png "Demo 01")
-![demo2](docu/examples/demo_02.png "Demo 02")
+Serve the production build over HTTPS (localhost also works for development). In Android Chrome, use the browser's install or add-to-home-screen option. After the app has loaded, the service worker has prepared the app shell, and the original files have been imported on that device, it can run without a connection. Offline storage is managed by the browser and can be cleared or evicted. Install and offline behaviour should be checked on the target devices and browser.
 
-# Disclaimer
-Disclaimer: This Project does not claim rights to any Lemmings Version. To the best of our/my knowledge, these titles have been discontinued by their publishers. If you know otherwise, please contact us/me and we will remove them accordingly. Thank you for your attention. See the LICENSE for more information.
+Progress and settings are stored locally per browser. They do not sync between devices. A static host must serve `index.html` as a fallback for application routes such as `/game/1`. The production build is in `dist/` and contains the app but no original game files.
 
-## Standing on the shoulders of giants
-Special thanks goes to:
-- DMA for the original game
-- Volker Oth, ccexplore and Mindless for their work on reverse engineering the Lemmings Level and Grafic Formats
-- DosBox for there OPL emulator
+Hints are available only for levels with a verified solution and are revealed one at a time on request. Loading a level successfully does not prove it is completable; the optional local integration tests exercise the recorded solutions as they are added.
 
+## Licence and acknowledgements
+
+The project code is licensed under the MIT licence. The included OPL emulator has a separate LGPL licence; see [LICENSE](LICENSE). The original Lemmings game files have their own rights and are not covered by the project licence. This project does not claim rights to the original game.
+
+Thanks to DMA for the original game; Volker Oth, ccexplore and Mindless for reverse-engineering the level and graphics formats; and the DOSBox project for its OPL emulator.
