@@ -741,6 +741,16 @@ export const TESTED_SOLUTIONS: readonly TestedSolution[] = [
   },
   {
     groupIndex: 3,
+    levelIndex: 4,
+    replay: '0=i3&1=i3&2=i3&3=i3&4=i3&100=l0&100=s2&100=l0&180=i1&429=s5&429=l0&649=s4&649=l0&652=s8&652=l1&717=l1&806=l1&903=l1&984=s4&984=l2&1240=s5&1240=l5&1436=s4&1436=l5&1922=s5&1922=l8&2114=s4&2114=l4&2125=s5&2125=l8&2298=l1&2308=s4&2308=l18',
+    hints: [
+      'The route upward uses the little platforms as a staircase.',
+      'Send a floating scout to build from the floor to the first platform, then dig staggered openings through the cage and keep the right edge safe.',
+      'Place Blockers at alternate edges and build into them: a Builder turns around and continues building towards the next platform.',
+    ],
+  },
+  {
+    groupIndex: 3,
     levelIndex: 10,
     replay: '0=i60&0=s8&585=l0&602=l1&619=l2&636=l3&653=l4&670=l5&687=l6&704=l7&721=l8&738=l9&755=l10&772=l11&789=l12&806=l13&823=l14&840=l15&857=l16&874=l17&891=l18&908=l19&925=l20&942=l21&959=l22&976=l23&993=l24&1010=l25&1027=l26&1044=l27&1061=l28&1078=l29&1095=l30&1112=l31&1129=l32&1146=l33&1163=l34&1180=l35&1197=l36&1214=l37&1231=l38&1248=l39&1265=l40&1282=l41&1299=l42&1316=l43&1333=l44&1350=l45&1367=l46&1384=l47&1401=l48&1418=l49&1435=l50&1452=l51&1469=l52&1486=l53&1503=l54&1520=l55&1537=l56&1554=l57&1571=l58&1588=l59&1605=l60&1622=l61&1639=l62&1656=l63&1673=l64&1690=l65&1707=l66&1724=l67&1741=l68&1758=l69&1775=l70&1792=l71&1809=l72&1826=l73&1843=l74&1860=l75&1877=l76&1894=l77&1911=l78&1928=l79',
     hints: [
