@@ -247,6 +247,15 @@ export const TESTED_SOLUTIONS: readonly TestedSolution[] = [
       'Build towards each left ledge, mine through the bridges near the far wall to descend safely, then bash right through the mound and bridge the last gap. Release the left Blocker when ready.',
     ],
   },
+  {
+    groupIndex: 1,
+    levelIndex: 9,
+    replay: '105=s6&105=l0&110=s4&110=l1&150=l3&178=s6&178=l2&204=s4&204=l4&232=l5&373=s5&373=l0&448=l2&573=l0&746=l2&773=l0&973=l0&1045=l2&1173=l0&1245=l2&1373=l0&1421=s6&1421=l0&1445=s5&1445=l2&1645=l2&1845=l2&2021=s6&2021=l2&2500=s3&2500=l3&2500=l5',
+    hints: [
+      'Protect both entrances, then prepare a separate path to the central exit from each side.',
+      'Hold each crowd between two Blockers. Bash the barriers and build inward from each side, interrupting each bridge above the exit so the lemmings can drop in; bomb the inner Blockers once the paths are ready.',
+    ],
+  },
 ];
 
 /** Unverified levels deliberately return no solution or hints. */
