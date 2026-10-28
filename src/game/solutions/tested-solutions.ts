@@ -440,6 +440,15 @@ export const TESTED_SOLUTIONS: readonly TestedSolution[] = [
   },
   {
     groupIndex: 1,
+    levelIndex: 22,
+    replay: '175=s6&175=l0&400=s1&400=l0&480=s8&480=l0&520=s5&520=l0&575=s7&575=l0',
+    hints: [
+      'A scout can open a route out of the trench for the group.',
+      'Bash through the wall and give the scout climbing ability. On the far side, dig briefly and build to turn around, then mine back into the trench.',
+    ],
+  },
+  {
+    groupIndex: 1,
     levelIndex: 24,
     replay: '54=s2&54=l0&86=l8&86=s1&86=l8&118=s2&118=l16&150=l24&182=l32&214=l40&246=l48&278=l56&310=l64&342=l72&515=s8&515=l0&567=s5&567=l8&588=l0&767=s6&767=l8&872=s5&872=l8&1110=l0&1158=l0&1238=l0&1377=l0',
     hints: [
