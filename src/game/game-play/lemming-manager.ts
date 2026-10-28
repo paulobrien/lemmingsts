@@ -128,8 +128,10 @@ import { TriggerManager } from './trigger-manager';
                     this.nextNukingLemmingsIndex++;
                 }
                 const next = lems[this.nextNukingLemmingsIndex];
-                if (next && this.doLemmingAction(next, SkillTypes.BOMBER)) next.countdown = 79;
-                if (next) this.nextNukingLemmingsIndex++;
+                if (next) {
+                    this.doLemmingAction(next, SkillTypes.BOMBER);
+                    this.nextNukingLemmingsIndex++;
+                }
             }
         }
 

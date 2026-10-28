@@ -12,7 +12,7 @@ describe('DOS nuke sweep', () => {
     lems[1].process = () => { order.push('update-1'); return LemmingStateType.OUT_OFF_LEVEL; };
     lems[2].process = () => { order.push('update-2'); return LemmingStateType.NO_STATE_TYPE; };
     lems[3].process = () => { order.push('update-3'); return LemmingStateType.NO_STATE_TYPE; };
-    const assign = vi.fn((lem: Lemming, skill: SkillTypes) => { order.push(`assign-${lem.id}`); lem.countdown = 80; return skill === SkillTypes.BOMBER; });
+    const assign = vi.fn((lem: Lemming, skill: SkillTypes) => { order.push(`assign-${lem.id}`); lem.countdown = 79; return skill === SkillTypes.BOMBER; });
     const manager = Object.assign(Object.create(LemmingManager.prototype), {
       level: {}, lemmings: lems, nextNukingLemmingsIndex: 0,
       gameVictoryCondition: { getLeftCount: () => 0 },

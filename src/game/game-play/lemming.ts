@@ -41,13 +41,20 @@ export class Lemming {
 
     /** set the countdown action of this lemming */
     public setCountDown(action: IActionSystem | null): boolean {
-        this.countdownAction = action;
+        if (action === null) {
+            this.countdownAction = null;
+            this.countdown = 0;
+            return true;
+        }
 
         if (this.countdown > 0) {
             return false;
         }
 
-        this.countdown = 80;
+        this.countdownAction = action;
+        // DOS/Lemmix starts an assigned bomber at 79 simulation frames.
+        // https://github.com/ericlangedijk/Lemmix/blob/master/src/Game.pas#L2075
+        this.countdown = 79;
 
         return true;
     }
