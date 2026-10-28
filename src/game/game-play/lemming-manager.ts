@@ -273,6 +273,10 @@ import { TriggerManager } from './trigger-manager';
             }
 
             lem.setAction(actionSystem);
+            // Original DOS/Lemmix starts its fall counter at three pixels.
+            // A later custom-DOS variant starts at zero; this engine targets
+            // the classic original rules rather than identifying executables.
+            if (stateType === LemmingStateType.FALLING) lem.state = 3;
         }
 
 
