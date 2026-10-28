@@ -476,6 +476,15 @@ export const TESTED_SOLUTIONS: readonly TestedSolution[] = [
   },
   {
     groupIndex: 1,
+    levelIndex: 23,
+    replay: '120=s4&120=l1&160=l2&544=s5&544=l0&736=l0&900=l48',
+    hints: [
+      'Keep the crowd safe on the rope while a scout builds to the exit.',
+      'Place two Blockers to contain the group. Build two flights near the far end of the rope, then build over the right Blocker from sufficiently far back to release the crowd. The two Blockers remain until time runs out.',
+    ],
+  },
+  {
+    groupIndex: 1,
     levelIndex: 24,
     replay: '54=s2&54=l0&86=l8&86=s1&86=l8&118=s2&118=l16&150=l24&182=l32&214=l40&246=l48&278=l56&310=l64&342=l72&515=s8&515=l0&567=s5&567=l8&588=l0&767=s6&767=l8&872=s5&872=l8&1110=l0&1158=l0&1238=l0&1377=l0',
     hints: [
