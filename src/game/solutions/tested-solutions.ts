@@ -41,6 +41,15 @@ export const TESTED_SOLUTIONS: readonly TestedSolution[] = [
   },
   {
     groupIndex: 0,
+    levelIndex: 3,
+    replay: '54=l0&80=s7&80=l0&107=s1&107=l1&160=l2&213=l3&266=l4&319=l5&372=l6&425=l7&478=l8&531=l9',
+    hints: [
+      'The lemmings need a way out of their starting enclosure and over the wall.',
+      'Make each lemming a Climber, and use the first as a Miner to open a path out.',
+    ],
+  },
+  {
+    groupIndex: 0,
     levelIndex: 4,
     replay: '165=s6&165=l0&270=l1&278=l0&323=l2&376=l3&532=l3&569=l2&585=l4&595=l0&606=l1&632=l3&647=l2&653=l1&679=l2&741=l0',
     hints: [
@@ -146,6 +155,15 @@ export const TESTED_SOLUTIONS: readonly TestedSolution[] = [
     hints: [
       'There is a route through the rock, followed by a trap before the exit.',
       'Bash through the rock, then use a Builder to give the group a safe path above the trap.',
+    ],
+  },
+  {
+    groupIndex: 0,
+    levelIndex: 24,
+    replay: '355=s6&355=l0&485=s8&485=l2',
+    hints: [
+      'The route climbs the fence before reaching the web above the exit.',
+      'Bash through the barrier at the top of the fence, then dig down through the web so the crowd can reach the exit.',
     ],
   },
   {
