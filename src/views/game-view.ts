@@ -1,342 +1,307 @@
-import { Options, Vue } from 'vue-class-component';
-import { LogHandler } from '@/game/utilities/log-handler';
-import { GameTypes, GameTypesHelper } from '@/game/game-types';
-import { AudioPlayer } from '@/game/resources/sound/audio-player';
-import { GameResources } from '@/game/game-resources';
-import { GameFactory } from '@/game/game-factory';
-import { Stage } from '@/game/view/stage';
+import { computed, defineComponent, onBeforeUnmount, onMounted, ref } from 'vue';
+import { useRoute, useRouter } from 'vue-router';
 import { Game } from '@/game/game';
-import { GameResult } from '@/game/game-result';
-import { GameStateTypeHelper, GameStateTypes } from '@/game/game-state-types';
+import { GameFactory } from '@/game/game-factory';
+import { GameResources } from '@/game/game-resources';
+import { GameStateTypes } from '@/game/game-state-types';
+import { GameTypes } from '@/game/game-types';
+import { CommandReleaseRateDecrease } from '@/game/game-play/commands/command-release-rate-decrease';
+import { CommandReleaseRateIncrease } from '@/game/game-play/commands/command-release-rate-increase';
+import { CommandNuke } from '@/game/game-play/commands/command-nuke';
+import { CommandSelectSkill } from '@/game/game-play/commands/command-select-skill';
+import { SkillTypes } from '@/game/game-play/skill-types';
+import { readSettings, recordCompletion, saveSettings } from '@/game/progress';
+import { getTestedSolution } from '@/game/solutions/tested-solutions';
 import { Level } from '@/game/resources/level';
+import { AudioPlayer } from '@/game/resources/sound/audio-player';
+import { Stage } from '@/game/view/stage';
 
-@Options({
-    props: {
-        gameState: String,
-        musicIndex: Number,
-        soundIndex: Number,
-        levelIndex: Number
-    },
-    components: {
-    },
-})
-export default class GameView extends Vue {
-    private log: LogHandler = new LogHandler('GameView');
+const skillButtons = [
+    { name: 'Climb', type: SkillTypes.CLIMBER }, { name: 'Float', type: SkillTypes.FLOATER },
+    { name: 'Bomb', type: SkillTypes.BOMBER }, { name: 'Block', type: SkillTypes.BLOCKER },
+    { name: 'Build', type: SkillTypes.BUILDER }, { name: 'Bash', type: SkillTypes.BASHER },
+    { name: 'Mine', type: SkillTypes.MINER }, { name: 'Dig', type: SkillTypes.DIGGER },
+];
 
-    private levelIndex = 0;
-    private levelGroupIndex = 0;
-    private gameType: GameTypes = GameTypes.UNKNOWN;
-    private musicIndex = 0;
-    private soundIndex = 0;
-    private gameResources: GameResources | null = null;
-    private musicPlayer: AudioPlayer | null = null;
-    private soundPlayer: AudioPlayer | null = null;
-    private game: Game | null = null;
-    private gameFactory = new GameFactory('/data');
+export default defineComponent({
+    setup() {
+        const route = useRoute();
+        const router = useRouter();
+        const gameCanvas = ref<HTMLCanvasElement | null>(null);
+        const level = ref<Level | null>(null);
+        const levelIndex = ref(Math.max(0, Number(route.query.level) || 0));
+        const groupIndex = ref(Math.max(0, Number(route.query.group) || 0));
+        const groupName = ref('');
+        const error = ref('');
+        const loading = ref(true);
+        const playing = ref(false);
+        const paused = ref(false);
+        const finished = ref(false);
+        const resultMessage = ref('');
+        const visibleHintCount = ref(0);
+        const nukeArmed = ref(false);
+        const selectedSkill = ref<SkillTypes>(SkillTypes.CLIMBER);
+        const skillCounts = ref<Record<number, number>>({});
+        const releaseRate = ref(0);
+        const gameTime = ref('');
+        const settings = readSettings();
+        const speed = ref(settings.speed);
+        const musicEnabled = ref(settings.musicEnabled);
+        const gameType = (Number(route.params.gameType) || GameTypes.LEMMINGS) as GameTypes;
+        const factory = new GameFactory(`${import.meta.env.BASE_URL}data`);
+        let resources: GameResources | null = null;
+        let game: Game | null = null;
+        let stage: Stage | null = null;
+        let music: AudioPlayer | null = null;
+        let disposed = false;
+        let loadGeneration = 0;
+        let musicGeneration = 0;
 
-    private stage: Stage | null = null;
+        const title = computed(() => level.value?.name || 'Loading level');
+        const canPlay = computed(() => !!level.value && !loading.value && !error.value);
+        const hints = computed(() => gameType === GameTypes.LEMMINGS
+            ? getTestedSolution(groupIndex.value, levelIndex.value)?.hints ?? [] : []);
 
-    protected level: Level | null = null;
-
-
-    public gameState = '';
-    private gameSpeedFactor = 1;
-
-
-    public mounted() {
-        const gameCanvas = this.$refs['gameCanvas'] as HTMLCanvasElement;
-        this.stage = new Stage(gameCanvas);
-
-        this.levelIndex = 0;
-        this.levelGroupIndex = 0;
-
-        if (!Array.isArray(this.$route.params['gameType'])) {
-            this.gameType = parseInt(this.$route.params['gameType'], 10);
+        function stopMusic() {
+            musicGeneration++;
+            music?.stop();
+            music = null;
         }
 
-        this.log.log('selected level: ' + GameTypesHelper.toString(this.gameType) + ' : ' + this.levelIndex + ' / ' + this.levelGroupIndex);
-
-
-        this.selectGameType(this.gameType);
-    }
-
-
-    /** start or continue the game */
-    public async start(replayString?: string) {
-
-        this.level = null;
-
-        /// is the game already running
-        if (this.game) {
-            this.continue();
-            return;
+        function updateStats() {
+            if (!game) return;
+            const skills = game.getGameSkills();
+            const counts: Record<number, number> = {};
+            for (const skill of skillButtons) counts[skill.type] = skills.getSkill(skill.type);
+            skillCounts.value = counts;
+            selectedSkill.value = skills.getSelectedSkill();
+            releaseRate.value = game.getVictoryCondition().getCurrentReleaseRate();
+            gameTime.value = game.getGameTimer().getGameLeftTimeString();
         }
 
-        /// create new game
-        const game = await this.gameFactory.getGame(this.gameType, this.levelGroupIndex, this.levelIndex);
-        if (!game) {
-            this.log.log('Unable to create game!');
-            return;
+        function disposeGame() {
+            game?.stop();
+            game = null;
+            stage?.clearInputBindings();
+            playing.value = false;
+            paused.value = false;
         }
 
-        this.level = game.level;
-
-        if (replayString) {
-            game.getCommandManager().loadReplay(replayString);
-        }
-
-
-        if (this.stage) {
-            game.setGameDisplay(this.stage.getGameDisplay());
-            game.setGuiDisplay(this.stage.getGuiDisplay());
-        }
-
-        game.getGameTimer().speedFactor = this.gameSpeedFactor;
-
-        game.start();
-        
-        this.gameState = GameStateTypeHelper.toString(GameStateTypes.RUNNING);
-
-        game.onGameEnd.on((state) => this.onGameEnd(state));
-
-        this.game = game;
-
-    }
-
-
-    private onGameEnd(gameResult?: GameResult) {
-        if (!gameResult) {
-            return;
-        }
-
-        this.gameState = GameStateTypeHelper.toString(gameResult.state);
-
-        if (this.stage) {
-            this.stage.startFadeOut();
-        }
-
-
-        console.dir(gameResult);
-
-        window.setTimeout(() => {
-            if (gameResult.state == GameStateTypes.SUCCEEDED) {
-                /// move to next level
-                this.moveToLevel(1);
+        async function loadLevel() {
+            const generation = ++loadGeneration;
+            disposeGame();
+            stopMusic();
+            loading.value = true;
+            error.value = '';
+            finished.value = false;
+            nukeArmed.value = false;
+            resultMessage.value = '';
+            visibleHintCount.value = 0;
+            try {
+                const config = await factory.getConfig(gameType);
+                if (!config) throw new Error('The selected game is not available.');
+                const group = config.level.order[groupIndex.value];
+                if (!group || levelIndex.value >= group.length) throw new Error('The selected level is not available.');
+                groupName.value = config.level.groups[groupIndex.value] || `Group ${groupIndex.value + 1}`;
+                resources = await factory.getGameResources(gameType) || null;
+                if (!resources) throw new Error('Could not load the game files.');
+                const nextLevel = await resources.getLevel(groupIndex.value, levelIndex.value);
+                if (!nextLevel) throw new Error('Could not load this level.');
+                if (disposed || generation !== loadGeneration) return;
+                level.value = nextLevel;
+                if (stage) {
+                    const display = stage.getGameDisplay();
+                    stage.resetFade();
+                    display.clear();
+                    nextLevel.render(display);
+                    display.setScreenPosition(nextLevel.screenPositionX, 0);
+                    display.redraw();
+                }
+            } catch (reason) {
+                if (generation === loadGeneration) error.value = reason instanceof Error ? reason.message : 'Could not load this level. Check your game files and try again.';
+            } finally {
+                if (generation === loadGeneration) loading.value = false;
             }
-            else {
-                /// redo this level
-                this.moveToLevel(0);
+        }
+
+        async function start() {
+            if (!canPlay.value || !stage || loading.value) return;
+            if (game) {
+                if (!finished.value) {
+                    game.getGameTimer().continue();
+                    paused.value = false;
+                }
+                return;
             }
-
-        }, 2500);
-    }
-
-    /** load and run a replay */
-    public loadReplay(replayString: string) {
-        this.start(replayString);
-    }
-
-    /** pause the game */
-    public cheat() {
-        if (this.game == null) {
-            return;
+            loading.value = true;
+            error.value = '';
+            const generation = loadGeneration;
+            try {
+                const nextGame = await factory.getGame(gameType, groupIndex.value, levelIndex.value);
+                if (!nextGame) throw new Error('Could not start this level.');
+                if (disposed || generation !== loadGeneration || !stage) {
+                    nextGame.stop();
+                    return;
+                }
+                game = nextGame;
+                stage.clearInputBindings();
+                game.setGameDisplay(stage.getGameDisplay());
+                game.setGuiDisplay(stage.getGuiDisplay());
+                stage.getGuiDisplay().onMouseDown.on(() => {
+                    if (game && !finished.value) {
+                        paused.value = !game.getGameTimer().isRunning();
+                        if (paused.value) music?.suspend();
+                        else music?.play();
+                    }
+                });
+                game.getGameTimer().speedFactor = speed.value;
+                game.getGameTimer().onGameTick.on(updateStats);
+                game.onGameEnd.on(result => {
+                    if (!result || !game) return;
+                    game.getGameTimer().suspend();
+                    stopMusic();
+                    playing.value = false;
+                    paused.value = false;
+                    finished.value = true;
+                    resultMessage.value = result.state === GameStateTypes.SUCCEEDED
+                        ? `Level complete! You saved ${result.survivorPercentage}%.`
+                        : `Try again — you saved ${result.survivorPercentage}%.`;
+                    if (result.state === GameStateTypes.SUCCEEDED) {
+                        recordCompletion(gameType, groupIndex.value, levelIndex.value, result.survivorPercentage);
+                    }
+                });
+                game.start();
+                playing.value = true;
+                paused.value = false;
+                updateStats();
+                if (musicEnabled.value) void playMusic();
+            } catch (reason) {
+                if (generation === loadGeneration) error.value = reason instanceof Error ? reason.message : 'Could not start this level.';
+            } finally {
+                if (generation === loadGeneration) loading.value = false;
+            }
         }
 
-        this.game.cheat();
-    }
-
-    /** pause the game */
-    public suspend() {
-        if (this.game == null) {
-            return;
+        function togglePause() {
+            if (!game || finished.value) return;
+            game.getGameTimer().toggle();
+            paused.value = !game.getGameTimer().isRunning();
+            if (paused.value) music?.suspend();
+            else music?.play();
         }
 
-        this.game.getGameTimer().suspend();
-    }
-
-    /** continue the game after pause/suspend */
-    public continue() {
-        if (this.game == null) {
-            return;
+        function selectSkill(type: SkillTypes) {
+            if (!game || finished.value) return;
+            game.queueCommand(new CommandSelectSkill(type));
+            updateStats();
         }
 
-        this.game.getGameTimer().continue();
-    }
-
-    public nextFrame() {
-        if (this.game == null) {
-            return;
+        function changeReleaseRate(delta: number) {
+            if (!game || finished.value) return;
+            game.queueCommand(delta > 0 ? new CommandReleaseRateIncrease(delta) : new CommandReleaseRateDecrease(-delta));
+            updateStats();
         }
 
-        this.game.getGameTimer().tick();
-    }
-
-    public selectSpeedFactor(newSpeed: number) {
-        if (this.game == null) {
-            return;
+        function confirmNuke() {
+            if (!game || finished.value) return;
+            if (!nukeArmed.value) { nukeArmed.value = true; return; }
+            game.queueCommand(new CommandNuke());
+            nukeArmed.value = false;
         }
 
-        this.gameSpeedFactor = newSpeed;
-        this.game.getGameTimer().speedFactor = newSpeed;
-    }
-
-
-    public async playMusic(moveInterval = 0) {
-
-        this.stopMusic();
-        if (!this.gameResources) {
-            return;
+        function setSpeed(value: number) {
+            speed.value = value;
+            if (game) game.getGameTimer().speedFactor = value;
+            saveSettings({ speed: value, musicEnabled: musicEnabled.value });
         }
 
-        this.musicIndex += moveInterval;
-        this.musicIndex = (this.musicIndex < 0) ? 0 : this.musicIndex;
-
-        const player = await this.gameResources.getMusicPlayer(this.musicIndex)
-
-        this.musicPlayer = player;
-        this.musicPlayer.play();
-    }
-
-
-    public stopMusic() {
-        if (!this.musicPlayer) {
-            return;
+        function onSpeedChange(event: Event) {
+            setSpeed(Number((event.target as HTMLSelectElement).value));
         }
 
-        this.musicPlayer.stop();
-        this.musicPlayer = null;
-    }
-
-
-    public stopSound() {
-        if (!this.soundPlayer) {
-            return;
+        async function playMusic() {
+            if (!resources || !musicEnabled.value) return;
+            stopMusic();
+            const generation = musicGeneration;
+            try {
+                const player = await resources.getMusicPlayer(levelIndex.value % 20);
+                if (disposed || !musicEnabled.value || generation !== musicGeneration) { player.stop(); return; }
+                music = player;
+                if (paused.value) music.suspend();
+                else music.play();
+            } catch {
+                if (generation === musicGeneration) {
+                    musicEnabled.value = false;
+                    saveSettings({ speed: speed.value, musicEnabled: false });
+                }
+            }
         }
 
-        this.soundPlayer.stop();
-        this.soundPlayer = null;
-    }
-
-    public async playSound(moveInterval = 0) {
-        this.stopSound();
-
-        this.soundIndex += moveInterval;
-
-        this.soundIndex = (this.soundIndex < 0) ? 0 : this.soundIndex;
-
-
-        if (!this.gameResources) {
-            return;
+        function toggleMusic() {
+            musicEnabled.value = !musicEnabled.value;
+            saveSettings({ speed: speed.value, musicEnabled: musicEnabled.value });
+            if (musicEnabled.value) void playMusic();
+            else stopMusic();
         }
 
-        const player = await this.gameResources.getSoundPlayer(this.soundIndex)
+        function zoom(delta: number) { stage?.zoomGame(delta); }
 
-        this.soundPlayer = player;
-        this.soundPlayer.play();
-
-    }
-
-
-    public enableDebug() {
-        if (this.game == null) {
-            return;
+        function onVisibilityChange() {
+            if (document.hidden && game && game.getGameTimer().isRunning()) {
+                game.getGameTimer().suspend();
+                music?.suspend();
+                paused.value = true;
+            }
         }
 
-        this.game.setDebugMode(true);
-    }
-
-    /** add/subtract one to the current levelIndex */
-    public async moveToLevel(moveInterval = 0) {
-
-        this.levelIndex = Math.max(0, (this.levelIndex + moveInterval) | 0);
-        
-        /// check if the levelIndex is out of bounds
-        const config = await this.gameFactory.getConfig(this.gameType);
-        if (!config) {
-            return;
+        function onKeyDown(event: KeyboardEvent) {
+            if (event.code !== 'Space' || event.repeat || event.altKey || event.ctrlKey || event.metaKey) return;
+            const target = event.target as HTMLElement | null;
+            if (target?.isContentEditable || /^(INPUT|SELECT|TEXTAREA|BUTTON)$/.test(target?.tagName || '')) return;
+            if (!game || finished.value) return;
+            event.preventDefault();
+            togglePause();
         }
 
-        /// jump to next level group?
-        if (this.levelIndex >= config.level.getGroupLength(this.levelGroupIndex)) {
-            this.levelGroupIndex++;
-            this.levelIndex = 0;
+        async function changeLevel(delta: number) {
+            try {
+                const config = await factory.getConfig(gameType);
+                if (!config || disposed) return;
+                let next = levelIndex.value + delta;
+                let group = groupIndex.value;
+                if (next >= config.level.getGroupLength(group)) { group++; next = 0; }
+                if (next < 0) { group--; next = config.level.getGroupLength(group) - 1; }
+                if (group < 0 || group >= config.level.order.length || next < 0) return;
+                groupIndex.value = group;
+                levelIndex.value = next;
+                // Keep refresh/deep links on the level the player is actually viewing.
+                void router.replace({ query: { ...route.query, group, level: next } }).catch(() => undefined);
+                await loadLevel();
+            } catch {
+                if (!disposed) error.value = 'Could not change levels. Please try again.';
+            }
         }
 
-        /// jump to previous level group?
-        if ((this.levelIndex < 0) && (this.levelGroupIndex > 0)) {
-            this.levelGroupIndex--;
-            this.levelIndex = config.level.getGroupLength(this.levelGroupIndex) - 1;
-        }
+        onMounted(() => {
+            if (!gameCanvas.value) return;
+            stage = new Stage(gameCanvas.value);
+            document.addEventListener('visibilitychange', onVisibilityChange);
+            window.addEventListener('keydown', onKeyDown);
+            void loadLevel();
+        });
+        onBeforeUnmount(() => {
+            disposed = true;
+            ++loadGeneration;
+            disposeGame();
+            stopMusic();
+            stage?.dispose();
+            document.removeEventListener('visibilitychange', onVisibilityChange);
+            window.removeEventListener('keydown', onKeyDown);
+        });
 
-        /// update and load level
-        this.loadLevel();
-
-    }
-
-
-
-    /** switch the selected level group */
-    public selectLevelGroup(newLevelGroupIndex: number) {
-        this.levelGroupIndex = newLevelGroupIndex;
-
-        this.loadLevel();
-    }
-
-
-    /** select a game type */
-    public async selectGameType(gameType: GameTypes) {
-
-        const newGameResources = await this.gameFactory.getGameResources(gameType)
-
-        if (!newGameResources) {
-            this.log.log('Unable to get game resources');
-            return;
-        }
-
-        this.gameResources = newGameResources;
-
-        // this.arrayToSelect(this.elementSelectLevelGroup, this.gameResources.getLevelGroups());
-        this.levelGroupIndex = 0;
-
-        this.loadLevel();
-
-    }
-
-
-    /** load a level and render it to the display */
-    private async loadLevel() {
-        if (!this.gameResources) {
-            return;
-        }
-
-        if (this.game) {
-            this.game.stop();
-            this.game = null;
-        }
-
-        this.gameState = GameStateTypeHelper.toString(GameStateTypes.UNKNOWN);
-
-        const level = await this.gameResources.getLevel(this.levelGroupIndex, this.levelIndex)
-        if (!level) {
-            return;
-        }
-
-        console.dir(level);
-        this.level = level;
-
-        if (!this.stage) {
-            return;
-        }
-
-        const gameDisplay = this.stage.getGameDisplay();
-        gameDisplay.clear();
-        this.stage.resetFade();
-
-        level.render(gameDisplay);
-
-        gameDisplay.setScreenPosition(level.screenPositionX, 0);
-        gameDisplay.redraw();
-
-    }
-
-}
+        return { gameCanvas, level, levelIndex, groupName, title, error, loading, playing, paused,
+            finished, resultMessage, hints, visibleHintCount, nukeArmed, selectedSkill, skillCounts, releaseRate, gameTime, speed,
+            musicEnabled, skillButtons, canPlay, start, togglePause, selectSkill, changeReleaseRate,
+            setSpeed, onSpeedChange, toggleMusic, zoom, changeLevel, loadLevel, confirmNuke };
+    },
+});
