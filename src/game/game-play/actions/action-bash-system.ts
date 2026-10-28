@@ -54,7 +54,7 @@ export class ActionBashSystem implements IActionSystem {
 
         const groundMask = level.getGroundMaskLayer();
 
-        lem.frameIndex++;
+        lem.frameIndex = (lem.frameIndex + 1) % 32;
 
         const state = lem.frameIndex % 16;
 
@@ -85,7 +85,10 @@ export class ActionBashSystem implements IActionSystem {
         }
 
         /// check if end of solid?
-        if (state == 5) {
+        // Lemmix checks for the end of terrain on animation frame 5 only,
+        // not on frame 21 despite both frames applying the fourth mask.
+        // https://github.com/ericlangedijk/Lemmix/blob/master/src/Game.pas#L3104
+        if (lem.frameIndex == 5) {
 
             if (this.findHorizontalSpace(groundMask, lem.x + (lem.lookRight ? 8 : -8), lem.y - 6, lem.lookRight) == 4) {
                 return LemmingStateType.WALKING;
