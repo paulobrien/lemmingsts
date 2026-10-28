@@ -346,6 +346,15 @@ export const TESTED_SOLUTIONS: readonly TestedSolution[] = [
       'Make the first lemming dig into the third pillar, give the next a Floater, then bomb the Digger to open the side of the shaft.',
     ],
   },
+  {
+    groupIndex: 1,
+    levelIndex: 24,
+    replay: '54=s2&54=l0&86=l8&86=s1&86=l8&118=s2&118=l16&150=l24&182=l32&214=l40&246=l48&278=l56&310=l64&342=l72&515=s8&515=l0&567=s5&567=l8&588=l0&767=s6&767=l8&872=s5&872=l8&1110=l0&1158=l0&1238=l0&1377=l0',
+    hints: [
+      'There are exactly enough Floaters to meet the target; spread them through the crowd.',
+      'Dig a shallow holding cell in the pillar, send an athlete ahead to bridge and bash toward the exit, then build the waiting Floaters out.',
+    ],
+  },
 ];
 
 /** Unverified levels deliberately return no solution or hints. */
