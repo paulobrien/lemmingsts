@@ -80,13 +80,15 @@ export class ActionWalkSystem implements IActionSystem {
             }
         }
         else if (upDelta > 0) {
-            lem.y -= upDelta - 1;
-
             if (upDelta > 3) {
-                // jump
+                // A DOS walker only rises two pixels on the first frame of a
+                // steep step; the jumping action handles the remaining rise.
+                // https://github.com/ericlangedijk/Lemmix/blob/master/src/Game.pas#L2826
+                lem.y -= 2;
                 return LemmingStateType.JUMPING;
             }
             else {
+                lem.y -= upDelta - 1;
                 // walk with small jump up
                 return LemmingStateType.NO_STATE_TYPE;
             }

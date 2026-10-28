@@ -43,7 +43,7 @@ export class ActionJumpSystem implements IActionSystem {
 
         let i = 0;
         for (; i < 2; i++) {
-            if (!level.hasGroundAt(lem.x, lem.y + i - 1)) { // really -1?
+            if (!level.hasGroundAt(lem.x, lem.y - i - 1)) {
                 break;
             }
         }
