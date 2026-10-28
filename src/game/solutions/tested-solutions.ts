@@ -578,6 +578,15 @@ export const TESTED_SOLUTIONS: readonly TestedSolution[] = [
   },
   {
     groupIndex: 2,
+    levelIndex: 22,
+    replay: '220=s5&220=l0&249=l1&278=l2&333=l3&362=l4&391=l5&420=l6&633=l2&690=l1&720=l7&825=l2&1000=i59&1246=l2&1310=l2&1502=l2&1901=l2&1986=l2&2178=l2&2608=l2&2720=l2&2912=l2',
+    hints: [
+      'Build across the first gap quickly, then make a zigzag route up the castle.',
+      'Use several early Builders to delay the crowd and complete the crossing from both sides. At the ends of the upper floors, build over the gaps and return toward the next floor; raise the release rate once the first crossing is safe.',
+    ],
+  },
+  {
+    groupIndex: 2,
     levelIndex: 23,
     replay: '325=s5&325=l0&354=l1&383=l2&412=l3&441=l4&470=l5&499=l6&525=l0&528=l7&557=l8&600=i49&884=l0&1076=l0&1268=l0&1646=l9',
     hints: [
