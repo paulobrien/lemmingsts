@@ -83,7 +83,14 @@ export function parseLemmixReplay(
   let selected = SkillTypes.CLIMBER;
   let lastTick = 0;
   let releaseRate = target.initialReleaseRate;
+  let heldRate: -1 | 0 | 1 = 0;
   let pausedAt: number | undefined;
+  const changeRate = (tick: number, delta: number) => {
+    if (!delta) return;
+    events.push({ tick, kind: 'rate', delta });
+    commands.push(`${tick}=${delta > 0 ? 'i' : 'd'}${Math.abs(delta)}`);
+    releaseRate += delta;
+  };
   const select = (tick: number, skill: SkillTypes) => {
     if (selected !== skill) {
       selected = skill;
@@ -96,11 +103,20 @@ export function parseLemmixReplay(
     if (view.getUint8(offset) !== 0x52) fail(`record ${i}: signature`);
     const tick = view.getInt32(offset + 1, true);
     if (tick < lastTick || tick < 0 || tick > 1_000_000) fail(`record ${i}: invalid iteration order`);
+    // Lemmix adjusts a held button immediately before each simulation step;
+    // actions recorded at iteration N run before the adjustment for N+1.
+    // https://github.com/ericlangedijk/Lemmix/blob/master/src/Game.pas#L3421
+    for (let step = lastTick; step < tick && heldRate !== 0; step++) {
+      const next = Math.max(target.initialReleaseRate, Math.min(99, releaseRate + heldRate));
+      if (next === releaseRate) break;
+      changeRate(step, next - releaseRate);
+    }
     lastTick = tick;
     const flags = view.getUint16(offset + 5, true);
     if (!flags || (flags & ~(SELECT | ASSIGN | START_PAUSE | END_PAUSE | PAUSING | RATE_INCREASE | RATE_DECREASE | RATE_STOP))) fail(`record ${i}: nuke or other action flags`);
     if (sourceVersion === 3 && (view.getUint8(offset + 29) !== 0 || view.getUint8(offset + 30) !== 0 || view.getUint8(offset + 31) !== 0)) fail(`record ${i}: glitch or reserved flags`);
     const rate = view.getInt32(offset + 9, true);
+    if (rate < target.initialReleaseRate || rate > 99) fail(`record ${i}: invalid release rate`);
     if (flags === START_PAUSE) {
       if (pausedAt !== undefined || rate !== releaseRate) fail(`record ${i}: invalid pause start`);
       pausedAt = tick;
@@ -114,9 +130,11 @@ export function parseLemmixReplay(
     if (flags & (START_PAUSE | END_PAUSE)) fail(`record ${i}: combined pause boundary`);
     if (((flags & PAUSING) !== 0) !== (pausedAt === tick)) fail(`record ${i}: inconsistent paused record`);
     const rateFlags = flags & (RATE_INCREASE | RATE_DECREASE | RATE_STOP);
-    if (rateFlags && (!(flags & PAUSING) || (rateFlags !== (RATE_INCREASE | RATE_STOP) && rateFlags !== (RATE_DECREASE | RATE_STOP)))) fail(`record ${i}: held or unsupported release-rate change`);
+    const pausedStop = !!(flags & PAUSING) && !!(rateFlags & RATE_STOP);
+    if (rateFlags && !pausedStop && rateFlags !== RATE_INCREASE && rateFlags !== RATE_DECREASE && rateFlags !== RATE_STOP) fail(`record ${i}: unsupported release-rate flags`);
+    if ((flags & PAUSING) && rateFlags && !pausedStop) fail(`record ${i}: incomplete paused release-rate change`);
     if (!(flags & (SELECT | ASSIGN)) && !rateFlags) fail(`record ${i}: no supported action`);
-    if (!rateFlags && rate !== releaseRate) fail(`record ${i}: unexpected release-rate change`);
+    if (!pausedStop && rate !== releaseRate) fail(`record ${i}: unexpected release-rate change`);
     // Lemmix applies assignments before button selection if both occur.
     if (flags & ASSIGN) {
       const skill = ACTION_SKILL[view.getUint8(offset + 7)];
@@ -133,16 +151,13 @@ export function parseLemmixReplay(
       select(tick, skill);
     } else if (view.getUint8(offset + 8) !== 0) fail(`record ${i}: unexpected selected button`);
     if (rateFlags) {
-      if (rate < target.initialReleaseRate || rate > 99 || (rateFlags === (RATE_INCREASE | RATE_STOP) && rate < releaseRate) || (rateFlags === (RATE_DECREASE | RATE_STOP) && rate > releaseRate)) fail(`record ${i}: invalid instantaneous release-rate change`);
-      const delta = rate - releaseRate;
-      if (delta) {
-        events.push({ tick, kind: 'rate', delta });
-        commands.push(`${tick}=${delta > 0 ? 'i' : 'd'}${Math.abs(delta)}`);
-        releaseRate = rate;
-      }
+      if (pausedStop) { changeRate(tick, rate - releaseRate); heldRate = 0; }
+      else if (rateFlags === RATE_STOP) heldRate = 0;
+      else heldRate = rateFlags === RATE_INCREASE ? 1 : -1;
     }
   }
   if (pausedAt !== undefined) fail('unclosed pause');
+  if (heldRate !== 0 && releaseRate !== (heldRate > 0 ? 99 : target.initialReleaseRate)) fail('release-rate hold has no recorded end');
   if (!events.some(event => event.kind === 'assign')) fail('no skill assignments');
   return { levelTitle: title, initialReleaseRate: target.initialReleaseRate, sourceLevelHash, sourceVersion, events, replay: commands.join('&') };
 }

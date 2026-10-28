@@ -89,6 +89,54 @@ describe('Lemmix replay conversion (synthetic inputs)', () => {
     expect(verifyLemmixCandidate(fakeGame(), candidate)).toEqual({ ok: true, replay: candidate.replay });
   });
 
+  it('expands a held rate button before each following simulation step, including the stop boundary', () => {
+    const candidate = parseLemmixReplay(lrb([
+      { tick: 0, flags: 0x08 },
+      { tick: 1, flags: 0x80, assigned: 3, rate: 51 },
+      { tick: 2, flags: 0x20, rate: 52 },
+    ]), target);
+    expect(candidate.replay).toBe('0=i1&1=s8&1=l0&1=i1');
+    expect(verifyLemmixCandidate(fakeGame(), candidate)).toEqual({ ok: true, replay: candidate.replay });
+  });
+
+  it('clamps held changes and supports a paused record combining both directions', () => {
+    const candidate = parseLemmixReplay(lrb([
+      { tick: 0, flags: 0x01 },
+      { tick: 0, flags: 0x3c, rate: 98 },
+      { tick: 0, flags: 0x02, rate: 98 },
+      { tick: 0, flags: 0x08, rate: 98 },
+      { tick: 3, flags: 0x20, rate: 99 },
+      { tick: 3, flags: 0x80, assigned: 3, rate: 99 },
+    ]), target);
+    expect(candidate.replay).toBe('0=i48&0=i1&3=s8&3=l0');
+  });
+
+  it('expands held decreases and can reverse direction at a record boundary', () => {
+    const candidate = parseLemmixReplay(lrb([
+      { tick: 0, flags: 1 }, { tick: 0, flags: 0x2c, rate: 53 }, { tick: 0, flags: 2, rate: 53 },
+      { tick: 0, flags: 0x10, rate: 53 },
+      { tick: 2, flags: 0x08, rate: 51 },
+      { tick: 3, flags: 0x20, rate: 52 },
+      { tick: 3, flags: 0x80, assigned: 3, rate: 52 },
+    ]), target);
+    expect(candidate.replay).toBe('0=i3&0=d1&1=d1&2=i1&3=s8&3=l0');
+  });
+
+  it('rejects held records whose stored rate disagrees with frame-by-frame changes', () => {
+    expect(() => parseLemmixReplay(lrb([
+      { tick: 0, flags: 0x08 },
+      { tick: 2, flags: 0x20, rate: 51 },
+      { tick: 2, flags: 0x80, assigned: 3, rate: 51 },
+    ]), target)).toThrow('unexpected release-rate change');
+  });
+
+  it('rejects an unfinished hold whose future changes cannot be represented', () => {
+    expect(() => parseLemmixReplay(lrb([
+      { tick: 0, flags: 0x08 },
+      { tick: 1, flags: 0x80, assigned: 3, rate: 51 },
+    ]), target)).toThrow('hold has no recorded end');
+  });
+
   it('rejects legacy candidates on levels with triggered traps', () => {
     const bytes = lrb([{ tick: 1, flags: 0x80, assigned: 3 }]);
     bytes[3] = 1;
@@ -103,7 +151,6 @@ describe('Lemmix replay conversion (synthetic inputs)', () => {
     ['pause', { tick: 1, flags: 0x81, assigned: 3 }],
     ['nuke', { tick: 1, flags: 0x180, assigned: 3 }],
     ['rate change', { tick: 1, flags: 0x80, assigned: 3, rate: 51 }],
-    ['held rate change', { tick: 1, flags: 0x08 }],
     ['right-click glitch', { tick: 1, flags: 0x80, assigned: 3, glitch: 2 }],
     ['unassignable skill', { tick: 1, flags: 0x80, assigned: 12 }],
   ])('rejects unsupported %s', (_name, record) => {
