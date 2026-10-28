@@ -10,6 +10,8 @@ import { indexedDB } from 'fake-indexeddb';
 import { expect, it, vi } from 'vitest';
 import { GameFactory } from '../../src/game/game-factory';
 import { GameTypes } from '../../src/game/game-types';
+import { GameStateTypes } from '../../src/game/game-state-types';
+import { getTestedSolution } from '../../src/game/solutions/tested-solutions';
 import { clearLemmingsFiles, importLemmingsFiles } from '../../src/game/resources/file/game-file-store';
 import { parseLemmixReplay, verifyLemmixCandidate } from '../../src/game/solutions/lemmix-replay-import';
 
@@ -45,23 +47,11 @@ async function verifyExternalReplay(replayPath: string, groupIndex: number, leve
   }
 }
 
-it.skipIf(!path || process.env.RUN_PRIVATE_GAME_TESTS !== '1')('verifies the public Tricky 7 replay against local game data', async () => {
-  await verifyExternalReplay(path!, 1, 6, 75);
-}, 60000);
-
-const tricky22Path = process.env.LEMMIX_TRICKY22_REPLAY_PATH;
-it.skipIf(!tricky22Path || process.env.RUN_PRIVATE_GAME_TESTS !== '1')('verifies the public Tricky 22 replay against local game data', async () => {
-  await verifyExternalReplay(tricky22Path!, 1, 21, 80);
-}, 60000);
-
-// Taxing9-undamaged.lrb: https://www.lemmingsforums.net/index.php?topic=1490.0
-const taxing9Path = process.env.LEMMIX_TAXING9_REPLAY_PATH;
-it.skipIf(!taxing9Path || process.env.RUN_PRIVATE_GAME_TESTS !== '1')('verifies the public Taxing 9 replay against local game data', async () => {
-  await verifyExternalReplay(taxing9Path!, 2, 8, 20);
-}, 60000);
-
 // Optional replay sources are documented in docu/LEMMIX_REPLAY_IMPORT.md.
-for (const { name, env, group, level, saved } of [
+const externalReplays = [
+  { name: 'Tricky 7', env: 'LEMMIX_V1_REPLAY_PATH', group: 1, level: 6, saved: 75 },
+  { name: 'Tricky 22', env: 'LEMMIX_TRICKY22_REPLAY_PATH', group: 1, level: 21, saved: 80 },
+  { name: 'Taxing 9', env: 'LEMMIX_TAXING9_REPLAY_PATH', group: 2, level: 8, saved: 20 },
   { name: 'Fun 12', env: 'LEMMIX_FUN12_REPLAY_PATH', group: 0, level: 11, saved: 80 },
   { name: 'Fun 14', env: 'LEMMIX_FUN14_REPLAY_PATH', group: 0, level: 13, saved: 80 },
   { name: 'Fun 15', env: 'LEMMIX_FUN15_REPLAY_PATH', group: 0, level: 14, saved: 80 },
@@ -133,9 +123,69 @@ for (const { name, env, group, level, saved } of [
   { name: 'Mayhem 27', env: 'LEMMIX_MAYHEM27_REPLAY_PATH', group: 3, level: 26, saved: 50 },
   { name: 'Mayhem 29', env: 'LEMMIX_MAYHEM29_REPLAY_PATH', group: 3, level: 28, saved: 77 },
   { name: 'Mayhem 30', env: 'LEMMIX_MAYHEM30_REPLAY_PATH', group: 3, level: 29, saved: 80 },
-]) {
+];
+
+for (const { name, env, group, level, saved } of externalReplays) {
   const replayPath = process.env[env];
   it.skipIf(!replayPath || process.env.RUN_PRIVATE_GAME_TESTS !== '1')(`verifies the public ${name} replay against local game data`, async () => {
     await verifyExternalReplay(replayPath!, group, level, saved);
   }, 60000);
 }
+
+// Strict opt-in gate: each original level must actually complete, whether its
+// replay is project-authored or supplied locally from a documented source.
+it.skipIf(process.env.REQUIRE_ALL_LEVEL_COMPLETIONS !== '1')('completes all 120 levels with available replays', async () => {
+  expect(process.env.RUN_PRIVATE_GAME_TESTS, 'Set RUN_PRIVATE_GAME_TESTS=1 to use your original game files').toBe('1');
+  const missing: string[] = [];
+  const choices: Array<{ group: number; level: number; replayPath?: string; saved?: number }> = [];
+  for (let group = 0; group < 4; group++) {
+    for (let level = 0; level < 30; level++) {
+      if (getTestedSolution(group, level)) {
+        choices.push({ group, level });
+        continue;
+      }
+      const available = externalReplays.find(entry => entry.group === group && entry.level === level && process.env[entry.env]);
+      if (available) choices.push({ group, level, replayPath: process.env[available.env], saved: available.saved });
+      else {
+        const candidates = externalReplays.filter(entry => entry.group === group && entry.level === level).map(entry => entry.env);
+        missing.push(`${['Fun', 'Tricky', 'Taxing', 'Mayhem'][group]} ${level + 1}: ${candidates.join(' or ') || 'no replay available'}`);
+      }
+    }
+  }
+  expect(missing, `Missing local replays: ${missing.join('; ')}`).toEqual([]);
+  vi.stubGlobal('indexedDB', indexedDB);
+  vi.stubGlobal('window', { atob });
+  vi.spyOn(console, 'log').mockImplementation(() => undefined);
+  vi.spyOn(console, 'dir').mockImplementation(() => undefined);
+  try {
+    const names = await readdir('dos/lemmings');
+    await importLemmingsFiles(await Promise.all(names.map(async name =>
+      new File([Uint8Array.from(await readFile(`dos/lemmings/${name}`))], name))));
+    vi.stubGlobal('fetch', async () => new Response(await readFile('public/data/config.json', 'utf8')));
+    const factory = new GameFactory('/data');
+    for (const { group, level, replayPath, saved } of choices) {
+      const label = `${['Fun', 'Tricky', 'Taxing', 'Mayhem'][group]} ${level + 1}`;
+      const game = await factory.getGame(GameTypes.LEMMINGS, group, level);
+      expect(game, label).toBeDefined();
+      if (replayPath) {
+        const bytes = Uint8Array.from(await readFile(replayPath));
+        const candidate = parseLemmixReplay(bytes, { levelTitle: game!.level.name.trim(), initialReleaseRate: game!.level.releaseRate });
+        const result = verifyLemmixCandidate(game!, candidate);
+        expect(result.ok, `${label}: ${result.ok ? '' : result.reason}`).toBe(true);
+        expect(game!.getVictoryCondition().getSurvivorsCount(), label).toBe(saved);
+      } else {
+        const replay = getTestedSolution(group, level)!.replay;
+        game!.getCommandManager().loadReplay(replay);
+        while (game!.getGameState() === GameStateTypes.RUNNING && game!.getGameTimer().getGameTicks() <= game!.getGameTimer().getGameTimeLimit()) {
+          game!.getGameTimer().tick();
+        }
+        expect(game!.getGameState(), label).toBe(GameStateTypes.SUCCEEDED);
+        expect(game!.getCommandManager().serialize(), `${label}: every command must execute`).toBe(replay);
+      }
+    }
+  } finally {
+    await clearLemmingsFiles();
+    vi.restoreAllMocks();
+    vi.unstubAllGlobals();
+  }
+}, 120_000);

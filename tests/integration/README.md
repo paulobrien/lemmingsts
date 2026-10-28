@@ -10,7 +10,15 @@ RUN_PRIVATE_GAME_TESTS=1 npm run test:unit -- tests/integration/local-game-files
 
 Replays and separately authored progressive hints live in `src/game/solutions/tested-solutions.ts`. Only levels with a replay that has been verified in this harness should have an entry. The normal tests do not claim that levels without entries have been solved.
 
-To require successful replay coverage for all 120 original levels, run:
+To verify all 120 levels using the project-authored replays where available and locally obtained community recordings for the rest, set the replay path environment variables documented in [the Lemmix replay guide](../../docu/LEMMIX_REPLAY_IMPORT.md), then run:
+
+```sh
+RUN_PRIVATE_GAME_TESTS=1 REQUIRE_ALL_LEVEL_COMPLETIONS=1 npx vitest run tests/integration/lemmix-import-external.spec.ts
+```
+
+This strict combined gate reports every missing replay path and actually runs one completion replay per level. The community files are not included in Git, and their recorded positions and actions are checked before a win is accepted. It does not add hints for those levels.
+
+To require all 120 levels to have **project-authored** replay solutions and hints, run:
 
 ```sh
 RUN_PRIVATE_GAME_TESTS=1 REQUIRE_ALL_LEVEL_SOLUTIONS=1 npm run test:unit -- tests/integration/local-game-files.spec.ts
