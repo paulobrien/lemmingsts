@@ -141,6 +141,15 @@ export const TESTED_SOLUTIONS: readonly TestedSolution[] = [
   },
   {
     groupIndex: 0,
+    levelIndex: 17,
+    replay: '249=s4&249=l0&250=s3&250=l0&375=s4&375=l8&376=s3&376=l8&487=s4&487=l16&488=s3&488=l16&604=s4&604=l17&605=s3&605=l17&781=s4&781=l18&782=s3&782=l18',
+    hints: [
+      'The floors have dangerous fire patches; choose a safe spot above each room.',
+      'Stop and bomb a lemming to open each floor in turn, keeping the holes clear of flames and offset so the drops stay safe.',
+    ],
+  },
+  {
+    groupIndex: 0,
     levelIndex: 18,
     replay: '858=s5&858=l0&1058=l0&1258=l0&1458=l0&1560=i3&1561=i3&1562=i3&1563=i3&1564=i3&1565=i3&1566=i3&1567=i3&1568=i3&1569=i3&1570=i3&1571=i3&1572=i3&1573=i3&1574=i3&1575=i3&1576=i3&1577=i3&1578=i3&1579=i3&1580=i3&1581=i3&1582=i3&1583=i3&1584=i3&1585=i3&1586=i1',
     hints: [
