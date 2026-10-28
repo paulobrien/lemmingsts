@@ -15,6 +15,9 @@ describe('DOS blocker field', () => {
     const blocker = new Lemming(368, 137, 0);
     const ground = { hasGroundAt: () => true } as unknown as Level;
     action.triggerLemAction(blocker);
+    // The field is already active immediately after assignment, before the
+    // blocker's own update; other lemmings may be processed first.
+    expect(manager.trigger(375, 137)).toBe(TriggerTypes.BLOCKER_RIGHT);
     action.process(ground, blocker);
 
     for (const y of [128, 131, 135, 139]) {

@@ -28,6 +28,16 @@ export class ActionBlockerSystem implements IActionSystem {
     public triggerLemAction(lem: Lemming): boolean {
         lem.setAction(this);
 
+        // Lemmix installs the object-map field as part of the transition,
+        // before any lemming is updated in the next simulation frame.
+        // https://github.com/ericlangedijk/Lemmix/blob/master/src/Game.pas#L1973
+        const left = Math.floor((lem.x - 4) / 4) * 4;
+        const right = Math.floor((lem.x + 4) / 4) * 4;
+        const top = Math.floor((lem.y - 6) / 4) * 4;
+        const bottom = Math.floor((lem.y + 2) / 4) * 4 + 3;
+        this.triggerManager.add(new Trigger(TriggerTypes.BLOCKER_LEFT, left, top, left + 3, bottom, 0, 0, lem));
+        this.triggerManager.add(new Trigger(TriggerTypes.BLOCKER_RIGHT, right, top, right + 3, bottom, 0, 0, lem));
+
         return true;
     }
 
@@ -41,23 +51,6 @@ export class ActionBlockerSystem implements IActionSystem {
 
 
     public process(level: Level, lem: Lemming): LemmingStateType {
-
-        if (lem.state == 0) {
-            // DOS stores blocker arms in a 4-pixel object grid: three rows
-            // sampled at y-6, y-2 and y+2, and columns at x-4 and x+4.
-            // https://github.com/ericlangedijk/Lemmix/blob/master/src/Game.pas#L1899
-            const left = Math.floor((lem.x - 4) / 4) * 4;
-            const right = Math.floor((lem.x + 4) / 4) * 4;
-            const top = Math.floor((lem.y - 6) / 4) * 4;
-            const bottom = Math.floor((lem.y + 2) / 4) * 4 + 3;
-            const trigger1 = new Trigger(TriggerTypes.BLOCKER_LEFT, left, top, left + 3, bottom, 0, 0, lem);
-            const trigger2 = new Trigger(TriggerTypes.BLOCKER_RIGHT, right, top, right + 3, bottom, 0, 0, lem);
-
-            this.triggerManager.add(trigger1);
-            this.triggerManager.add(trigger2);
-
-            lem.state = 1;
-        }
 
         lem.frameIndex++;
         if (!level.hasGroundAt(lem.x, lem.y + 1)) {
