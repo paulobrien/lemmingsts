@@ -27,7 +27,7 @@ function lrb(records: RecordData[]): Uint8Array {
 const target = { levelTitle: 'Synthetic level', initialReleaseRate: 50 };
 
 function fakeGame(x = 12, allowAssignment = true): Game {
-  let ticks = 0, selected = SkillTypes.CLIMBER, remaining = 10, releaseRate = 50;
+  let ticks = 0, selected = SkillTypes.CLIMBER, remaining = 10, releaseRate = 50, nuking = false;
   const lemming = { x, y: 34, removed: false };
   const commands: string[] = [];
   const timer = { getGameTicks: () => ticks, getGameTimeLimit: () => 4, isRunning: () => false, tick: () => { ticks++; } };
@@ -38,7 +38,7 @@ function fakeGame(x = 12, allowAssignment = true): Game {
     getGameState: () => ticks >= 3 ? GameStateTypes.SUCCEEDED : GameStateTypes.RUNNING,
     getGameSkills: () => skills,
     getVictoryCondition: () => ({ getCurrentReleaseRate: () => releaseRate }),
-    getLemmingManager: () => ({ getLemming: () => lemming }),
+    getLemmingManager: () => ({ getLemming: () => lemming, isNuking: () => nuking }),
     getCommandManager: () => ({ serialize: () => commands.join('&') }),
     queueCommand: (command: { getCommandKey(): string; save(): number[] }) => {
       const key = command.getCommandKey(), value = command.save()[0];
@@ -50,6 +50,7 @@ function fakeGame(x = 12, allowAssignment = true): Game {
       }
       if (key === 'i') { releaseRate += value; commands.push(`${ticks}=i${value}`); }
       if (key === 'd') { releaseRate -= value; commands.push(`${ticks}=d${value}`); }
+      if (key === 'n' && !nuking) { nuking = true; commands.push(`${ticks}=n`); }
     },
   } as unknown as Game;
 }
@@ -75,6 +76,25 @@ describe('Lemmix replay conversion (synthetic inputs)', () => {
     const candidate = parseLemmixReplay(lrb([{ tick: 1, flags: 0x80, assigned: 3 }]), target);
     expect(verifyLemmixCandidate(fakeGame(13), candidate)).toEqual({ ok: false, reason: 'lemming 0 position differs at tick 1' });
     expect(verifyLemmixCandidate(fakeGame(12, false), candidate)).toEqual({ ok: false, reason: 'skill assignment failed at tick 1' });
+  });
+
+  it('converts and verifies a standard nuke after an assignment', () => {
+    const candidate = parseLemmixReplay(lrb([
+      { tick: 1, flags: 0x80, assigned: 3 },
+      { tick: 2, flags: 0x104 },
+    ]), target);
+    expect(candidate.replay).toBe('1=s8&1=l0&2=n');
+    expect(verifyLemmixCandidate(fakeGame(), candidate)).toEqual({ ok: true, replay: candidate.replay });
+  });
+
+  it('rejects duplicate nukes and nuke-percentage glitch mechanics', () => {
+    expect(() => parseLemmixReplay(lrb([
+      { tick: 1, flags: 0x80, assigned: 3 },
+      { tick: 2, flags: 0x100 }, { tick: 2, flags: 0x100 },
+    ]), target)).toThrow('unsupported nuke record');
+    const bytes = lrb([{ tick: 1, flags: 0x80, assigned: 3 }, { tick: 2, flags: 0x100 }]);
+    new DataView(bytes.buffer).setUint16(10, 0x07df, true);
+    expect(() => parseLemmixReplay(bytes, target)).toThrow('mechanics');
   });
 
   it('compares a miner position after the one-pixel assignment transition', () => {

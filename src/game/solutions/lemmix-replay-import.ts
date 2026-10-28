@@ -2,6 +2,7 @@ import { Game } from '../game';
 import { GameStateTypes } from '../game-state-types';
 import { GameTypes } from '../game-types';
 import { CommandLemmingsAction } from '../game-play/commands/command-lemming-action';
+import { CommandNuke } from '../game-play/commands/command-nuke';
 import { CommandReleaseRateDecrease } from '../game-play/commands/command-release-rate-decrease';
 import { CommandReleaseRateIncrease } from '../game-play/commands/command-release-rate-increase';
 import { CommandSelectSkill } from '../game-play/commands/command-select-skill';
@@ -18,6 +19,7 @@ import { TriggerTypes } from '../resources/lemmings/trigger-types';
 type Event =
   | { readonly tick: number; readonly kind: 'select'; readonly skill: SkillTypes }
   | { readonly tick: number; readonly kind: 'assign'; readonly skill: SkillTypes; readonly id: number; readonly x: number; readonly y: number }
+  | { readonly tick: number; readonly kind: 'nuke' }
   | { readonly tick: number; readonly kind: 'rate'; readonly delta: number };
 
 export interface LemmixCandidate {
@@ -39,6 +41,7 @@ const HEADER_SIZE = 64;
 const RECORD_SIZE = 32;
 const SELECT = 0x40;
 const ASSIGN = 0x80;
+const NUKE = 0x100;
 const START_PAUSE = 0x01;
 const END_PAUSE = 0x02;
 const PAUSING = 0x04;
@@ -84,6 +87,7 @@ export function parseLemmixReplay(
   let lastTick = 0;
   let releaseRate = target.initialReleaseRate;
   let heldRate: -1 | 0 | 1 = 0;
+  let nuked = false;
   const changeRate = (tick: number, delta: number) => {
     if (!delta) return;
     events.push({ tick, kind: 'rate', delta });
@@ -112,7 +116,7 @@ export function parseLemmixReplay(
     }
     lastTick = tick;
     const flags = view.getUint16(offset + 5, true);
-    if (!flags || (flags & ~(SELECT | ASSIGN | START_PAUSE | END_PAUSE | PAUSING | RATE_INCREASE | RATE_DECREASE | RATE_STOP))) fail(`record ${i}: nuke or other action flags`);
+    if (!flags || (flags & ~(SELECT | ASSIGN | NUKE | START_PAUSE | END_PAUSE | PAUSING | RATE_INCREASE | RATE_DECREASE | RATE_STOP))) fail(`record ${i}: unsupported action flags`);
     if (sourceVersion === 3 && (view.getUint8(offset + 29) !== 0 || view.getUint8(offset + 30) !== 0 || view.getUint8(offset + 31) !== 0)) fail(`record ${i}: glitch or reserved flags`);
     const rate = view.getInt32(offset + 9, true);
     if (rate < target.initialReleaseRate || rate > 99) fail(`record ${i}: invalid release rate`);
@@ -128,6 +132,16 @@ export function parseLemmixReplay(
       continue;
     }
     if (flags & (START_PAUSE | END_PAUSE)) fail(`record ${i}: combined pause boundary`);
+    if (flags & NUKE) {
+      // Standard Lemmix records a nuke independently; reject ambiguous
+      // combinations and optional glitch mechanics instead of guessing.
+      // https://github.com/ericlangedijk/Lemmix/blob/master/src/Game.pas#L4268
+      if ((flags & ~(NUKE | PAUSING)) || nuked || rate !== releaseRate || view.getUint8(offset + 7) || view.getUint8(offset + 8)) fail(`record ${i}: unsupported nuke record`);
+      events.push({ tick, kind: 'nuke' });
+      commands.push(`${tick}=n`);
+      nuked = true;
+      continue;
+    }
     const rateFlags = flags & (RATE_INCREASE | RATE_DECREASE | RATE_STOP);
     const pausedStop = !!(flags & PAUSING) && !!(rateFlags & RATE_STOP);
     if (rateFlags && !pausedStop && rateFlags !== RATE_INCREASE && rateFlags !== RATE_DECREASE && rateFlags !== RATE_STOP) fail(`record ${i}: unsupported release-rate flags`);
@@ -185,6 +199,10 @@ export function verifyLemmixCandidate(game: Game, candidate: LemmixCandidate): {
         const rate = game.getVictoryCondition().getCurrentReleaseRate();
         game.queueCommand(event.delta > 0 ? new CommandReleaseRateIncrease(event.delta) : new CommandReleaseRateDecrease(-event.delta));
         if (game.getVictoryCondition().getCurrentReleaseRate() !== rate + event.delta) return fail(`release-rate change failed at tick ${tick}`);
+      } else if (event.kind === 'nuke') {
+        if (game.getLemmingManager().isNuking()) return fail(`nuke already active at tick ${tick}`);
+        game.queueCommand(new CommandNuke());
+        if (!game.getLemmingManager().isNuking()) return fail(`nuke failed at tick ${tick}`);
       } else {
         const lemming = game.getLemmingManager().getLemming(event.id);
         if (!lemming || lemming.removed) return fail(`lemming ${event.id} is unavailable at tick ${tick}`);
