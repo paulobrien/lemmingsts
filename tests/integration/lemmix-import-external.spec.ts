@@ -82,6 +82,7 @@ for (const { name, env, group, level, saved } of [
   { name: 'Tricky 23', env: 'LEMMIX_TRICKY23_REPLAY_PATH', group: 1, level: 22, saved: 79 },
   { name: 'Tricky 23 (nuke)', env: 'LEMMIX_TRICKY23_NUKE_REPLAY_PATH', group: 1, level: 22, saved: 50 },
   { name: 'Tricky 24', env: 'LEMMIX_TRICKY24_REPLAY_PATH', group: 1, level: 23, saved: 80 },
+  { name: 'Tricky 27', env: 'LEMMIX_TRICKY27_REPLAY_PATH', group: 1, level: 26, saved: 73 },
   { name: 'Tricky 28', env: 'LEMMIX_TRICKY28_REPLAY_PATH', group: 1, level: 27, saved: 80 },
   { name: 'Tricky 29', env: 'LEMMIX_TRICKY29_REPLAY_PATH', group: 1, level: 28, saved: 80 },
   { name: 'Tricky 30', env: 'LEMMIX_TRICKY30_REPLAY_PATH', group: 1, level: 29, saved: 74 },

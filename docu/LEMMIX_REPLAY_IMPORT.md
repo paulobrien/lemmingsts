@@ -87,6 +87,7 @@ The following wins use files from the public [LemmingsWelt challenge replay arch
 | --- | --- | --- | ---: |
 | Tricky 20 | `Tricky_20_digbuildbash.lrb` | `LEMMIX_TRICKY20_REPLAY_PATH` | 80 |
 | Tricky 23 | `tricky23_save79.zip` / `Tricky23_save79.lrb` | `LEMMIX_TRICKY23_REPLAY_PATH` | 79 |
+| Tricky 27 | `tricky27_1min.lrb` | `LEMMIX_TRICKY27_REPLAY_PATH` | 73 |
 | Taxing 17 | `Taxing_17_buildbash.lrb` | `LEMMIX_TAXING17_REPLAY_PATH` | 80 |
 | Taxing 18 | `taxing18.zip` / `Taxing_18.lrb` | `LEMMIX_TAXING18_REPLAY_PATH` | 74 |
 | Taxing 23 | `taxing23_saveall_16builders.zip` / `Taxing23_saveall_16builders.lrb` | `LEMMIX_TAXING23_REPLAY_PATH` | 80 |
