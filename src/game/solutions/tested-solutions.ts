@@ -551,6 +551,15 @@ export const TESTED_SOLUTIONS: readonly TestedSolution[] = [
   },
   {
     groupIndex: 2,
+    levelIndex: 13,
+    replay: '114=s4&114=l1&172=s5&172=l0&180=s4&180=l2&364=s5&364=l0&556=l0&748=l0&940=l0&1300=l0&1492=l0&1684=l0&1876=l0&2068=l0&2260=l0&2584=l0&2776=l0&2854=s6&2854=l0&2941=s5&2941=l0&3133=l0&3434=l0&3626=l0&3818=l0&4010=l0&4152=s6&4152=l0&4304=s5&4304=l0&4496=l0&4688=l0&4880=l0&5000=s3&5000=l1&5072=s5&5072=l0&5264=l0&5456=l0&5710=l0&5902=l0&6094=l0',
+    hints: [
+      'Keep the group near the entrance while a scout builds a route across the water and through Nessy.',
+      'Build long staircases across the gaps, bash the two obstructing sections, and prepare the final approach. Release the right-hand Blocker once the route is almost ready.',
+    ],
+  },
+  {
+    groupIndex: 2,
     levelIndex: 18,
     replay: '171=s3&171=l0&310=l1&475=l2&715=l3&889=l4',
     hints: [
