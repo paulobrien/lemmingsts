@@ -395,6 +395,15 @@ export const TESTED_SOLUTIONS: readonly TestedSolution[] = [
   },
   {
     groupIndex: 2,
+    levelIndex: 5,
+    replay: '75=s8&75=l2&117=s6&117=l2',
+    hints: [
+      'A lower passage can make the final drop safer.',
+      'Make a lemming near the left side dig briefly, then switch it to Basher while it faces right.',
+    ],
+  },
+  {
+    groupIndex: 2,
     levelIndex: 9,
     replay: '110=s5&110=l0&175=s6&175=l1&310=s5&310=l0&510=l0&710=l0&942=l0&1142=l0&1150=s6&1150=l0&1200=s5&1200=l0&1248=s6&1248=l0&1388=s5&1388=l0&1552=l0&1716=l0&1881=l0&2048=l0&2248=l0&2448=l0&2781=l1',
     hints: [
