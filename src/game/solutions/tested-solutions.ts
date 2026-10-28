@@ -366,6 +366,15 @@ export const TESTED_SOLUTIONS: readonly TestedSolution[] = [
   },
   {
     groupIndex: 1,
+    levelIndex: 20,
+    replay: '85=s6&85=l0&97=s4&97=l1&183=s5&183=l0&375=l0&478=s6&478=l0&633=l0&725=s5&725=l0&917=s6&917=l0&1197=s7&1197=l2&1229=s5&1229=l2',
+    hints: [
+      'Keep the crowd in the first shape while a scout connects a route through the others.',
+      'Bash and build from one six to the next. Once the route is ready, mine toward the Blocker, then build to stop mining and release the group.',
+    ],
+  },
+  {
+    groupIndex: 1,
     levelIndex: 24,
     replay: '54=s2&54=l0&86=l8&86=s1&86=l8&118=s2&118=l16&150=l24&182=l32&214=l40&246=l48&278=l56&310=l64&342=l72&515=s8&515=l0&567=s5&567=l8&588=l0&767=s6&767=l8&872=s5&872=l8&1110=l0&1158=l0&1238=l0&1377=l0',
     hints: [
