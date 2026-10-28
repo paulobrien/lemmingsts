@@ -541,6 +541,15 @@ export const TESTED_SOLUTIONS: readonly TestedSolution[] = [
   },
   {
     groupIndex: 2,
+    levelIndex: 8,
+    replay: '65=s8&65=l0&82=s2&82=l1&84=i49&188=s7&188=l1',
+    hints: [
+      'Keep the crowd together on the way down, and prepare a way to turn them towards the exit.',
+      'Make the first lemming dig near the entrance and give the next one a Floater. Increase the release rate, then have the Floater mine towards the steel at the bottom to form a turning point.',
+    ],
+  },
+  {
+    groupIndex: 2,
     levelIndex: 9,
     replay: '110=s5&110=l0&175=s6&175=l1&310=s5&310=l0&510=l0&710=l0&942=l0&1142=l0&1150=s6&1150=l0&1200=s5&1200=l0&1248=s6&1248=l0&1388=s5&1388=l0&1552=l0&1716=l0&1881=l0&2048=l0&2248=l0&2448=l0&2781=l1',
     hints: [
