@@ -7,10 +7,10 @@ export class Frame {
     public offsetX = 0;
     public offsetY = 0;
 
-    private data: Uint32Array;
+    private data: Uint32Array<ArrayBuffer>;
     public mask: Int8Array;
 
-    public getData(): Uint8ClampedArray {
+    public getData(): Uint8ClampedArray<ArrayBuffer> {
         return new Uint8ClampedArray(this.data.buffer);
     }
 

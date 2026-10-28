@@ -8,5 +8,5 @@ import { SkillTypes } from '@/game/game-play/skill-types';
         public releaseCount = 0;
         public needCount = 0;
         public timeLimit = 0;
-        public skills: SkillTypes[] = new Array(SkillTypes.length());
+        public skills: number[] = new Array(SkillTypes.length());
     }    

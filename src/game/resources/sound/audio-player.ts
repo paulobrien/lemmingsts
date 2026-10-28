@@ -1,5 +1,5 @@
 import { LogHandler } from '@/game/utilities/log-handler';
-import { OPL } from './dbopl/db-opl3';
+import { OPL } from './DBOPL/db-opl3';
 import { IOpl3 } from './opl3';
 import { SoundImagePlayer } from './sound-image-player';
 

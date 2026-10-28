@@ -3,7 +3,7 @@ import { EventHandler } from '../utilities/event-handler';
 import { SkillTypes } from './skill-types';
 
 export class GameSkills {
-    private skills: SkillTypes[];
+    private skills: number[];
     private selectedSkill: SkillTypes = SkillTypes.CLIMBER;
 
     constructor(level: Level) {

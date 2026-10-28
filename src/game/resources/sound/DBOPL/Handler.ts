@@ -21,7 +21,7 @@
 */
 
 
-import { Chip } from './chip';
+import { Chip } from './Chip';
 import { GlobalMembers } from './global-members';
 import { MixerChannel } from './mixer-channel';
 

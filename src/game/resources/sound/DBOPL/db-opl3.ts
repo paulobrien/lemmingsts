@@ -41,7 +41,7 @@
 
 
 import { IOpl3 } from '../opl3';
-import { Handler } from './handler';
+import { Handler } from './Handler';
 import { MixerChannel } from './mixer-channel';
 
 

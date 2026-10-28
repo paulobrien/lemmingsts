@@ -20,7 +20,7 @@
 * 2019 - Typescript Version: Thomas Zeugner
 */
 
-import { Chip } from './chip';
+import { Chip } from './Chip';
 import { GlobalMembers } from './global-members';
 import { Shifts } from './db-opl3';
 

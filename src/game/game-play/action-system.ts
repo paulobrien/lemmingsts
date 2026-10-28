@@ -1,6 +1,7 @@
 import { Level } from '../resources/level';
 import { Lemming } from './lemming';
 import { LemmingStateType } from './lemming-state-type';
+import { DisplayImage } from '../view/display-image';
 
 export interface IActionSystem {
 
