@@ -256,6 +256,15 @@ export const TESTED_SOLUTIONS: readonly TestedSolution[] = [
       'Hold each crowd between two Blockers. Bash the barriers and build inward from each side, interrupting each bridge above the exit so the lemmings can drop in; bomb the inner Blockers once the paths are ready.',
     ],
   },
+  {
+    groupIndex: 1,
+    levelIndex: 14,
+    replay: '54=s3&54=l0&82=l1&110=l2&138=l3',
+    hints: [
+      'The group can spare only four lemmings to open the route.',
+      'Assign Bomber to each of the first four as it leaves the hatch; let the remaining six follow the opening.',
+    ],
+  },
 ];
 
 /** Unverified levels deliberately return no solution or hints. */
