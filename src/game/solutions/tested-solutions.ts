@@ -733,6 +733,16 @@ export const TESTED_SOLUTIONS: readonly TestedSolution[] = [
   },
   {
     groupIndex: 2,
+    levelIndex: 27,
+    replay: '54=s2&54=l0&54=s1&54=l0&372=s7&372=l0&423=s5&423=l0&487=l0&788=l0&862=l0&1054=l0&1150=l20&1342=s4&1342=l20&1800=s5&1800=l21&2215=s6&2215=l21&2564=s5&2564=l24&2566=s4&2566=l22&2800=s3&2800=l22&2800=i98',
+    hints: [
+      'One athlete can create a landing for the others from above.',
+      'Climb the right pillar, turn around, and build across the overhead beam before making a landing below the entrance.',
+      'Use a raised staircase and Blocker to reach the upper route, bash through the crystal, then bridge the trap near the exit before releasing the crowd.',
+    ],
+  },
+  {
+    groupIndex: 2,
     levelIndex: 28,
     replay: '80=s2&80=l0&89=s4&89=l1&291=s5&291=l0&452=s6&452=l2&483=s5&483=l0&770=l0&962=l0&1000=s1&1000=l2&1545=s8&1545=l2&1610=s5&1610=l2&1658=s7&1658=l2',
     hints: [
