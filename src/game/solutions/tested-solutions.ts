@@ -104,6 +104,15 @@ export const TESTED_SOLUTIONS: readonly TestedSolution[] = [
   },
   {
     groupIndex: 0,
+    levelIndex: 10,
+    replay: '54=l0&54=s2&54=l0&82=s1&82=l1&82=s2&82=l1&396=s4&396=l0&429=s6&429=l1&650=s3&650=l0',
+    hints: [
+      'The arrowed wall can only be bashed in one direction.',
+      'Give the first two lemmings Climber and Floater. On the far side, use one as a Blocker to turn the other around, then bash back through the wall and bomb the Blocker.',
+    ],
+  },
+  {
+    groupIndex: 0,
     levelIndex: 11,
     replay: '172=s6&172=l0&302=s4&302=l1&387=s5&387=l0&620=l0&820=l0&917=l0&949=n',
     hints: [
