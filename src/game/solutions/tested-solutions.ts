@@ -571,6 +571,16 @@ export const TESTED_SOLUTIONS: readonly TestedSolution[] = [
   },
   {
     groupIndex: 2,
+    levelIndex: 7,
+    replay: '340=s6&340=l0&363=s5&363=l1&387=l0&414=l2&457=l3&500=l4&539=s6&539=l0&584=l0&684=l0&884=l0&930=s5&930=l0&1000=i99&1122=l0&1314=l0&1574=l0&1766=l0&1776=s6&1776=l18',
+    hints: [
+      'One lemming can prepare the route while the others wait in the gallery.',
+      'After opening the first rope, use Builders to close the passage behind your scout.',
+      'Bash through the obstacles and bridge the gap to the exit. Once the route is ready, bash the raised barrier to release everyone and increase the release rate.',
+    ],
+  },
+  {
+    groupIndex: 2,
     levelIndex: 8,
     replay: '65=s8&65=l0&82=s2&82=l1&84=i49&188=s7&188=l1',
     hints: [
