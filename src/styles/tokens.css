@@ -1,0 +1,33 @@
+/* Hallmark · checked: 2026-10-29 · genre: playful · scope: app · built: the project · redesign: polish · v2.0.0 */
+/* Hallmark · waive 7b · one black game canvas surround · the original DOS game requires a black canvas backdrop. */
+:root {
+  --color-ground: #101c17;
+  --color-surface: #18251c;
+  --color-panel: #303a30;
+  --color-panel-raised: #424c3e;
+  --color-ink: #edf3e4;
+  --color-muted: #becfc0;
+  --color-accent: #b0df8e;
+  --color-accent-ink: #172417;
+  --color-edge: #71816a;
+  --color-edge-light: #a4a894;
+  --color-edge-dark: #20291e;
+  --color-focus: #f2ce7d;
+  --color-black: #000;
+  --color-error: #ffd3b8;
+  --color-warning: #f9e3b3;
+  --color-overlay: rgba(24, 37, 28, .98);
+  --color-clear: transparent;
+  --font-body: ui-monospace, "SFMono-Regular", Consolas, "Liberation Mono", monospace;
+  --color-art-sky: #182e34;
+  --color-art-mountain-back: #344d3d;
+  --color-art-mountain-front: #253a2c;
+  --color-art-earth: #76513d;
+  --color-art-earth-shadow: #4c3329;
+  --color-art-grass: #90b66a;
+  --color-art-sun: #d5bb77;
+  --color-art-steps: #d2bd83;
+  --color-art-depth: #050c0a;
+  --color-art-shadow: #050c0a;
+  --content-width: 72rem;
+}
