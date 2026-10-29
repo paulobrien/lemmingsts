@@ -678,6 +678,16 @@ export const TESTED_SOLUTIONS: readonly TestedSolution[] = [
   },
   {
     groupIndex: 2,
+    levelIndex: 12,
+    replay: '0=i59&90=s4&90=l0&551=s7&551=l6&906=l47&973=l6&1040=s5&1040=l47&1480=s6&1480=l6&2050=s1&2050=l6&2381=s5&2381=l6&2416=s7&2416=l6&2880=s6&2880=l6',
+    hints: [
+      'Let one worker prepare the way while the others gather, then bring the whole group through.',
+      'Mine through the first two rises; a returning worker can mine beneath the Blocker and build at the far end to free them safely.',
+      'Raise the release rate early. Bash through the lower ridge, give the leading worker climbing ability, then turn and mine back from near the exit to join the lower passage. Interrupt the Miner with a Basher before it digs too low.',
+    ],
+  },
+  {
+    groupIndex: 2,
     levelIndex: 13,
     replay: '114=s4&114=l1&172=s5&172=l0&180=s4&180=l2&364=s5&364=l0&556=l0&748=l0&940=l0&1300=l0&1492=l0&1684=l0&1876=l0&2068=l0&2260=l0&2584=l0&2776=l0&2854=s6&2854=l0&2941=s5&2941=l0&3133=l0&3434=l0&3626=l0&3818=l0&4010=l0&4152=s6&4152=l0&4304=s5&4304=l0&4496=l0&4688=l0&4880=l0&5000=s3&5000=l1&5072=s5&5072=l0&5264=l0&5456=l0&5710=l0&5902=l0&6094=l0',
     hints: [
