@@ -1096,6 +1096,16 @@ export const TESTED_SOLUTIONS: readonly TestedSolution[] = [
   },
   {
     groupIndex: 3,
+    levelIndex: 25,
+    replay: '0=i49&260=d35&340=i35&730=s4&730=l52&803=s5&803=l31&815=s3&815=l52&985=l54&1005=s4&1005=l53&1067=s5&1067=l31&1122=l53&1314=l53&1462=s3&1462=l31&1725=s4&1725=l1&1767=s5&1767=l53&1959=l53&2151=l53&2200=s3&2200=l1&2343=s5&2343=l53&2365=s4&2365=l2&2365=s3&2365=l2&2504=s4&2504=l0&2504=s3&2504=l0&2675=s4&2675=l4&2675=s3&2675=l4&2695=s5&2695=l53&2879=l53&2880=s4&2880=l5&2880=s3&2880=l5&3000=s4&3000=l6&3000=s3&3000=l6&3134=s4&3134=l7&3134=s3&3134=l7&3147=s4&3147=l53&3147=s3&3147=l53&3282=s4&3282=l8&3282=s3&3282=l8&3543=s4&3543=l9&3543=s3&3543=l9&3719=s4&3719=l10&3719=s3&3719=l10&3909=s4&3909=l11&3909=s3&3909=l11&4452=s4&4452=l12',
+    hints: [
+      'Keep the crowd together while a small group prepares a route through the mines.',
+      'Adjust the release rate to separate two workers, then use Blockers and Bombers to open a route to the lower floor. Bridge the water and send a scout to build a zigzag staircase up the far side.',
+      'Open the upper wall in stages with Blockers and Bombers. Use another blast near the far ridge, then place a Blocker to turn the returning crowd onto the staircase.',
+    ],
+  },
+  {
+    groupIndex: 3,
     levelIndex: 26,
     replay: '91=s6&91=l0&166=s8&166=l1&170=i89&230=s6&230=l1&660=l21&663=l22&666=l23',
     hints: [
