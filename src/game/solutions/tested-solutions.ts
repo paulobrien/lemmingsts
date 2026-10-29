@@ -591,6 +591,16 @@ export const TESTED_SOLUTIONS: readonly TestedSolution[] = [
   },
   {
     groupIndex: 2,
+    levelIndex: 3,
+    replay: '120=s4&120=l1&145=s7&145=l2&160=s5&160=l0&245=s6&245=l2&352=s5&352=l0&450=l0&650=l0&670=l0&720=l2&736=l2&762=s4&762=l3&862=s5&862=l0&878=l0&1070=l0&1086=l0&1278=l0&1294=l0&1486=l0&1502=l0&1694=l0&1710=l0&1902=l0&2112=l0&2304=l0',
+    hints: [
+      'Bring both entrances together beneath the steel, then make a safe route up the narrow shaft.',
+      'Mine and bash from the right room; use short Builders to connect that tunnel to a zigzag staircase, and a Blocker to turn walkers at the first landing.',
+      'Build through the shaft while avoiding its wall traps, then bridge across the upper room to the exit.',
+    ],
+  },
+  {
+    groupIndex: 2,
     levelIndex: 4,
     replay: '100=s5&100=l0&105=s4&105=l1&292=s5&292=l0&484=l0&500=l0&692=l0&884=l0&1076=l0&1268=l0&1460=l0&1547=l0&1739=l0&1931=l0&1967=s6&1967=l0&2004=l0&2020=s5&2020=l0&2212=l0&2404=l0&2596=s6&2596=l0&2638=l0&2700=s3&2700=l1',
     hints: [
