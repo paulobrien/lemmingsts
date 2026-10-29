@@ -25,4 +25,8 @@ test('keeps level details and sound controls readable on narrow screens', async 
     await expect(page.getByRole('button', { name: 'Music off' })).toBeInViewport()
     await expect(page.getByRole('button', { name: 'Sound off' })).toBeInViewport()
   }
+
+  await page.setViewportSize({ width: 1280, height: 800 })
+  await expect(page.getByRole('button', { name: 'Start level', exact: true })).toBeInViewport({ ratio: 1 })
+  await expect(page.getByRole('button', { name: 'Fullscreen', exact: true })).toBeInViewport({ ratio: 1 })
 })

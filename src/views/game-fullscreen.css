@@ -1,14 +1,15 @@
+/* Hallmark · checked: 2026-10-29 · genre: playful · scope: app · built: the project · redesign: polish · v2.0.0 */
 /* Fullscreen targets the game screen itself, leaving the surrounding page out. */
 .game-screen.is-fullscreen.is-fullscreen {
   position: fixed;
   inset: 0;
   z-index: 1000;
   box-sizing: border-box;
-  width: 100vw;
+  width: 100%;
   height: 100vh;
   height: 100dvh;
   overflow: hidden;
-  background: #000;
+  background: var(--color-black);
 }
 
 /* Fit the complete, uncropped game view to the available screen. */
@@ -19,10 +20,10 @@
   place-items: center;
   margin: 0;
   border: 0;
-  background: #000;
+  background: var(--color-black);
 }
 .game-screen.is-fullscreen .canvas-frame canvas {
-  width: min(100vw, calc(100dvh * 5 / 3));
+  width: min(100%, calc(100dvh * 5 / 3));
   max-height: 100%;
   height: auto;
   margin: 0;
@@ -43,9 +44,9 @@
   overscroll-behavior: contain;
   padding: max(.5rem, env(safe-area-inset-top)) max(.5rem, env(safe-area-inset-right))
     max(.5rem, env(safe-area-inset-bottom)) .5rem;
-  color: #f3f3e3;
-  background: rgba(24, 37, 28, .96);
-  border-left: 2px solid #858878;
+  color: var(--color-ink);
+  background: var(--color-overlay);
+  border-left: 2px solid var(--color-edge);
 }
 .game-screen.is-fullscreen .game-controls .game-toolbar { margin-top: 0; }
 .game-screen.is-fullscreen .skill-grid { grid-template-columns: repeat(4, minmax(0, 1fr)); }
@@ -57,5 +58,5 @@
   left: .5rem;
   max-width: min(24rem, 85%);
   padding: .4rem;
-  background: #18251c;
+  background: var(--color-surface);
 }

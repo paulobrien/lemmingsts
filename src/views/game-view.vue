@@ -1,22 +1,22 @@
 <template>
   <main class="game-page">
     <header class="game-header" :inert="fullscreenActive">
-      <router-link class="back-link" to="/">← Levels</router-link>
-      <div>
-        <p class="eyebrow">{{ groupName }} · Level {{ levelIndex + 1 }}</p>
+      <div class="level-heading">
+        <p class="level-context">{{ groupName }} <span>Level {{ levelIndex + 1 }}</span></p>
         <h1>{{ title }}</h1>
         <p v-if="level && !loading && !error" class="objective">
-          <template v-if="playing || finished">Saved {{ savedCount }} · </template>
-          Save at least {{ level.needCount }} of {{ level.releaseCount }} lemmings
-          <template v-if="!playing && !finished"> · {{ level.timeLimit }} {{ level.timeLimit === 1 ? 'minute' : 'minutes' }}</template>
+          <span v-if="playing || finished" class="saved-count">Saved {{ savedCount }}</span>
+          Save at least {{ level.needCount }} of {{ level.releaseCount }} lemmings<template v-if="!playing && !finished">, {{ level.timeLimit }} {{ level.timeLimit === 1 ? 'minute' : 'minutes' }}</template>
         </p>
       </div>
+      <div class="audio-controls" role="group" aria-label="Audio settings">
       <button class="quiet" type="button" :disabled="loading" :aria-pressed="musicEnabled" @click="toggleMusic">
         Music {{ musicEnabled ? 'on' : 'off' }}
       </button>
       <button class="quiet" type="button" :aria-pressed="soundEnabled" @click="toggleSound">
         Sound {{ soundEnabled ? 'on' : 'off' }}
       </button>
+      </div>
     </header>
 
     <section ref="gameScreen" class="game-screen" :class="{ 'is-fullscreen': fullscreenActive }" aria-label="Game screen">
@@ -52,7 +52,7 @@
       <button v-else-if="playing && !paused" ref="pauseControl" class="primary" type="button" aria-controls="pause-menu" :aria-expanded="paused" @click="openPauseMenu">Pause</button>
       <button v-if="finished && levelSucceeded && nextLevelAvailable" class="primary" type="button" @click="changeLevel(1)">Next level</button>
       <button v-if="finished" :class="{ primary: !levelSucceeded }" type="button" @click="loadLevel">Try again</button>
-      <button type="button" :disabled="loading || !level" @click="loadLevel">Restart</button>
+      <button v-if="playing && !paused" type="button" :disabled="loading || !level" @click="loadLevel">Restart</button>
       <button class="zoom-button" type="button" aria-label="Zoom out" @click="zoom(-1)">−</button>
       <button class="zoom-button" type="button" aria-label="Zoom in" @click="zoom(1)">+</button>
       <button type="button" :disabled="!zoomChanged" @click="resetZoom">Reset zoom</button>
@@ -121,9 +121,10 @@
     </div>
     </section>
 
-    <nav class="level-navigation" aria-label="Level navigation" :inert="fullscreenActive">
-      <button type="button" :disabled="loading" @click="changeLevel(-1)">← Previous level</button>
-      <button type="button" :disabled="loading" @click="changeLevel(1)">Next level →</button>
+    <nav v-if="!playing" class="level-navigation" aria-label="Level navigation" :inert="fullscreenActive">
+      <router-link class="pause-link level-selection" to="/">Level selection</router-link>
+      <button type="button" :disabled="loading" @click="changeLevel(-1)">Previous level</button>
+      <button type="button" :disabled="loading" @click="changeLevel(1)">Next level</button>
     </nav>
   </main>
 </template>
@@ -131,65 +132,87 @@
 <script lang="ts" src="./game-view.ts"></script>
 
 <style scoped>
-.game-page { max-width: 1080px; min-height: 100vh; box-sizing: border-box; padding: 1rem; margin: 0 auto; color: #f3f3e3; background: #18251c; text-align: left; }
+/* Hallmark · checked: 2026-10-29 · genre: playful · scope: app · built: the project · redesign: polish · v2.0.0 */
+/* User-directed: remove the header back link, preserve pause navigation and the original game canvas. */
+.game-page { max-width: var(--content-width); min-height: 100vh; box-sizing: border-box; padding: 1.5rem 2rem; margin: 0 auto; color: var(--color-ink); background: var(--color-surface); text-align: left; }
 .game-header { display: flex; align-items: center; gap: 1rem; margin-bottom: .75rem; }
-.game-header > div { flex: 1; min-width: 0; }
-h1 { font-size: clamp(1.2rem, 3vw, 2rem); margin: .1rem 0; line-height: 1.15; }
-.eyebrow { color: #c0e7a6; text-transform: uppercase; font-size: .7rem; letter-spacing: .12em; margin: 0; font-weight: bold; }
-.back-link { color: #d5f6c4; white-space: nowrap; }
-.hint, .notice { color: #d9dfd0; min-height: 1.4rem; margin: .5rem 0; }
-.objective { color: #e1f3d2; margin: .4rem 0; font-weight: 600; }
-.interaction-notice { color: #f9e3b3; margin: .4rem .2rem 0; }
+.level-heading { flex: 1; min-width: 0; }
+.audio-controls { display: flex; flex-wrap: wrap; gap: .5rem; }
+h1 { font-size: 1.5rem; overflow-wrap: break-word; min-width: 0; text-wrap: balance; margin: .1rem 0; line-height: 1.15; }
+.level-context { display: flex; align-items: center; gap: .75rem; color: var(--color-muted); font-size: .8rem; margin: 0 0 .3rem; }
+.level-context span { padding-left: .75rem; border-left: 1px solid var(--color-edge); }
+.saved-count { color: var(--color-accent); margin-right: 1rem; }
+
+.hint, .notice { color: var(--color-muted); min-height: 1.4rem; margin: .5rem 0; }
+.objective { color: var(--color-muted); margin: .4rem 0; font-weight: 600; }
+.interaction-notice { color: var(--color-warning); margin: .4rem .2rem 0; }
 .interaction-notice:empty { display: none; }
-.error { color: #ffd3b8; }
-.canvas-frame { background: #000; border: 4px solid; border-color: #999a87 #34382f #34382f #999a87; overflow: hidden; }
+.error { color: var(--color-error); }
+.canvas-frame { background: var(--color-black); border: 4px solid; border-color: var(--color-edge-light) var(--color-edge-dark) var(--color-edge-dark) var(--color-edge-light); overflow: hidden; }
 canvas { display: block; width: 100%; height: auto; aspect-ratio: 5 / 3; image-rendering: pixelated; touch-action: none; }
-button, select { min-height: 44px; padding: .55rem .8rem; border-radius: 2px; border: 2px solid; border-color: #a4a894 #292d26 #292d26 #a4a894; color: #f9f9ea; background: #4a4d41; font: inherit; cursor: pointer; }
-button:hover:not(:disabled) { background: #5c6050; }
-button:focus-visible, select:focus-visible { outline: 2px solid #c4f79e; outline-offset: 2px; }
-canvas:focus-visible { outline: 2px solid #c4f79e; outline-offset: -3px; }
+button, select { min-height: 44px; padding: .55rem .8rem; border-radius: 2px; border: 2px solid; border-color: var(--color-edge-light) var(--color-edge-dark) var(--color-edge-dark) var(--color-edge-light); color: var(--color-ink); background: var(--color-panel-raised); font: inherit; cursor: pointer; }
+button:hover:not(:disabled) { background: var(--color-panel-raised); box-shadow: inset 0 0 0 1px var(--color-edge-light); }
+button:focus-visible, select:focus-visible { outline: 2px solid var(--color-focus); outline-offset: 2px; }
+canvas:focus-visible { outline: 2px solid var(--color-focus); outline-offset: -3px; }
 .visually-hidden { position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px; overflow: hidden; clip: rect(0, 0, 0, 0); white-space: nowrap; border: 0; }
 .fullscreen-a11y-pause:focus-visible { position: absolute; top: .5rem; left: .5rem; z-index: 3; width: auto; height: auto; margin: 0; padding: .55rem .8rem; clip: auto; overflow: visible; border: 2px solid; }
-button:disabled { cursor: default; opacity: .45; }
+button:disabled { cursor: not-allowed; opacity: .45; }
 button.zoom-button { min-width: 44px; box-sizing: border-box; }
-button.primary { background: #b0df8e; color: #172417; border-color: #d9f4bd #527a43 #527a43 #d9f4bd; font-weight: bold; }
-button.primary:hover:not(:disabled) { background: #c4eca7; }
-button.quiet { background: transparent; }
-.game-toolbar, .release-controls, .level-navigation { display: flex; flex-wrap: wrap; gap: .5rem; align-items: center; margin-top: .75rem; padding: .45rem; border: 2px solid; border-color: #858878 #292d26 #292d26 #858878; background: #3c4036; }
-.pause-menu { margin-top: .75rem; padding: .8rem; border: 2px solid; border-color: #a4a894 #292d26 #292d26 #a4a894; background: #343e31; }
-.pause-menu h2 { margin: 0; font-size: 1.1rem; }.pause-menu p { margin: .3rem 0 .7rem; color: #d9dfd0; }
+button.primary { background: var(--color-accent); color: var(--color-accent-ink); border-color: var(--color-accent) var(--color-edge-dark) var(--color-edge-dark) var(--color-accent); font-weight: bold; }
+button.primary:hover:not(:disabled) { background: var(--color-accent); box-shadow: inset 0 0 0 2px var(--color-accent-ink); }
+button.quiet { background: var(--color-clear); }
+button.quiet[aria-pressed="true"] { border-color: var(--color-accent); color: var(--color-accent); background: var(--color-surface); }
+.game-toolbar, .release-controls, .level-navigation { display: flex; flex-wrap: wrap; gap: .5rem; align-items: center; margin-top: .75rem; padding: .6rem 0; border: 0; border-bottom: 1px solid var(--color-edge-dark); background: var(--color-clear); }
+.pause-menu { margin-top: .75rem; padding: .8rem; border: 2px solid; border-color: var(--color-edge-light) var(--color-edge-dark) var(--color-edge-dark) var(--color-edge-light); background: var(--color-panel); }
+.pause-menu h2 { margin: 0; font-size: 1.1rem; }.pause-menu p { margin: .3rem 0 .7rem; color: var(--color-muted); }
 .pause-actions { display: flex; flex-wrap: wrap; gap: .5rem; align-items: stretch; }
-.pause-link { display: inline-flex; align-items: center; min-height: 44px; box-sizing: border-box; padding: .55rem .8rem; border: 2px solid; border-color: #a4a894 #292d26 #292d26 #a4a894; border-radius: 2px; color: #f9f9ea; background: #4a4d41; text-decoration: none; }
-.pause-link:hover { background: #5c6050; }.pause-link:focus-visible { outline: 2px solid #c4f79e; outline-offset: 2px; }
-.fullscreen-status { color: #d9dfd0; font-size: .85rem; }
-.display-settings { margin-top: .75rem; padding: .6rem; border: 2px solid; border-color: #858878 #292d26 #292d26 #858878; background: #3c4036; }
+.pause-link { display: inline-flex; align-items: center; min-height: 44px; box-sizing: border-box; padding: .55rem .8rem; border: 2px solid; border-color: var(--color-edge-light) var(--color-edge-dark) var(--color-edge-dark) var(--color-edge-light); border-radius: 2px; color: var(--color-ink); background: var(--color-panel-raised); text-decoration: none; }
+.pause-link:hover { background: var(--color-panel-raised); box-shadow: inset 0 0 0 1px var(--color-edge-light); }.pause-link:focus-visible { outline: 2px solid var(--color-focus); outline-offset: 2px; }
+.fullscreen-status { color: var(--color-muted); font-size: .85rem; }
+.display-settings { margin-top: .75rem; padding: .6rem; border: 2px solid; border-color: var(--color-edge) var(--color-edge-dark) var(--color-edge-dark) var(--color-edge); background: var(--color-panel); }
 .display-settings summary { cursor: pointer; min-height: 44px; display: flex; align-items: center; font-weight: 600; }
 .display-settings summary::before { content: '▸'; margin-right: .5rem; }.display-settings[open] summary::before { content: '▾'; }
-.display-settings summary:focus-visible, .display-settings input:focus-visible { outline: 2px solid #c4f79e; outline-offset: 2px; }
+.display-settings summary:focus-visible, .display-settings input:focus-visible { outline: 2px solid var(--color-focus); outline-offset: 2px; }
 .display-settings fieldset { display: flex; flex-wrap: wrap; gap: .5rem; border: 0; margin: .3rem 0; padding: 0; }
 .display-settings legend { padding: 0; font-weight: 600; }
 .display-settings label { display: inline-flex; align-items: center; gap: .45rem; min-height: 44px; padding: 0 .5rem; }
-.display-settings input { width: 1.1rem; height: 1.1rem; accent-color: #b0df8e; }
-.display-settings p { margin: .4rem 0 .6rem; color: #d9dfd0; }
+.display-settings input { width: 1.1rem; height: 1.1rem; accent-color: var(--color-accent); }
+.display-settings p { margin: .4rem 0 .6rem; color: var(--color-muted); }
 .comparison-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: .5rem; overflow-x: auto; }
-.comparison-grid:focus-visible { outline: 2px solid #c4f79e; outline-offset: 2px; }
+.comparison-grid:focus-visible { outline: 2px solid var(--color-focus); outline-offset: 2px; }
 .comparison-grid figure { margin: 0; min-width: 0; }.comparison-grid figcaption { margin-bottom: .3rem; font-weight: 600; }
-.comparison-grid canvas { background: #000; border: 2px solid #858878; box-sizing: border-box; touch-action: auto; }
+.comparison-grid canvas { background: var(--color-black); border: 2px solid var(--color-edge); box-sizing: border-box; touch-action: auto; }
 .speed { display: flex; align-items: center; gap: .4rem; }
-.time { margin-left: auto; padding: .3rem .45rem; color: #d8f6bd; background: #20291e; font-family: monospace; font-variant-numeric: tabular-nums; }
-.skill-section { margin-top: .75rem; padding: .45rem; border: 2px solid; border-color: #858878 #292d26 #292d26 #858878; background: #3c4036; }
+.time { margin-left: auto; padding: .3rem .45rem; color: var(--color-accent); background: var(--color-edge-dark); font-family: var(--font-body); font-variant-numeric: tabular-nums; }
+.skill-section { margin-top: .75rem; padding: .6rem 0; border: 0; border-bottom: 1px solid var(--color-edge-dark); background: var(--color-clear); }
 .skill-grid { display: grid; grid-template-columns: repeat(8, minmax(0, 1fr)); gap: .4rem; }
 .skill-button { display: flex; flex-direction: column; align-items: center; gap: .15rem; padding: .4rem .15rem; min-width: 0; font-size: .8rem; }
-.skill-button strong { font-family: monospace; font-size: 1rem; }
-.skill-button.selected { color: #152514; background: #b0df8e; border-color: #e0f8c9 #527a43 #527a43 #e0f8c9; box-shadow: inset 0 0 0 1px #527a43; }
-button.skill-button.selected:hover:not(:disabled) { background: #c4eca7; }
+.skill-button strong { font-family: var(--font-body); font-size: 1rem; }
+.skill-button.selected { color: var(--color-accent-ink); background: var(--color-accent); border-color: var(--color-accent) var(--color-edge-dark) var(--color-edge-dark) var(--color-accent); box-shadow: inset 0 0 0 1px var(--color-edge-dark); }
+button.skill-button.selected:hover:not(:disabled) { background: var(--color-accent); box-shadow: inset 0 0 0 2px var(--color-accent-ink); }
 .release-controls span { margin-right: .2rem; }
-.hints { margin-top: 1rem; color: #d9dfd0; }.hints button + button { margin-left: .5rem; }.hints ol { padding-left: 1.5rem; line-height: 1.6; }
-.level-navigation { justify-content: space-between; margin-bottom: 1rem; }
+.hints { margin-top: 1rem; color: var(--color-muted); }.hints button + button { margin-left: .5rem; }.hints ol { padding-left: 1.5rem; line-height: 1.6; }
+.level-navigation { justify-content: flex-end; margin-bottom: 1rem; }
+.level-selection { margin-right: auto; }
+button, select, .pause-link { white-space: nowrap; }
+button:active:not(:disabled), .pause-link:active { border-color: var(--color-edge-dark) var(--color-edge-light) var(--color-edge-light) var(--color-edge-dark); }
+.display-settings { border: 0; border-top: 1px solid var(--color-edge); background: var(--color-clear); padding: .35rem 0; }
+.skill-section { border: 0; padding: 0; background: var(--color-clear); }
+.hints { border-top: 1px solid var(--color-edge); padding: 1rem 0 .25rem; line-height: 1.6; }
+.game-controls { padding-top: .25rem; }
+@media (min-width: 900px) {
+  /* Keep the canvas and the first control row together on shorter desktop screens. */
+  .game-page { max-width: min(var(--content-width), max(50rem, calc((100dvh - 17rem) * 5 / 3 + 4rem))); }
+}
 @media (max-width: 600px) {
-  .game-page { padding: .6rem; }
+  .game-page { padding: 1rem .75rem; }
+  h1 { font-size: 1.25rem; }
+  .audio-controls { gap: .5rem; }
+  .objective { font-size: .85rem; line-height: 1.5; }
+  .level-navigation { gap: .5rem; }
+  .level-selection { flex-basis: 100%; justify-content: center; }
   .game-header { gap: .5rem; flex-wrap: wrap; }
-  .game-header > div { flex-basis: calc(100% - 90px); }
+  .level-heading { flex-basis: 100%; }
   .skill-grid { grid-template-columns: repeat(4, minmax(0, 1fr)); }
   .skill-button { min-height: 48px; }
   .comparison-grid { grid-template-columns: repeat(2, minmax(260px, 1fr)); }

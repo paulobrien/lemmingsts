@@ -1,4 +1,5 @@
-/* Hallmark · checked: 2026-10-29 · genre: playful · scope: app · built: the project · redesign: polish · v2.0.0 */
+/* Hallmark · checked: 2026-10-29 · genre: playful · scope: app · built: the project · redesign: polish · surface: absolute-black game canvas · v2.0.0 */
+/* Critique: retain the DOS canvas backdrop while tinting the surrounding interface toward forest green. */
 /* Hallmark · waive 7b · one black game canvas surround · the original DOS game requires a black canvas backdrop. */
 :root {
   --color-ground: #101c17;
