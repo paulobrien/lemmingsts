@@ -7,8 +7,31 @@ import { Trigger } from '../../src/game/game-play/trigger';
 import { TriggerManager } from '../../src/game/game-play/trigger-manager';
 import { GameTimer } from '../../src/game/game-play/game-timer';
 import { TriggerTypes } from '../../src/game/resources/lemmings/trigger-types';
+import { ActionBuildSystem } from '../../src/game/game-play/actions/action-build-system';
+import type { LemmingsSprite } from '../../src/game/resources/lemmings-sprite';
 
 describe('DOS sound events', () => {
+    it('warns once for each of the final three builder bricks', () => {
+        const manager = Object.create(LemmingManager.prototype) as LemmingManager;
+        const emit = vi.fn();
+        const builder = new ActionBuildSystem({ getAnimation: () => ({}) } as unknown as LemmingsSprite);
+        const lem = new Lemming(50, 50, 0);
+        lem.setAction(builder);
+        const actions = [];
+        actions[LemmingStateType.SHRUG] = { getActionName: () => 'shrug' };
+        Object.assign(manager, {
+            level: { width: 100, height: 100, hasGroundAt: () => false, setGroundAt: vi.fn() },
+            actions, lemmings: [lem], gameVictoryCondition: { getLeftCount: () => 0 },
+            onSoundEffect: { trigger: emit }, nextNukingLemmingsIndex: -1,
+            logging: { debug: vi.fn() }, triggerManager: { trigger: () => TriggerTypes.NO_TRIGGER },
+        });
+        for (let tick = 0; tick < 192; tick++) manager.tick();
+        expect(emit.mock.calls).toEqual([
+            [SoundEffect.BuilderWarning], [SoundEffect.BuilderWarning], [SoundEffect.BuilderWarning],
+        ]);
+        expect(lem.action).toBe(actions[LemmingStateType.SHRUG]);
+    });
+
     it('plays the opening cues once, on simulation iterations 15 and 34', () => {
         const manager = Object.create(LemmingManager.prototype) as LemmingManager;
         const emit = vi.fn();

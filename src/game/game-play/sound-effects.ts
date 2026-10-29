@@ -9,6 +9,7 @@ export enum SoundEffect {
     Fire = 12,
     Exit = 15,
     Drowning = 16,
+    BuilderWarning = 17,
 }
 
 // Mapping cross-checked against the DOS driver calls in

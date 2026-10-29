@@ -122,6 +122,12 @@ import { TriggerManager } from './trigger-manager';
                 const previousAction = lem.action;
                 const countdownFinishes = lem.countdownAction !== null && lem.countdown === 1;
                 let newAction = lem.process(this.level);
+                // DOS warns on frame 10 of each of the final three bricks.
+                // A finishing bomber countdown skips the builder action entirely.
+                if (!countdownFinishes && newAction === LemmingStateType.NO_STATE_TYPE && previousAction instanceof ActionBuildSystem &&
+                    lem.frameIndex === 10 && lem.state >= 9) {
+                    this.onSoundEffect.trigger(SoundEffect.BuilderWarning);
+                }
                 // DOS/Lemmix checks interactive objects for a digger only on
                 // the frames where it digs a row (0 and 8), not during the
                 // seven intervening animation frames. The initial digging
