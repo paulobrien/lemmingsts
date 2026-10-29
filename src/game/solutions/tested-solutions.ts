@@ -1094,6 +1094,16 @@ export const TESTED_SOLUTIONS: readonly TestedSolution[] = [
       'Near the end, bridge over the crusher before bashing the wall to the exit.',
     ],
   },
+  {
+    groupIndex: 3,
+    levelIndex: 29,
+    replay: '120=s4&120=l1&130=s5&130=l0&230=s4&230=l3&308=s5&308=l2&500=l2&562=s6&562=l0&580=l2&791=s5&791=l0&983=l0&1175=l0&1367=l0&1588=s6&1588=l0&1639=s5&1639=l0&1831=l0&1900=s6&1900=l0&2007=s5&2007=l0&2199=l0&2391=s6&2391=l0&2507=s5&2507=l0&2800=s3&2800=l3&3100=s1&3100=l2&3100=s2&3100=l2&3168=s5&3168=l2&3360=l2&3552=l2&3728=l2&3898=s4&3898=l74&3921=s5&3921=l2&4039=s6&4039=l2&4240=s5&4240=l2&4432=l2&4624=l2&4903=l2&5095=l2&5287=l2&5479=l2&5671=l2&5863=l2&6055=l2&6247=l2&6439=l2&7000=l5&7260=s6&7260=l5',
+    hints: [
+      'Protect both groups while a scout from each entrance prepares a path to the central exit.',
+      'From the left, bridge over the trap and water, bash through the pillars and build a step up the mountain. Release the left group once its path is ready.',
+      'From the right, send a Climber and Floater over the wall. Use a Blocker to turn the scout onto a higher route, then bash and build left to the exit. Build over the Blocker and bash through the wall to let the right group follow.',
+    ],
+  },
 ];
 
 /** Unverified levels deliberately return no solution or hints. */
