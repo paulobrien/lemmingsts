@@ -4,6 +4,29 @@ import type { SoundImagePlayer } from '../../src/game/resources/sound/sound-imag
 
 afterEach(() => vi.unstubAllGlobals());
 
+it('connects its generated audio directly to the output for the lifetime of the player', () => {
+  const processor = { onaudioprocess: null, connect: vi.fn(), disconnect: vi.fn() };
+  class TestAudioContext {
+    readonly sampleRate = 48_000;
+    readonly destination = {};
+    readonly resume = vi.fn(async () => undefined);
+    readonly close = vi.fn(async () => undefined);
+    readonly createScriptProcessor = vi.fn(() => processor);
+  }
+  vi.stubGlobal('AudioContext', TestAudioContext);
+  const track = { sampleRateFactor: 16800, getSamplingInterval: () => 80 } as unknown as SoundImagePlayer;
+  const player = new AudioPlayer(track);
+  const context = player.audioCtx as unknown as TestAudioContext;
+  expect(context.createScriptProcessor).toHaveBeenCalledWith(8192, 0, 2);
+  expect(processor.connect).toHaveBeenCalledWith(context.destination);
+  expect(processor.onaudioprocess).toBeTypeOf('function');
+  expect(processor.disconnect).not.toHaveBeenCalled();
+  player.stop();
+  expect(processor.disconnect).toHaveBeenCalledWith(context.destination);
+  expect(processor.onaudioprocess).toBeNull();
+  expect(context.close).toHaveBeenCalledOnce();
+});
+
 it('suspends a nonterminating effect after a bounded amount of audio', () => {
   class TestAudioContext {
     readonly sampleRate = 48_000;

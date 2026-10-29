@@ -3,36 +3,54 @@ import { resolve } from 'node:path'
 import { expect, test } from '@playwright/test'
 
 declare global {
-  interface Window { audioOutputMeters: { meter: AnalyserNode; context: BaseAudioContext }[] }
+  interface Window {
+    audioOutputDiagnostics: Array<{
+      state: () => AudioContextState
+      callbacks: number
+      firstSignalAt: number | null
+      lastSignalAt: number | null
+      peak: number
+    }>
+  }
 }
 
-// Do not let headless Chrome's permissive autoplay default hide a missing
-// player gesture. Keep the optional local Chromium override used by CI/dev.
+// Keep Chrome's user-gesture policy active while preserving the local browser override.
 test.use({ launchOptions: {
   ...(process.env.PLAYWRIGHT_CHROMIUM_EXECUTABLE ? { executablePath: process.env.PLAYWRIGHT_CHROMIUM_EXECUTABLE } : {}),
   args: ['--autoplay-policy=user-gesture-required'],
 } })
 
-test('music and effects produce audio samples after a player gesture', async ({ page }) => {
+test('music continues to produce sound and gameplay effects produce samples', async ({ page }) => {
   test.skip(process.env.RUN_PRIVATE_GAME_TESTS !== '1', 'Requires local, untracked original game files')
   test.setTimeout(45_000)
-  // Insert analysers into the real Web Audio graph: keep the audio output and
-  // synthesis intact while checking actual signal, not just context state.
   await page.addInitScript(() => {
-    window.audioOutputMeters = []
-    const connect = AudioNode.prototype.connect
-    Object.defineProperty(AudioNode.prototype, 'connect', {
-      configurable: true,
-      writable: true,
-      value: function (this: AudioNode, destination: AudioNode | AudioParam, ...args: number[]) {
-        if (destination instanceof AudioDestinationNode) {
-          const meter = this.context.createAnalyser()
-          meter.fftSize = 2048
-          window.audioOutputMeters.push({ meter, context: this.context })
-          Reflect.apply(connect, this, [meter])
-          return Reflect.apply(connect, this, [destination, ...args])
-        }
-        return Reflect.apply(connect, this, [destination, ...args])
+    window.audioOutputDiagnostics = []
+    // Wrap the real processor callback and inspect its output in place. Unlike
+    // an analyser attached to the graph, this adds no audio node or connection,
+    // so it cannot accidentally keep a disconnected graph alive.
+    const descriptor = Object.getOwnPropertyDescriptor(ScriptProcessorNode.prototype, 'onaudioprocess')!
+    Object.defineProperty(ScriptProcessorNode.prototype, 'onaudioprocess', {
+      configurable: descriptor.configurable,
+      enumerable: descriptor.enumerable,
+      get: descriptor.get,
+      set(this: ScriptProcessorNode, callback: ((event: AudioProcessingEvent) => void) | null) {
+        if (!callback) { descriptor.set!.call(this, callback); return }
+        const diagnostic = { state: () => this.context.state, callbacks: 0, firstSignalAt: null as number | null, lastSignalAt: null as number | null, peak: 0 }
+        window.audioOutputDiagnostics.push(diagnostic)
+        descriptor.set!.call(this, (event: AudioProcessingEvent) => {
+          callback.call(this, event)
+          diagnostic.callbacks++
+          let peak = 0
+          for (let channel = 0; channel < event.outputBuffer.numberOfChannels; channel++) {
+            for (const sample of event.outputBuffer.getChannelData(channel)) peak = Math.max(peak, Math.abs(sample))
+          }
+          diagnostic.peak = Math.max(diagnostic.peak, peak)
+          if (peak > 0.005) {
+            const now = performance.now()
+            diagnostic.firstSignalAt ??= now
+            diagnostic.lastSignalAt = now
+          }
+        })
       },
     })
   })
@@ -42,32 +60,18 @@ test('music and effects produce audio samples after a player gesture', async ({ 
   await page.goto('/')
   await page.locator('input[type=file]').first().setInputFiles(files)
   await page.getByRole('link', { name: 'Play Lemmings' }).click()
-
-  // One AudioContext can be running yet produce only silence. Sample the
-  // analyser repeatedly, since effects are short and do not start instantly.
-  const peakWithin = (timeout: number) => page.evaluate(async timeout => {
-    const deadline = performance.now() + timeout
-    let peak = 0
-    while (performance.now() < deadline) {
-      for (const { meter, context } of window.audioOutputMeters) {
-        if (context.state !== 'running') continue
-        const samples = new Float32Array(meter.fftSize)
-        meter.getFloatTimeDomainData(samples)
-        for (const sample of samples) peak = Math.max(peak, Math.abs(sample))
-      }
-      if (peak > 0.005) break
-      await new Promise(resolve => setTimeout(resolve, 20))
-    }
-    return peak
-  }, timeout)
-
   await page.getByRole('button', { name: 'Music off' }).click()
-  expect(await peakWithin(8_000), 'music output should not be silent').toBeGreaterThan(0.005)
+
+  // A context reporting 'running' or a single audible buffer is insufficient:
+  // a zero-duration source can disconnect the processor almost immediately.
+  await expect.poll(() => page.evaluate(() => window.audioOutputDiagnostics.some(d =>
+    d.state() === 'running' && d.callbacks >= 10 && d.firstSignalAt !== null && d.lastSignalAt !== null &&
+    d.lastSignalAt - d.firstSignalAt >= 3_000)), { timeout: 12_000, message: 'music should keep producing audible output for at least three seconds' }).toBe(true)
   await page.getByRole('button', { name: 'Music on' }).click()
-  await page.evaluate(() => { window.audioOutputMeters = [] })
+  await page.evaluate(() => { window.audioOutputDiagnostics = [] })
 
   await page.getByRole('button', { name: 'Sound off' }).click()
   await page.getByRole('button', { name: 'Start level' }).click()
-  // The entrance and "Let's go" cues occur shortly after starting the level.
-  expect(await peakWithin(12_000), 'game effects output should not be silent').toBeGreaterThan(0.005)
+  await expect.poll(() => page.evaluate(() => window.audioOutputDiagnostics.some(d => d.peak > 0.005)),
+    { timeout: 12_000, message: 'game effects should produce audible samples' }).toBe(true)
 })

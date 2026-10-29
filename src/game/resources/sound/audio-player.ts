@@ -8,7 +8,6 @@ export class AudioPlayer {
     private log = new LogHandler('AudioPlayer');
 
     public audioCtx: AudioContext | null = null;
-    public source: AudioBufferSourceNode | null = null;
     public processor: ScriptProcessorNode | null = null
 
     private opl: IOpl3 | null = null;
@@ -42,22 +41,10 @@ export class AudioPlayer {
             this.log.debug('Audio sample rate ' + this.audioCtx.sampleRate);
 
             this.samplesPerTick = Math.max(1, Math.round(this.audioCtx.sampleRate / (this.soundImagePlayer.getSamplingInterval())));
-            this.source = this.audioCtx.createBufferSource();
-            this.processor = this.audioCtx.createScriptProcessor(8192, 2, 2);
-
-            // When the buffer source stops playing, disconnect everything
-            this.source.onended = () => {
-
-                if ((!this.source) || (!this.processor) || (!this.audioCtx)) {
-                    return;
-                }
-
-                console.log('source.onended()');
-                this.source.disconnect(this.processor);
-                this.processor.disconnect(this.audioCtx.destination);
-                this.processor = null;
-                this.source = null;
-            }
+            // The OPL synthesizer generates output directly. A BufferSource
+            // with no buffer ends immediately and used to disconnect the
+            // processor, leaving the running context silent.
+            this.processor = this.audioCtx.createScriptProcessor(8192, 0, 2);
 
             this.opl = new OPL(this.audioCtx.sampleRate, 2);
 
@@ -65,8 +52,6 @@ export class AudioPlayer {
             /// setup Web-Audio
             this.processor.onaudioprocess = (e: AudioProcessingEvent) => this.audioScriptProcessor(e);
             this.processor.connect(this.audioCtx.destination);
-            this.source.connect(this.processor);
-            this.source.start();
 
             this.play();
         } catch (error) {
@@ -196,9 +181,6 @@ export class AudioPlayer {
         }
 
         try {
-            if ((this.source) && (this.processor)) {
-                this.source.disconnect(this.processor);
-            }
             if (this.processor && this.audioCtx) this.processor.disconnect(this.audioCtx.destination);
             
         } catch (ex) {
@@ -207,7 +189,6 @@ export class AudioPlayer {
 
 
         this.audioCtx = null;
-        this.source = null;
         this.processor = null;
 
         this.opl = null;
