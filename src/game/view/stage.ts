@@ -543,6 +543,13 @@ export class Stage {
             if (!ctx) continue;
             ctx.imageSmoothingEnabled = false;
             ctx.globalAlpha = 1;
+            // Erased terrain may contain transparent pixels. Paint the playfield
+            // black before compositing each frame so old sprites cannot show
+            // through those pixels; the separate panel below remains untouched.
+            if (display === this.gameImgProps) {
+                ctx.fillStyle = '#000000';
+                ctx.fillRect(display.x, display.y, display.width, display.height);
+            }
             const filtered = target.enhanced && enhanced;
             let failed = false;
             try {
