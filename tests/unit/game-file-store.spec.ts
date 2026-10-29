@@ -98,4 +98,25 @@ describe('original game file import', () => {
     entries['other/main.dat'] = new Uint8Array([2]);
     await expect(importLemmingsFiles([new File([zipSync(entries)], 'game.zip')])).rejects.toThrow('Duplicate files: MAIN.DAT');
   });
+
+  it('rejects repeated ZIP paths before extraction can silently overwrite an entry', async () => {
+    await importLemmingsFiles(sampleFiles());
+    const entries = Object.fromEntries(REQUIRED_LEMMINGS_FILES.map((name, index) => [`game/${name}`, sampleData(name, index + 1)]));
+    entries['copy/MAIN.DAT'] = sampleData('MAIN.DAT', 9);
+    const archive = zipSync(entries);
+    // Both names have the same length: replace the second name in the local
+    // header and central directory to construct a valid repeated-path ZIP.
+    const duplicate = new TextEncoder().encode('copy/MAIN.DAT');
+    const original = new TextEncoder().encode('game/MAIN.DAT');
+    let replacements = 0;
+    for (let index = 0; index <= archive.length - duplicate.length; index++) {
+      if (duplicate.every((byte, offset) => archive[index + offset] === byte)) {
+        archive.set(original, index);
+        replacements++;
+      }
+    }
+    expect(replacements).toBe(2);
+    await expect(importLemmingsFiles([new File([archive], 'game.zip')])).rejects.toThrow('Duplicate files: MAIN.DAT');
+    expect(new Uint8Array((await getLemmingsFile('main.dat'))!)).toEqual(sampleData('MAIN.DAT', 2));
+  });
 });

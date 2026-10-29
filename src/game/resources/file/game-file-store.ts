@@ -82,20 +82,33 @@ async function importFiles(files: FileList | readonly File[], onlyIfEmpty: boole
     const archive = archives[0];
     if (archive.size > MAX_ARCHIVE_BYTES) throw new Error('The ZIP archive is too large. Please select the original game files.');
     let extractedSize = 0;
+    let validationError: Error | undefined;
+    const archiveNames = new Set<string>();
     try {
       const entries = unzipSync(new Uint8Array(await archive.arrayBuffer()), {
         filter: entry => {
           const name = entry.name.split(/[\\/]/).pop()?.toUpperCase() || '';
           if (!requiredNames.has(name)) return false;
+          // ZIPs may contain the exact same path more than once. unzipSync's
+          // result object keeps only the final entry, hiding that ambiguity
+          // from the normal filename validation performed after extraction.
+          if (archiveNames.has(name)) {
+            validationError = new Error(`Duplicate files: ${name}`);
+            throw validationError;
+          }
+          archiveNames.add(name);
           extractedSize += entry.originalSize;
-          if (extractedSize > MAX_EXTRACTED_BYTES) throw new Error('The game files in this ZIP archive are too large.');
+          if (extractedSize > MAX_EXTRACTED_BYTES) {
+            validationError = new Error('The game files in this ZIP archive are too large.');
+            throw validationError;
+          }
           return true;
         },
       });
       selected = Object.entries(entries).map(([path, data]) =>
         new File([Uint8Array.from(data)], path.split(/[\\/]/).pop() || path));
-    } catch (error) {
-      if (error instanceof Error && error.message === 'The game files in this ZIP archive are too large.') throw error;
+    } catch {
+      if (validationError) throw validationError;
       throw new Error('Could not read this ZIP archive. Please use an unencrypted ZIP or select the game files directly.');
     }
   }
