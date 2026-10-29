@@ -1,5 +1,7 @@
 import { Position2D } from '../utilities/position2d';
+import { EventHandler } from '../utilities/event-handler';
 import { DisplayImage } from './display-image';
+import { upscalePixelArt2x } from './pixel-art-upscale';
 import { StageImageProperties } from './stage-image-properties';
 import { UserInputManager } from './user-input-manager';
 
@@ -16,6 +18,15 @@ export class Stage {
     private dragging = false;
     private keyboardTarget: (() => Position2D | null) | null = null;
     private exampleHint: Position2D | null = null;
+    private graphicsMode: 'original' | 'enhanced' = 'original';
+    private comparisonOriginal: HTMLCanvasElement | null = null;
+    private comparisonEnhanced: HTMLCanvasElement | null = null;
+    private enhancedCanvas: HTMLCanvasElement | null = null;
+    private enhancedContext: CanvasRenderingContext2D | null = null;
+    private cropPixels: Uint8ClampedArray<ArrayBuffer> | null = null;
+    private enhancedPixels: Uint8ClampedArray<ArrayBuffer> | null = null;
+    private enhancedImage: ImageData | null = null;
+    public readonly onGraphicsError = new EventHandler<string>();
 
 
     constructor(canvasForOutput: HTMLCanvasElement, zoom = 2) {
@@ -177,6 +188,49 @@ export class Stage {
         this.updateViewPoint(this.gameImgProps, 0, 0, delta);
     }
 
+    /** Graphics modes affect presentation only; simulation and input stay unchanged. */
+    public setGraphicsMode(mode: 'original' | 'enhanced'): void {
+        this.graphicsMode = mode;
+        if (mode === 'original' && !this.comparisonEnhanced) this.releaseEnhancedFrame();
+        this.redraw();
+    }
+
+    /** Read-only comparison canvases receive the same scene and camera as play. */
+    public setComparisonCanvases(original: HTMLCanvasElement | null, enhanced: HTMLCanvasElement | null): void {
+        this.comparisonOriginal = original && enhanced ? original : null;
+        this.comparisonEnhanced = original && enhanced ? enhanced : null;
+        if (!this.comparisonEnhanced && this.graphicsMode === 'original') this.releaseEnhancedFrame();
+        if (this.comparisonOriginal && this.comparisonEnhanced) {
+            for (const canvas of [this.comparisonOriginal, this.comparisonEnhanced]) {
+                canvas.width = this.stageCav.width;
+                canvas.height = this.stageCav.height;
+                if (!canvas.getContext('2d')) {
+                    this.failEnhancedGraphics();
+                    break;
+                }
+            }
+        }
+        this.clear();
+        this.redraw();
+    }
+
+    private releaseEnhancedFrame(): void {
+        if (this.enhancedCanvas) { this.enhancedCanvas.width = 0; this.enhancedCanvas.height = 0; }
+        this.enhancedCanvas = null;
+        this.enhancedContext = null;
+        this.cropPixels = null;
+        this.enhancedPixels = null;
+        this.enhancedImage = null;
+    }
+
+    private failEnhancedGraphics(): void {
+        this.graphicsMode = 'original';
+        this.comparisonOriginal = null;
+        this.comparisonEnhanced = null;
+        this.releaseEnhancedFrame();
+        this.onGraphicsError.trigger('Enhanced graphics are unavailable. Original graphics have been restored.');
+    }
+
     /** Follow and outline a keyboard-selected lemming without changing terrain. */
     public setKeyboardTarget(target: (() => Position2D | null) | null): void {
         this.keyboardTarget = target;
@@ -214,6 +268,10 @@ export class Stage {
         this.cancelPress();
         this.keyboardTarget = null;
         this.exampleHint = null;
+        this.comparisonOriginal = null;
+        this.comparisonEnhanced = null;
+        this.releaseEnhancedFrame();
+        this.onGraphicsError.dispose();
         this.controller.dispose();
         this.resetFade();
     }
@@ -349,18 +407,13 @@ export class Stage {
 
     /** clear the stage/display/output */
     public clear(stageImage?: StageImageProperties) {
-        const ctx = this.stageCav.getContext('2d');
-        if (!ctx) {
-            return;
-        }
-
-        ctx.fillStyle = '#000000';
-
-        if (stageImage == null) {
-            ctx.fillRect(0, 0, ctx.canvas.width, ctx.canvas.height);
-        }
-        else {
-            ctx.fillRect(stageImage.x, stageImage.y, stageImage.width, stageImage.height);
+        for (const canvas of [this.stageCav, this.comparisonOriginal, this.comparisonEnhanced]) {
+            if (!canvas) continue;
+            const ctx = canvas.getContext('2d');
+            if (!ctx) continue;
+            ctx.fillStyle = '#000000';
+            if (stageImage == null) ctx.fillRect(0, 0, ctx.canvas.width, ctx.canvas.height);
+            else ctx.fillRect(stageImage.x, stageImage.y, stageImage.width, stageImage.height);
         }
     }
 
@@ -390,6 +443,37 @@ export class Stage {
 
     }
 
+    /** Filter only the visible world crop plus a one-pixel neighbour border. */
+    private createEnhancedViewport(display: StageImageProperties, img: ImageData, width: number, height: number) {
+        const left = Math.max(0, Math.floor(display.viewPoint.x) - 1);
+        const top = Math.max(0, Math.floor(display.viewPoint.y) - 1);
+        const right = Math.min(img.width, Math.ceil(display.viewPoint.x + width) + 1);
+        const bottom = Math.min(img.height, Math.ceil(display.viewPoint.y + height) + 1);
+        const cropWidth = right - left, cropHeight = bottom - top;
+        if (cropWidth < 1 || cropHeight < 1) throw new Error('Empty game viewport');
+        if (!this.enhancedCanvas) {
+            this.enhancedCanvas = document.createElement('canvas');
+            this.enhancedContext = this.enhancedCanvas.getContext('2d');
+            if (!this.enhancedContext) throw new Error('Canvas unavailable');
+        }
+        if (!this.cropPixels || this.cropPixels.length !== cropWidth * cropHeight * 4 ||
+            this.enhancedCanvas.width !== cropWidth * 2 || this.enhancedCanvas.height !== cropHeight * 2) {
+            this.cropPixels = new Uint8ClampedArray(cropWidth * cropHeight * 4);
+            this.enhancedPixels = new Uint8ClampedArray(cropWidth * cropHeight * 16);
+            this.enhancedImage = new ImageData(this.enhancedPixels, cropWidth * 2, cropHeight * 2);
+            this.enhancedCanvas.width = cropWidth * 2;
+            this.enhancedCanvas.height = cropHeight * 2;
+        }
+        for (let row = 0; row < cropHeight; row++) {
+            const start = ((top + row) * img.width + left) * 4;
+            this.cropPixels.set(img.data.subarray(start, start + cropWidth * 4), row * cropWidth * 4);
+        }
+        upscalePixelArt2x(this.cropPixels, cropWidth, cropHeight, this.enhancedPixels!);
+        this.enhancedContext!.putImageData(this.enhancedImage!, 0, 0);
+        return { canvas: this.enhancedCanvas, x: (display.viewPoint.x - left) * 2,
+            y: (display.viewPoint.y - top) * 2, width: width * 2, height: height * 2 };
+    }
+
     /** draw everything to the stage/display */
     private draw(display: StageImageProperties, img: ImageData) {
 
@@ -400,17 +484,8 @@ export class Stage {
         /// write image to context
         display.ctx.putImageData(img, 0, 0);
 
-        const ctx = this.stageCav.getContext('2d');
-        if (!ctx) {
-            return;
-        }
-
-        ctx.imageSmoothingEnabled = false;
-
         const outH = display.height;
         const outW = display.width;
-
-        ctx.globalAlpha = 1;
 
         //- Display Layers
         let dW = img.width - display.viewPoint.x; //- display width
@@ -423,51 +498,84 @@ export class Stage {
             dH = outH / display.viewPoint.scale;
         }
 
-        if (!display.cav) {
-            return;
+        if (!display.cav || dW <= 0 || dH <= 0) return;
+
+        let enhanced: ReturnType<Stage['createEnhancedViewport']> | null = null;
+        if (display === this.gameImgProps && (this.graphicsMode === 'enhanced' || this.comparisonEnhanced)) {
+            try {
+                enhanced = this.createEnhancedViewport(display, img, dW, dH);
+            } catch {
+                // A renderer failure must not interrupt the simulation or leave
+                // stale comparison previews on screen.
+                this.failEnhancedGraphics();
+            }
         }
 
-        //- drawImage(image,sx,sy,sw,sh,dx,dy,dw,dh)
-        ctx.drawImage(display.cav,
-            display.viewPoint.x, display.viewPoint.y, dW, dH,
-            display.x, display.y, Math.trunc(dW * display.viewPoint.scale), Math.trunc(dH * display.viewPoint.scale));
+        const targets: Array<{ canvas: HTMLCanvasElement | null; enhanced: boolean }> = [
+            { canvas: this.stageCav, enhanced: this.graphicsMode === 'enhanced' },
+            { canvas: this.comparisonOriginal, enhanced: false },
+            { canvas: this.comparisonEnhanced, enhanced: true },
+        ];
+        for (const target of targets) {
+            if (!target.canvas) continue;
+            const ctx = target.canvas.getContext('2d');
+            if (!ctx) continue;
+            ctx.imageSmoothingEnabled = false;
+            ctx.globalAlpha = 1;
+            const filtered = target.enhanced && enhanced;
+            let failed = false;
+            try {
+                ctx.drawImage(filtered ? filtered.canvas : display.cav,
+                    filtered ? filtered.x : display.viewPoint.x, filtered ? filtered.y : display.viewPoint.y,
+                    filtered ? filtered.width : dW, filtered ? filtered.height : dH,
+                    display.x, display.y, Math.trunc(dW * display.viewPoint.scale), Math.trunc(dH * display.viewPoint.scale));
+            } catch (error) {
+                if (!filtered) throw error;
+                this.failEnhancedGraphics();
+                if (target.canvas !== this.stageCav) break;
+                ctx.drawImage(display.cav, display.viewPoint.x, display.viewPoint.y, dW, dH,
+                    display.x, display.y, Math.trunc(dW * display.viewPoint.scale), Math.trunc(dH * display.viewPoint.scale));
+                failed = true;
+            }
 
-        if (display === this.gameImgProps && this.exampleHint) {
-            const scale = display.viewPoint.scale;
-            const x = display.x + (this.exampleHint.x - display.viewPoint.x) * scale;
-            const y = display.y + (this.exampleHint.y - display.viewPoint.y) * scale;
-            ctx.save();
-            ctx.beginPath();
-            ctx.rect(display.x, display.y, display.width, display.height);
-            ctx.clip();
-            ctx.strokeStyle = '#68e4ff';
-            ctx.lineWidth = 3;
-            ctx.strokeRect(x - 9 * scale, y - 17 * scale, 18 * scale, 20 * scale);
-            ctx.restore();
-        }
-
-        if (display === this.gameImgProps && this.keyboardTarget) {
-            const target = this.keyboardTarget();
-            if (target) {
+            if (display === this.gameImgProps && this.exampleHint) {
                 const scale = display.viewPoint.scale;
-                const x = display.x + (target.x - display.viewPoint.x) * scale;
-                const y = display.y + (target.y - display.viewPoint.y) * scale;
+                const x = display.x + (this.exampleHint.x - display.viewPoint.x) * scale;
+                const y = display.y + (this.exampleHint.y - display.viewPoint.y) * scale;
                 ctx.save();
                 ctx.beginPath();
                 ctx.rect(display.x, display.y, display.width, display.height);
                 ctx.clip();
-                ctx.strokeStyle = '#ffed76';
-                ctx.lineWidth = 2;
-                ctx.strokeRect(x - 7 * scale, y - 15 * scale, 14 * scale, 17 * scale);
+                ctx.strokeStyle = '#68e4ff';
+                ctx.lineWidth = 3;
+                ctx.strokeRect(x - 9 * scale, y - 17 * scale, 18 * scale, 20 * scale);
                 ctx.restore();
             }
-        }
 
-        //- apply fading
-        if (this.fadeAlpha != 0) {
-            ctx.globalAlpha = this.fadeAlpha;
-            ctx.fillStyle = 'black';
-            ctx.fillRect(display.x, display.y, Math.trunc(dW * display.viewPoint.scale), Math.trunc(dH * display.viewPoint.scale));
+            if (display === this.gameImgProps && this.keyboardTarget) {
+                const selected = this.keyboardTarget();
+                if (selected) {
+                    const scale = display.viewPoint.scale;
+                    const x = display.x + (selected.x - display.viewPoint.x) * scale;
+                    const y = display.y + (selected.y - display.viewPoint.y) * scale;
+                    ctx.save();
+                    ctx.beginPath();
+                    ctx.rect(display.x, display.y, display.width, display.height);
+                    ctx.clip();
+                    ctx.strokeStyle = '#ffed76';
+                    ctx.lineWidth = 2;
+                    ctx.strokeRect(x - 7 * scale, y - 15 * scale, 14 * scale, 17 * scale);
+                    ctx.restore();
+                }
+            }
+
+            //- apply fading
+            if (this.fadeAlpha != 0) {
+                ctx.globalAlpha = this.fadeAlpha;
+                ctx.fillStyle = 'black';
+                ctx.fillRect(display.x, display.y, Math.trunc(dW * display.viewPoint.scale), Math.trunc(dH * display.viewPoint.scale));
+            }
+            if (failed) break;
         }
 
     }
