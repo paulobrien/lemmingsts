@@ -697,6 +697,16 @@ export const TESTED_SOLUTIONS: readonly TestedSolution[] = [
   },
   {
     groupIndex: 2,
+    levelIndex: 14,
+    replay: '170=s6&170=l0&565=s5&565=l0&790=s1&790=l0&990=s5&990=l0&1193=l0&1424=s6&1424=l0&1739=s5&1739=l0&1941=l0&2133=l0&2325=l0&2556=l69',
+    hints: [
+      'Clear a path through the first obstacle and let a Climber prepare the route ahead of the group.',
+      'Bridge the gap beyond the first head, then bash through the next head and build up toward the final one.',
+      'Once the scout has completed the route, build a short step at the wall where the crowd is waiting so they can follow.',
+    ],
+  },
+  {
+    groupIndex: 2,
     levelIndex: 15,
     replay: '54=s2&54=l0&83=l1&112=l2&141=l3&200=s4&200=l4&201=i49&359=l2&400=s5&400=l3&500=s4&500=l0&524=s5&524=l1&592=l3&716=l1&784=l3&908=l1&976=l3&1100=l1&1292=l1&1500=s3&1500=l0&1500=l2&1500=l4',
     hints: [
