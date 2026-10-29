@@ -14,7 +14,7 @@ test('explains local setup and rejects an incomplete import', async ({ page }) =
   await page.locator('input[type=file]').first().setInputFiles({
     name: 'main.dat', mimeType: 'application/octet-stream', buffer: Buffer.from('synthetic'),
   })
-  await expect(page.getByRole('status')).toContainText('Missing files:')
+  await expect(page.getByRole('status').filter({ hasText: 'Missing files:' })).toBeVisible()
   await expect(page.getByRole('button', { name: 'Add your game files' })).toBeVisible()
   expect(outgoingWrites).toEqual([])
 })
@@ -138,7 +138,7 @@ test('completes the first level with a canvas interaction and keeps progress', a
   await page.getByLabel('Speed').selectOption('4')
   await page.getByRole('button', { name: 'Resume', exact: true }).click()
   await expect(page.getByRole('button', { name: /^Dig\b/ })).toContainText('9')
-  await expect(page.getByRole('status')).toContainText('Level complete!', { timeout: 30_000 })
+  await expect(page.getByRole('status').filter({ hasText: 'Level complete!' })).toBeVisible({ timeout: 30_000 })
   await expect.poll(() => page.evaluate(() => (window as unknown as { audioTestCounts: { opened: number } }).audioTestCounts.opened)).toBeGreaterThan(0)
   await expect.poll(() => page.evaluate(() => {
     const counts = (window as unknown as { audioTestCounts: { opened: number; closed: number } }).audioTestCounts
@@ -147,7 +147,7 @@ test('completes the first level with a canvas interaction and keeps progress', a
 
   await page.getByRole('link', { name: '← Levels' }).click()
   await page.reload()
-  await expect(page.getByLabel('Level').locator('option').first()).toHaveText('1 ✓')
+  await expect(page.getByLabel('Level').locator('option').first()).toHaveText('1 · best 100%')
 })
 
 test('imports a ZIP of the local DOS files', async ({ page }) => {

@@ -11,8 +11,9 @@
           <div v-if="ready" class="actions">
             <div class="level-picker" v-if="groups.length">
               <label>Difficulty <select v-model.number="selectedGroup" @change="selectedLevel = 0"><option v-for="(group, index) in groups" :key="group.name" :value="index">{{ group.name }}</option></select></label>
-              <label>Level <select v-model.number="selectedLevel"><option v-for="index in groups[selectedGroup].count" :key="index" :value="index - 1">{{ index }}{{ isComplete(selectedGroup, index - 1) ? ' ✓' : '' }}</option></select></label>
+              <label>Level <select v-model.number="selectedLevel"><option v-for="index in groups[selectedGroup].count" :key="index" :value="index - 1">{{ index }}{{ bestScore(selectedGroup, index - 1) === null ? '' : ` · best ${bestScore(selectedGroup, index - 1)}%` }}</option></select></label>
             </div>
+            <p v-if="bestScore(selectedGroup, selectedLevel) !== null" class="best-score">Best saved: {{ bestScore(selectedGroup, selectedLevel) }}%</p>
             <router-link class="primary-button" :to="{ name: 'game', params: { gameType: 1 }, query: { group: selectedGroup, level: selectedLevel } }">Play Lemmings <span aria-hidden="true">→</span></router-link>
             <p class="ready-note"><span aria-hidden="true">●</span> Your game files are ready on this device</p>
           </div>
@@ -21,8 +22,9 @@
             <button class="text-button folder-button" type="button" :disabled="busy" @click="folderInput?.click()">Or choose a folder</button>
             <p class="hint">A one-time setup using your original DOS Lemmings files or a ZIP archive.</p>
           </div>
-          <input ref="fileInput" class="visually-hidden" type="file" multiple @change="onFilesSelected" />
-          <input ref="folderInput" class="visually-hidden" type="file" webkitdirectory multiple @change="onFilesSelected" />
+          <p class="offline-note" role="status">{{ offlineReadiness === 'checking' ? 'Preparing offline play…' : offlineReadiness === 'ready' ? (ready ? 'The app shell is ready offline; your game files are stored on this device.' : 'The app shell is ready offline. Add your game files to play.') : 'Offline play may be unavailable. Reconnect and reopen the app.' }}</p>
+          <input ref="fileInput" class="visually-hidden" type="file" multiple tabindex="-1" aria-hidden="true" @change="onFilesSelected" />
+          <input ref="folderInput" class="visually-hidden" type="file" webkitdirectory multiple tabindex="-1" aria-hidden="true" @change="onFilesSelected" />
           <p v-if="message" class="status-message" role="status">{{ message }}</p>
         </div>
         <div class="hero-art" aria-hidden="true">
@@ -49,6 +51,18 @@
           <button v-if="ready" class="text-button" type="button" :disabled="busy" @click="removeFiles">Remove game files</button>
         </div>
       </section>
+      <section class="setup backup" aria-labelledby="backup-title">
+        <div><p class="section-label">KEEP YOUR PROGRESS</p><h2 id="backup-title">Progress backup</h2></div>
+        <div class="setup-detail">
+          <p>Back up progress, settings and your last level. Your original game files are not included. Restoring replaces the progress and settings on this device.</p>
+          <div class="backup-actions">
+            <button class="text-button" type="button" :disabled="busy" @click="downloadBackup">Export backup</button>
+            <button class="text-button" type="button" :disabled="busy" @click="backupInput?.click()">Restore backup</button>
+          </div>
+          <p v-if="backupMessage" class="status-message" role="status">{{ backupMessage }}</p>
+          <input ref="backupInput" class="visually-hidden" type="file" accept=".json,application/json" tabindex="-1" aria-hidden="true" @change="onBackupSelected" />
+        </div>
+      </section>
       <footer>Made for a little more play <span aria-hidden="true">✳</span> · <a :href="`${baseUrl}third-party.html`">Source and licences</a></footer>
     </div>
   </main>
@@ -59,16 +73,19 @@ import { onBeforeUnmount, onMounted, ref, watch } from 'vue';
 import { clearLemmingsFiles, hasLemmingsFiles, importLemmingsFiles } from '@/game/resources/file/game-file-store';
 import { GameFactory } from '@/game/game-factory';
 import { GameTypes } from '@/game/game-types';
-import { readProgress } from '@/game/progress';
+import { exportProgressBackup, readLastLevel, readProgress, restoreProgressBackup } from '@/game/progress';
 import { loadHomeArtwork, paintHomeArtwork } from '@/game/resources/home-artwork';
+import { offlineReadiness } from '@/offline-readiness';
 
 const baseUrl = import.meta.env.BASE_URL;
 
 const ready = ref(false);
 const busy = ref(true);
 const message = ref('');
+const backupMessage = ref('');
 const fileInput = ref<HTMLInputElement | null>(null);
 const folderInput = ref<HTMLInputElement | null>(null);
+const backupInput = ref<HTMLInputElement | null>(null);
 const logoCanvas = ref<HTMLCanvasElement | null>(null);
 const backgroundCanvas = ref<HTMLCanvasElement | null>(null);
 const artworkReady = ref(false);
@@ -98,16 +115,29 @@ onBeforeUnmount(() => { artworkRequest++; });
 const groups = ref<{ name: string; count: number }[]>([]);
 const selectedGroup = ref(0);
 const selectedLevel = ref(0);
-const progress = readProgress();
-function isComplete(group: number, level: number) {
-  return progress.some(entry => entry.gameType === GameTypes.LEMMINGS && entry.groupIndex === group && entry.levelIndex === level);
+const progress = ref(readProgress());
+function bestScore(group: number, level: number): number | null {
+  return progress.value.find(entry => entry.gameType === GameTypes.LEMMINGS && entry.groupIndex === group && entry.levelIndex === level)?.bestSavedPercent ?? null;
+}
+function selectLastLevel() {
+  const last = readLastLevel();
+  if (last?.gameType === GameTypes.LEMMINGS && groups.value[last.groupIndex] && last.levelIndex < groups.value[last.groupIndex].count) {
+    selectedGroup.value = last.groupIndex;
+    selectedLevel.value = last.levelIndex;
+  } else {
+    selectedGroup.value = 0;
+    selectedLevel.value = 0;
+  }
 }
 onMounted(async () => {
   try { ready.value = await hasLemmingsFiles(); }
   catch { message.value = 'This browser could not access local storage. Check your browser settings and try again.'; }
   try {
     const config = await new GameFactory(`${import.meta.env.BASE_URL}data`).getConfig(GameTypes.LEMMINGS);
-    if (config) groups.value = config.level.groups.map((name, index) => ({ name, count: config.level.getGroupLength(index) }));
+    if (config) {
+      groups.value = config.level.groups.map((name, index) => ({ name, count: config.level.getGroupLength(index) }));
+      selectLastLevel();
+    }
   } catch { message.value = 'The level list could not be loaded. Check your connection and try again.'; }
   finally { busy.value = false; }
 });
@@ -124,6 +154,35 @@ async function removeFiles() {
   try { await clearLemmingsFiles(); ready.value = false; message.value = 'Game files removed from this browser.'; }
   catch { message.value = 'Could not remove the game files. Please try again.'; }
   finally { busy.value = false; }
+}
+function downloadBackup() {
+  backupMessage.value = '';
+  try {
+    const url = URL.createObjectURL(new Blob([exportProgressBackup()], { type: 'application/json' }));
+    const link = document.createElement('a');
+    link.href = url;
+    link.download = 'lemmings-progress.json';
+    link.click();
+    window.setTimeout(() => URL.revokeObjectURL(url), 1000);
+    backupMessage.value = 'Progress backup downloaded. Your game files were not included.';
+  } catch {
+    backupMessage.value = 'Could not export your progress. Check browser storage and try again.';
+  }
+}
+async function onBackupSelected(event: Event) {
+  const input = event.target as HTMLInputElement;
+  const file = input.files?.[0];
+  if (!file) return;
+  busy.value = true; backupMessage.value = '';
+  try {
+    if (file.size > 64 * 1024) throw new Error('This backup file is too large.');
+    if (!restoreProgressBackup(await file.text())) throw new Error('Could not save progress on this device. Check browser storage and try again.');
+    progress.value = readProgress();
+    selectLastLevel();
+    backupMessage.value = 'Progress and settings restored. Your game files were not changed.';
+  } catch (error) {
+    backupMessage.value = error instanceof Error ? error.message : 'Could not read this progress backup.';
+  } finally { input.value = ''; busy.value = false; }
 }
 </script>
 
@@ -150,10 +209,12 @@ h1 em { color: #a1d585; font-weight: inherit; font-style: normal; }
 .level-picker { display: flex; flex-wrap: wrap; gap: 12px; max-width: 430px; margin-bottom: 18px; padding: 14px; border: 1px solid #537563; background: #1a3028; box-shadow: 4px 4px 0 #0d1813; }
 .level-picker label { display: flex; flex: 1 1 120px; flex-direction: column; gap: 5px; color: #a5c7a3; font-size: 12px; font-weight: 700; }
 .level-picker select { width: 100%; min-width: 120px; min-height: 44px; padding: 8px; border: 1px solid #6e8f77; border-radius: 6px; background: #243a32; color: #f5f8ef; font: inherit; }
+.best-score { color: #c6e3b9; font-size: 12px; margin: -6px 0 18px; }
 .primary-button { display: inline-flex; align-items: center; justify-content: space-between; gap: 48px; min-height: 54px; padding: 14px 18px; border: 0; border-radius: 5px; background: #99ca7b; color: #12241a; font: inherit; font-size: 15px; font-weight: 750; text-decoration: none; cursor: pointer; box-shadow: 0 6px 0 #416d4b; }
 .primary-button:hover { background: #b6df99; }
 .primary-button:disabled { opacity: .6; cursor: wait; }
 .ready-note, .hint { color: #acc2b0; font-size: 12px; margin-top: 18px; }
+.offline-note { color: #acc2b0; font-size: 12px; line-height: 1.5; }
 .ready-note span { color: #6aaf78; margin-right: 5px; }
 .status-message { color: #d3edc5; font-size: 14px; line-height: 1.5; }
 .folder-button { display: block; }
@@ -179,6 +240,10 @@ h2 { margin: 10px 0; font: 750 21px/1.3 ui-monospace, 'SFMono-Regular', Consolas
 .setup-detail { color: #becfc0; font-size: 14px; line-height: 1.7; }
 .setup-detail p { margin: 0; }
 .text-button { margin: 12px 0 0; padding: 0; border: 0; background: none; color: #a9d99b; text-decoration: underline; cursor: pointer; font: inherit; }
+.backup-actions { display: flex; flex-wrap: wrap; gap: 10px; }
+.backup-actions .text-button { min-height: 44px; padding: 8px 12px; border: 1px solid #73967c; background: #243a32; text-decoration: none; box-shadow: 3px 3px 0 #0d1813; }
+.backup-actions .text-button:hover:not(:disabled) { background: #345345; }
+.backup-actions .text-button:disabled { opacity: .55; cursor: wait; }
 footer { padding: 24px 0; border-top: 1px solid #395348; color: #b1c5b2; font-size: 12px; }
 footer span { color: #d3a059; }
 footer a { color: #a9d99b; }
