@@ -11,6 +11,7 @@ import { GameStateTypes } from '../../src/game/game-state-types';
 import { TriggerTypes } from '../../src/game/resources/lemmings/trigger-types';
 import { getTestedSolution, TESTED_SOLUTIONS } from '../../src/game/solutions/tested-solutions';
 import { clearLemmingsFiles, importLemmingsFiles } from '../../src/game/resources/file/game-file-store';
+import { loadHomeArtwork } from '../../src/game/resources/home-artwork';
 
 const localTest = process.env.RUN_PRIVATE_GAME_TESTS === '1' ? it : it.skip;
 
@@ -38,6 +39,13 @@ describe('local original DOS assets', () => {
     ));
     try {
       await importLemmingsFiles(files);
+      const artwork = await loadHomeArtwork();
+      expect(artwork?.logo.width).toBe(632);
+      expect(artwork?.logo.height).toBe(94);
+      expect(artwork?.logo.getMask().some(pixel => pixel === 1)).toBe(true);
+      expect(artwork?.logo.getMask().some(pixel => pixel === 0)).toBe(true);
+      expect(artwork?.background.width).toBe(320);
+      expect(artwork?.background.height).toBe(104);
       const configuration = await readFile(resolve('public/data/config.json'), 'utf8');
       vi.stubGlobal('fetch', async () => new Response(configuration));
       const factory = new GameFactory('/data');

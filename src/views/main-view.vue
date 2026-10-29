@@ -4,9 +4,9 @@
       <header class="topbar"><span class="brand-mark" aria-hidden="true">L</span><span class="brand">LEMMINGS <span>at home</span></span></header>
       <section class="hero" aria-labelledby="welcome-title">
         <div class="hero-copy">
-          <p class="eyebrow"><span aria-hidden="true">✦</span> A LITTLE ADVENTURE AWAITS</p>
+          <p class="eyebrow"><span aria-hidden="true">▶</span> {{ ready ? 'SELECT YOUR LEVEL' : 'WELCOME, PLAYER' }}</p>
           <h1 id="welcome-title">Let's get them <em>home.</em></h1>
-          <p class="intro">A little bit of chaos, a lot of tiny lemmings, and a whole world of puzzles to solve.</p>
+          <p class="intro">{{ ready ? 'Choose a difficulty and level, then lead your lemmings to the exit.' : 'Add your original DOS game files to unlock 120 levels.' }}</p>
           <p class="preview-note">Early preview · Testing on different devices is still underway.</p>
           <div v-if="ready" class="actions">
             <div class="level-picker" v-if="groups.length">
@@ -26,14 +26,23 @@
           <p v-if="message" class="status-message" role="status">{{ message }}</p>
         </div>
         <div class="hero-art" aria-hidden="true">
-          <div class="sun"></div><div class="cloud cloud-one"></div><div class="cloud cloud-two"></div>
-          <div class="art-hill hill-back"></div><div class="art-hill hill-front"></div>
-          <div class="lemming lemming-one"></div><div class="lemming lemming-two"></div><div class="lemming lemming-three"></div>
-          <div class="art-label">A CLASSIC, REIMAGINED <span>✦</span></div>
+          <div class="art-frame">
+            <div class="art-topline"><span>LEMMINGS AT HOME</span><span>120 LEVELS</span></div>
+            <div class="art-screen">
+              <div class="fallback-landscape" :class="{ 'is-hidden': artworkReady }">
+                <span class="pixel-sun"></span><span class="pixel-mountain mountain-back"></span><span class="pixel-mountain mountain-front"></span>
+                <span class="pixel-platform"></span><span class="pixel-steps"></span>
+                <span class="fallback-caption">A LITTLE ADVENTURE AWAITS</span>
+              </div>
+              <canvas ref="backgroundCanvas" v-show="artworkReady" class="original-background" data-home-background></canvas>
+              <canvas ref="logoCanvas" v-show="artworkReady" class="original-logo" data-home-logo></canvas>
+            </div>
+            <div class="art-bottomline"><span>YOUR ADVENTURE</span><span>PRESS PLAY <b>▶</b></span></div>
+          </div>
         </div>
       </section>
       <section class="setup" aria-labelledby="setup-title">
-        <div><p class="section-label">{{ ready ? 'READY TO GO' : 'FIRST THINGS FIRST' }}</p><h2 id="setup-title">{{ ready ? 'Your lemmings are waiting' : 'Bring your own game' }}</h2></div>
+        <div><p class="section-label">{{ ready ? 'FILES READY' : 'ONE-TIME SETUP' }}</p><h2 id="setup-title">{{ ready ? 'Your game, on this device' : 'Bring your own game' }}</h2></div>
         <div class="setup-detail">
           <p v-if="ready">Your original files are stored in this browser, ready for your next adventure. They stay on this device.</p>
           <p v-else>Select the original Lemmings <strong>.dat</strong> files together, or choose a ZIP containing them. They’re stored in this browser, not uploaded. You’ll need to add them separately on each device.</p>
@@ -46,11 +55,12 @@
 </template>
 
 <script setup lang="ts">
-import { onMounted, ref } from 'vue';
+import { onBeforeUnmount, onMounted, ref, watch } from 'vue';
 import { clearLemmingsFiles, hasLemmingsFiles, importLemmingsFiles } from '@/game/resources/file/game-file-store';
 import { GameFactory } from '@/game/game-factory';
 import { GameTypes } from '@/game/game-types';
 import { readProgress } from '@/game/progress';
+import { loadHomeArtwork, paintHomeArtwork } from '@/game/resources/home-artwork';
 
 const baseUrl = import.meta.env.BASE_URL;
 
@@ -59,6 +69,32 @@ const busy = ref(true);
 const message = ref('');
 const fileInput = ref<HTMLInputElement | null>(null);
 const folderInput = ref<HTMLInputElement | null>(null);
+const logoCanvas = ref<HTMLCanvasElement | null>(null);
+const backgroundCanvas = ref<HTMLCanvasElement | null>(null);
+const artworkReady = ref(false);
+let artworkRequest = 0;
+
+watch(ready, async (hasFiles) => {
+  const request = ++artworkRequest;
+  artworkReady.value = false;
+  if (!hasFiles) {
+    // Discard decoded pixels when the player removes the local files.
+    for (const canvas of [logoCanvas.value, backgroundCanvas.value]) {
+      if (canvas) { canvas.width = 0; canvas.height = 0; }
+    }
+    return;
+  }
+  try {
+    const artwork = await loadHomeArtwork();
+    if (request !== artworkRequest || !artwork || !logoCanvas.value || !backgroundCanvas.value) return;
+    artworkReady.value = paintHomeArtwork(logoCanvas.value, artwork.logo)
+      && paintHomeArtwork(backgroundCanvas.value, artwork.background);
+  } catch {
+    // Artwork is optional: keep the accessible home screen usable if an import
+    // is incomplete, incompatible, or local storage becomes unavailable.
+  }
+});
+onBeforeUnmount(() => { artworkRequest++; });
 const groups = ref<{ name: string; count: number }[]>([]);
 const selectedGroup = ref(0);
 const selectedLevel = ref(0);
@@ -92,26 +128,69 @@ async function removeFiles() {
 </script>
 
 <style scoped>
-.home { min-height: 100vh; background: #f7f5ec; color: #1e3028; }
+.home {
+  min-height: 100vh;
+  background: #14221f;
+  color: #edf3e4;
+  font-family: ui-monospace, 'SFMono-Regular', Consolas, 'Liberation Mono', monospace;
+}
 .home-inner { max-width: 1220px; margin: auto; padding: 0 36px; }
-.topbar { height: 90px; display: flex; align-items: center; gap: 10px; border-bottom: 1px solid #d9ded1; }
-.brand-mark { display: grid; place-items: center; width: 34px; height: 34px; color: #f6f6dc; background: #2a684b; border-radius: 10px; font-size: 21px; font-weight: 900; }
-.brand { font-weight: 900; letter-spacing: .13em; font-size: 14px; }.brand span { font-family: Georgia, serif; font-size: 13px; font-style: italic; letter-spacing: 0; font-weight: 400; color: #77847a; }
-.hero { display: grid; grid-template-columns: 1fr 1fr; gap: 6%; align-items: center; padding: 75px 0 86px; }
-.eyebrow, .section-label { color: #648171; font-size: 11px; font-weight: 800; letter-spacing: .18em; }.eyebrow span { color: #d99d4d; margin-right: 7px; }
-h1 { font-family: Georgia, serif; font-size: clamp(52px, 6.3vw, 82px); font-weight: 400; letter-spacing: -.065em; line-height: 1.04; margin: 24px 0; max-width: 620px; } h1 em { color: #36785a; font-weight: 400; }
-.intro { color: #718177; font-size: 17px; line-height: 1.7; max-width: 405px; }.actions { margin-top: 34px; }
-.preview-note { color: #7b6b47; font-size: 12px; line-height: 1.5; }
-.level-picker { display: flex; gap: 12px; margin-bottom: 18px; }.level-picker label { display: flex; flex-direction: column; gap: 5px; color: #648171; font-size: 12px; font-weight: 700; }.level-picker select { min-width: 120px; min-height: 44px; padding: 8px; border: 1px solid #becdbd; border-radius: 6px; background: #fff; color: #1e3028; font: inherit; }
-.primary-button { display: inline-flex; align-items: center; justify-content: space-between; gap: 48px; background: #286d4e; color: #fff; padding: 18px 22px; min-height: 58px; border: 0; border-radius: 8px; font: inherit; font-size: 15px; font-weight: 750; text-decoration: none; cursor: pointer; box-shadow: 0 6px 0 #d6e2d3; }.primary-button:hover { background: #205a41; }.primary-button:disabled { opacity: .6; cursor: wait; }
-.ready-note, .hint { color: #849087; font-size: 12px; margin-top: 18px; }.ready-note span { color: #6aaf78; margin-right: 5px; }.status-message { color: #315d47; font-size: 14px; line-height: 1.5; }
+.topbar { height: 76px; display: flex; align-items: center; gap: 10px; border-bottom: 1px solid #395348; }
+.brand-mark { display: grid; place-items: center; width: 34px; height: 34px; color: #14291c; background: #9bcc83; border-radius: 4px; box-shadow: 3px 3px 0 #547b51; font-size: 21px; font-weight: 900; }
+.brand { color: #edf3e4; font-size: 14px; font-weight: 900; letter-spacing: .08em; }
+.brand span { color: #b1c5b2; font: inherit; font-size: 12px; letter-spacing: 0; }
+.hero { display: grid; grid-template-columns: 1fr 1fr; gap: 5%; align-items: center; padding: 50px 0 62px; }
+.eyebrow, .section-label { color: #a5c7a3; font-size: 11px; font-weight: 800; letter-spacing: .18em; }
+.eyebrow span { color: #d99d4d; margin-right: 7px; }
+h1 { max-width: 580px; margin: 18px 0; font: 800 clamp(34px, 4.4vw, 58px)/1.08 ui-monospace, 'SFMono-Regular', Consolas, 'Liberation Mono', monospace; letter-spacing: -.05em; }
+h1 em { color: #a1d585; font-weight: inherit; font-style: normal; }
+.intro { color: #becfc0; max-width: 500px; font-size: 15px; line-height: 1.6; }
+.preview-note { color: #dbc99d; font-size: 12px; line-height: 1.5; }
+.actions { margin-top: 25px; }
+.level-picker { display: flex; flex-wrap: wrap; gap: 12px; max-width: 430px; margin-bottom: 18px; padding: 14px; border: 1px solid #537563; background: #1a3028; box-shadow: 4px 4px 0 #0d1813; }
+.level-picker label { display: flex; flex: 1 1 120px; flex-direction: column; gap: 5px; color: #a5c7a3; font-size: 12px; font-weight: 700; }
+.level-picker select { width: 100%; min-width: 120px; min-height: 44px; padding: 8px; border: 1px solid #6e8f77; border-radius: 6px; background: #243a32; color: #f5f8ef; font: inherit; }
+.primary-button { display: inline-flex; align-items: center; justify-content: space-between; gap: 48px; min-height: 54px; padding: 14px 18px; border: 0; border-radius: 5px; background: #99ca7b; color: #12241a; font: inherit; font-size: 15px; font-weight: 750; text-decoration: none; cursor: pointer; box-shadow: 0 6px 0 #416d4b; }
+.primary-button:hover { background: #b6df99; }
+.primary-button:disabled { opacity: .6; cursor: wait; }
+.ready-note, .hint { color: #acc2b0; font-size: 12px; margin-top: 18px; }
+.ready-note span { color: #6aaf78; margin-right: 5px; }
+.status-message { color: #d3edc5; font-size: 14px; line-height: 1.5; }
 .folder-button { display: block; }
-.hero-art { position: relative; min-height: 390px; overflow: hidden; border-radius: 8px; background: #cce6d9; }.sun { position: absolute; width: 80px; height: 80px; top: 52px; right: 75px; border-radius: 50%; background: #ffeba6; }
-.cloud { position: absolute; height: 18px; width: 85px; border-radius: 30px; background: #e9f4e9; opacity: .8; }.cloud:after { content: ''; position: absolute; width: 35px; height: 35px; bottom: 0; left: 20px; background: inherit; border-radius: 50%; }.cloud-one { top: 85px; left: 60px; }.cloud-two { top: 160px; right: 30px; transform: scale(.7); }
-.art-hill { position: absolute; width: 150%; height: 260px; border-radius: 50% 50% 0 0; }.hill-back { bottom: -95px; left: -25%; background: #78b38e; transform: rotate(-8deg); }.hill-front { bottom: -145px; left: -20%; background: #488b66; transform: rotate(9deg); }
-.lemming { position: absolute; bottom: 81px; width: 24px; height: 30px; background: #3858a0; border-radius: 8px 8px 4px 4px; box-shadow: 0 6px 0 -2px #273c74; }.lemming:before { content: ''; position: absolute; width: 24px; height: 18px; top: -16px; background: #f5d6b7; border-radius: 40%; }.lemming:after { content: ''; position: absolute; width: 28px; height: 11px; top: -19px; left: -2px; background: #68a849; border-radius: 60% 60% 25% 25%; }.lemming-one { left: 30%; }.lemming-two { left: 48%; bottom: 101px; transform: scale(.85); }.lemming-three { left: 65%; bottom: 116px; transform: scale(.7); }
-.art-label { position: absolute; bottom: 18px; left: 22px; color: #e8f3e8; font-size: 9px; font-weight: 800; letter-spacing: .17em; }.art-label span { margin-left: 8px; }
-.setup { display: grid; grid-template-columns: 1fr 1fr; gap: 6%; border-top: 1px solid #d9ded1; padding: 42px 0; }h2 { font-family: Georgia, serif; font-weight: 400; font-size: 30px; margin: 12px 0; }.setup-detail { color: #718177; font-size: 14px; line-height: 1.7; }.setup-detail p { margin: 0; }.text-button { margin: 12px 0 0; padding: 0; border: 0; background: none; color: #286d4e; text-decoration: underline; cursor: pointer; font: inherit; }
-footer { padding: 24px 0; border-top: 1px solid #d9ded1; color: #9ba79c; font-size: 12px; } footer span { color: #d3a059; }.visually-hidden { position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px; overflow: hidden; clip: rect(0,0,0,0); white-space: nowrap; border: 0; }
-@media (max-width: 720px) { .home-inner { padding: 0 22px; }.topbar { height: 72px; }.hero { grid-template-columns: 1fr; padding: 46px 0 50px; gap: 40px; }.hero-art { min-height: 280px; }.setup { grid-template-columns: 1fr; gap: 8px; }.intro { font-size: 16px; } }
+.hero-art { position: relative; min-height: 390px; display: grid; place-items: center; padding: 22px; overflow: hidden; border-radius: 8px; background: #182a2a; box-shadow: 0 12px 0 #284536; }
+.art-frame { width: 100%; max-width: 510px; padding: 10px; border: 1px solid #537665; background: #0d1c1b; box-shadow: 0 0 0 3px #203d32; }
+.art-topline, .art-bottomline { min-height: 28px; display: flex; align-items: center; justify-content: space-between; gap: 12px; color: #9bc4a4; font: 700 9px/1.3 ui-monospace, monospace; letter-spacing: .12em; }
+.art-bottomline { padding-top: 7px; color: #7fa489; }
+.art-bottomline b { color: #e7c66e; }
+.art-screen { position: relative; min-height: 270px; overflow: hidden; border: 2px solid #547a5b; background: #050c0a; }
+.original-background { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; image-rendering: pixelated; opacity: .8; }
+.original-logo { position: absolute; width: min(94%, 480px); height: auto; left: 50%; top: 50%; transform: translate(-50%, -50%); image-rendering: pixelated; filter: drop-shadow(2px 3px 0 #000); }
+.fallback-landscape { position: absolute; inset: 0; background: linear-gradient(#182e34 0 58%, #182823 58%); }
+.fallback-landscape.is-hidden { display: none; }
+.pixel-sun { position: absolute; top: 15%; right: 16%; width: 32px; height: 32px; background: #d5bb77; box-shadow: 8px 0 #d5bb77, -8px 0 #d5bb77, 0 8px #d5bb77, 0 -8px #d5bb77; }
+.pixel-mountain { position: absolute; left: 0; right: 0; bottom: 0; }
+.mountain-back { height: 62%; background: #344d3d; clip-path: polygon(0 100%, 0 67%, 12% 67%, 12% 51%, 24% 51%, 24% 35%, 34% 35%, 34% 19%, 43% 19%, 43% 36%, 53% 36%, 53% 52%, 64% 52%, 64% 40%, 74% 40%, 74% 55%, 87% 55%, 87% 69%, 100% 69%, 100% 100%); }
+.mountain-front { height: 32%; background: #253a2c; clip-path: polygon(0 100%, 0 42%, 18% 42%, 18% 25%, 36% 25%, 36% 45%, 59% 45%, 59% 28%, 77% 28%, 77% 47%, 100% 47%, 100% 100%); }
+.pixel-platform { position: absolute; bottom: 25%; left: 13%; width: 31%; height: 12px; border-top: 4px solid #90b66a; background: #76513d; box-shadow: 0 7px #4c3329; }
+.pixel-steps { position: absolute; right: 17%; bottom: 25%; width: 12px; height: 10px; background: #d2bd83; box-shadow: -12px 6px #d2bd83, -24px 12px #d2bd83, -36px 18px #d2bd83, -48px 24px #d2bd83; }
+.fallback-caption { position: absolute; left: 18px; bottom: 14px; color: #9eb7a1; font: 700 9px/1.3 ui-monospace, monospace; letter-spacing: .11em; }
+.setup { display: grid; grid-template-columns: 1fr 1fr; gap: 6%; border-top: 1px solid #395348; padding: 34px 0; }
+h2 { margin: 10px 0; font: 750 21px/1.3 ui-monospace, 'SFMono-Regular', Consolas, 'Liberation Mono', monospace; letter-spacing: -.03em; }
+.setup-detail { color: #becfc0; font-size: 14px; line-height: 1.7; }
+.setup-detail p { margin: 0; }
+.text-button { margin: 12px 0 0; padding: 0; border: 0; background: none; color: #a9d99b; text-decoration: underline; cursor: pointer; font: inherit; }
+footer { padding: 24px 0; border-top: 1px solid #395348; color: #b1c5b2; font-size: 12px; }
+footer span { color: #d3a059; }
+footer a { color: #a9d99b; }
+.visually-hidden { position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px; overflow: hidden; clip: rect(0,0,0,0); white-space: nowrap; border: 0; }
+.primary-button:focus-visible, .text-button:focus-visible, select:focus-visible, footer a:focus-visible { outline: 3px solid #f2ce7d; outline-offset: 3px; }
+@media (max-width: 720px) {
+  .home-inner { padding: 0 22px; }
+  .topbar { height: 72px; }
+  .hero { grid-template-columns: 1fr; padding: 46px 0 50px; gap: 40px; }
+  .hero-art { min-height: 280px; padding: 16px; }
+  .art-screen { min-height: 220px; }
+  .setup { grid-template-columns: 1fr; gap: 8px; }
+  .intro { font-size: 16px; }
+}
 </style>
