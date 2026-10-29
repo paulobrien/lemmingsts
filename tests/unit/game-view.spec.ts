@@ -329,7 +329,7 @@ describe('game view lifecycle', () => {
         await nextTick();
         button(wrapper.container, 'Show example first move').click();
         await flushPromises();
-        expect(wrapper.container.textContent).toContain('Tested example, not live advice: use Dig near the highlighted spot at about 5 game seconds.');
+        expect(wrapper.container.textContent).toContain('Tested example, not live advice: use Dig near the highlighted spot when the timer shows about 4-55.');
         expect(mock.stage.setExampleHint).toHaveBeenLastCalledWith(expect.objectContaining({ x: 100, y: 60 }));
         button(wrapper.container, 'Hide hints').click();
         await nextTick();

@@ -88,7 +88,7 @@
       <ol v-if="visibleHintCount" aria-live="polite"><li v-for="hint in hints.slice(0, visibleHintCount)" :key="hint">{{ hint }}</li></ol>
       <button v-if="visibleHintCount && !exampleMove" type="button" :disabled="exampleBusy" @click="showExample">{{ exampleBusy ? 'Finding example…' : 'Show example first move' }}</button>
       <button v-if="exampleMove" type="button" @click="clearExample">Hide example</button>
-      <p v-if="exampleMove" role="status">Tested example, not live advice: use {{ exampleSkillName }} near the highlighted spot at about {{ exampleMove.gameSeconds }} game seconds.</p>
+      <p v-if="exampleMove" role="status">Tested example, not live advice: use {{ exampleSkillName }} near the highlighted spot when the timer shows about {{ exampleClock }}.</p>
       <p v-else-if="exampleError" role="status">{{ exampleError }}</p>
     </section>
     <p v-else-if="availableHints.length && !loading && !error && hintCompatibility === 'different'" class="hint">Hints were verified for a different DOS data set. You can still play this level.</p>

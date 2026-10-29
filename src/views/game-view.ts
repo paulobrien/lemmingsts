@@ -90,6 +90,11 @@ export default defineComponent({
             ? getTestedSolution(groupIndex.value, levelIndex.value)?.hints ?? [] : []);
         const hints = computed(() => hintCompatibility.value === 'verified' ? availableHints.value : []);
         const exampleSkillName = computed(() => skillButtons.find(skill => skill.type === exampleMove.value?.skill)?.name || 'skill');
+        const exampleClock = computed(() => {
+            if (!exampleMove.value || !level.value) return '';
+            const remaining = Math.max(0, level.value.timeLimit * 60 - exampleMove.value.gameSeconds);
+            return `${Math.floor(remaining / 60)}-${String(remaining % 60).padStart(2, '0')}`;
+        });
 
         function clearExample() {
             ++exampleGeneration;
@@ -445,7 +450,7 @@ export default defineComponent({
 
         return { gamePage, gameCanvas, pauseControl, pauseHeading, fullscreenActive, fullscreenMode, toggleFullscreen,
             level, levelIndex, groupName, title, error, loading, playing, paused,
-            finished, levelSucceeded, nextLevelAvailable, savedCount, saveWarning, assignmentMessage, keyboardMessage, resultMessage, hints, availableHints, hintCompatibility, visibleHintCount, exampleMove, exampleBusy, exampleError, exampleSkillName, hideHints, showExample, clearExample, nukeArmed, nukeExecuted, selectedSkill, skillCounts, releaseRate, gameTime, speed,
+            finished, levelSucceeded, nextLevelAvailable, savedCount, saveWarning, assignmentMessage, keyboardMessage, resultMessage, hints, availableHints, hintCompatibility, visibleHintCount, exampleMove, exampleBusy, exampleError, exampleSkillName, exampleClock, hideHints, showExample, clearExample, nukeArmed, nukeExecuted, selectedSkill, skillCounts, releaseRate, gameTime, speed,
             musicEnabled, soundEnabled, skillButtons, canPlay, start, openPauseMenu, resumeFromMenu, restartFromMenu, selectSkill, changeReleaseRate,
             setSpeed, onSpeedChange, toggleMusic, toggleSound, zoom, changeLevel, loadLevel, confirmNuke };
     },
