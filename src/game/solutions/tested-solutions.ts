@@ -891,6 +891,16 @@ export const TESTED_SOLUTIONS: readonly TestedSolution[] = [
   },
   {
     groupIndex: 3,
+    levelIndex: 5,
+    replay: '0=i49&659=s5&659=l70&868=l70&1041=l27&1229=l16&1418=s8&1418=l1&1730=s5&1730=l1&1761=s7&1761=l20&1761=s8&1761=l29&1875=s5&1875=l20&1950=l29&2212=l20&2401=l40&2465=l40&2513=l40&2561=l40&2609=l40',
+    hints: [
+      'Keep everyone together while one worker prepares a safe route to the exit.',
+      'Raise the release rate and build out of the starting pocket. Dig a shaft, then mine left with one lemming while another digs a deeper holding pit for the crowd.',
+      'Stop the Miner and bridge the lower gaps. When the route is ready, build a short zigzag inside the holding pit to let everyone climb out.',
+    ],
+  },
+  {
+    groupIndex: 3,
     levelIndex: 6,
     replay: '75=s5&75=l0&250=s1&250=l5&344=s8&344=l0&408=s5&408=l0&548=s8&548=l5&870=s5&870=l5&982=s6&982=l5&1105=s8&1105=l5&1427=s5&1427=l5&1555=s6&1555=l5&1679=s8&1679=l5&2001=s5&2001=l5&2129=s6&2129=l5&2148=s5&2148=l5&2350=s6&2350=l10',
     hints: [
