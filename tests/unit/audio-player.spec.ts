@@ -4,6 +4,18 @@ import type { SoundImagePlayer } from '../../src/game/resources/sound/sound-imag
 
 afterEach(() => vi.unstubAllGlobals());
 
+it.each([0, -1, Number.NaN, Number.POSITIVE_INFINITY])('rejects invalid track timing (%s) and closes the audio context', interval => {
+  const close = vi.fn(async () => undefined);
+  class TestAudioContext {
+    readonly sampleRate = 48_000;
+    readonly close = close;
+  }
+  vi.stubGlobal('AudioContext', TestAudioContext);
+  const track = { sampleRateFactor: 0, getSamplingInterval: () => interval } as unknown as SoundImagePlayer;
+  expect(() => new AudioPlayer(track)).toThrow('Invalid sound track timing');
+  expect(close).toHaveBeenCalledOnce();
+});
+
 it('connects its generated audio directly to the output for the lifetime of the player', () => {
   const processor = { onaudioprocess: null, connect: vi.fn(), disconnect: vi.fn() };
   class TestAudioContext {

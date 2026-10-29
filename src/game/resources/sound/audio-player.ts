@@ -40,7 +40,7 @@ export class AudioPlayer {
             this.log.debug('Sound image sample rate factor: ' + this.soundImagePlayer.sampleRateFactor + ' --> ' + this.soundImagePlayer.getSamplingInterval());
             this.log.debug('Audio sample rate ' + this.audioCtx.sampleRate);
 
-            this.samplesPerTick = Math.max(1, Math.round(this.audioCtx.sampleRate / (this.soundImagePlayer.getSamplingInterval())));
+            this.samplesPerTick = this.getSamplesPerTick(src);
             // The OPL synthesizer generates output directly. A BufferSource
             // with no buffer ends immediately and used to disconnect the
             // processor, leaving the running context silent.
@@ -75,13 +75,22 @@ export class AudioPlayer {
     /** Reuse this audio graph for a new, monophonic sound effect. */
     public setTrack(src: SoundImagePlayer) {
         if (!this.audioCtx) return;
+        const samplesPerTick = this.getSamplesPerTick(src);
         this.soundImagePlayer = src;
-        this.samplesPerTick = Math.max(1, Math.round(this.audioCtx.sampleRate / src.getSamplingInterval()));
+        this.samplesPerTick = samplesPerTick;
         this.lenGen = 0;
         this.finishedSamples = 0;
         this.generatedSamples = 0;
         this.autoSuspended = false;
         this.opl = new OPL(this.audioCtx.sampleRate, 2);
+    }
+
+    private getSamplesPerTick(src: SoundImagePlayer): number {
+        const interval = src.getSamplingInterval();
+        if (!Number.isFinite(interval) || interval <= 0) throw new Error('Invalid sound track timing.');
+        const samples = Math.round(this.audioCtx!.sampleRate / interval);
+        if (!Number.isFinite(samples)) throw new Error('Invalid sound track timing.');
+        return Math.max(1, samples);
     }
 
 
@@ -158,7 +167,7 @@ export class AudioPlayer {
             return;
         }
 
-        this.audioCtx.suspend();
+        void this.audioCtx.suspend().catch(() => { /* Already closed or unavailable. */ });
     }
 
     /** stop playing and close */

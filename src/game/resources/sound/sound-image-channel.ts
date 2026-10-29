@@ -16,6 +16,10 @@ enum SoundImagChannelState {
  *  and as result OPL3 command are returned */
 export class SoundImageChannels {
 
+  // A bar must eventually yield a note, delay or stop. Imported data may
+  // contain a jump cycle; keep its interpreter from blocking the game thread.
+  private static readonly MAX_COMMANDS_PER_TICK = 4096;
+
   public waitTime = 0;
   public waitSum = 0;
   public programPointer = 0;
@@ -103,7 +107,8 @@ export class SoundImageChannels {
 
     let cmdPos = this.channelPosition;
 
-    while (true) {
+    for (let instructions = 0; instructions < SoundImageChannels.MAX_COMMANDS_PER_TICK; instructions++) {
+      if (cmdPos < 0 || cmdPos >= this.reader.length) break;
 
       const cmd = this.reader.readByte(cmdPos);
       cmdPos++;
@@ -133,6 +138,7 @@ export class SoundImageChannels {
         cmdPos++;
       }
     }
+    this.stopInvalidChannel(commandCallback);
   }
 
 
@@ -140,7 +146,8 @@ export class SoundImageChannels {
 
     let cmdPos: number = this.channelPosition;
 
-    while (true) {
+    for (let instructions = 0; instructions < SoundImageChannels.MAX_COMMANDS_PER_TICK; instructions++) {
+      if (cmdPos < 0 || cmdPos >= this.reader.length) break;
       const cmd = this.reader.readByte(cmdPos)
       cmdPos++;
 
@@ -165,7 +172,13 @@ export class SoundImageChannels {
         this.setEnvelope(commandCallback, cmd - 0xA0);
       }
     }
+    this.stopInvalidChannel(commandCallback);
+  }
 
+  private stopInvalidChannel(commandCallback: AdlibCommandCallback): void {
+    commandCallback(this.di08hL, this.di08hH);
+    this.playingState = SoundImagChannelState.NONE;
+    this.log.log('Stopped an invalid or non-yielding sound channel');
   }
 
 
