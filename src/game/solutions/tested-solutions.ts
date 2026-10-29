@@ -812,6 +812,16 @@ export const TESTED_SOLUTIONS: readonly TestedSolution[] = [
   },
   {
     groupIndex: 3,
+    levelIndex: 2,
+    replay: '54=l0&54=s2&54=l0&129=s7&129=l3&140=s6&140=l3&337=s5&337=l3&385=s8&385=l0',
+    hints: [
+      'Everyone has to keep moving; assign different jobs to two early lemmings.',
+      'Make the first lemming an athlete to reach the exit area, while another mines and bashes a lower route for the group.',
+      'Have the second worker build at the water’s edge to turn back safely, and use the athlete to dig down to the exit.',
+    ],
+  },
+  {
+    groupIndex: 3,
     levelIndex: 3,
     replay: '360=s6&360=l0&375=l1&386=l0&397=l1&408=l0&419=l5&452=l1',
     hints: [
