@@ -186,5 +186,12 @@ button.skill-button.selected:hover:not(:disabled) { background: #c4eca7; }
 .release-controls span { margin-right: .2rem; }
 .hints { margin-top: 1rem; color: #d9dfd0; }.hints button + button { margin-left: .5rem; }.hints ol { padding-left: 1.5rem; line-height: 1.6; }
 .level-navigation { justify-content: space-between; margin-bottom: 1rem; }
-@media (max-width: 600px) { .game-page { padding: .6rem; } .game-header { gap: .5rem; } .skill-grid { grid-template-columns: repeat(4, minmax(0, 1fr)); } .skill-button { min-height: 48px; } .comparison-grid { grid-template-columns: repeat(2, minmax(260px, 1fr)); } }
+@media (max-width: 600px) {
+  .game-page { padding: .6rem; }
+  .game-header { gap: .5rem; flex-wrap: wrap; }
+  .game-header > div { flex-basis: calc(100% - 90px); }
+  .skill-grid { grid-template-columns: repeat(4, minmax(0, 1fr)); }
+  .skill-button { min-height: 48px; }
+  .comparison-grid { grid-template-columns: repeat(2, minmax(260px, 1fr)); }
+}
 </style>
