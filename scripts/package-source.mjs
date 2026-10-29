@@ -19,7 +19,7 @@ export function packageSource(root, output) {
   visitSource('src');
   visitSource('tests');
   for (const path of [
-    'LICENSE', 'README.md', 'index.html', 'package.json', 'package-lock.json', 'tsconfig.json', 'vite.config.ts', 'playwright.config.ts',
+    '.gitignore', 'LICENSE', 'README.md', 'index.html', 'package.json', 'package-lock.json', 'tsconfig.json', 'vite.config.ts', 'playwright.config.ts',
     'scripts/verify-public-data.ts', 'scripts/package-source.mjs', 'docu/LICENCE_REVIEW.md', 'docu/ANDROID_DEVICE_CHECK.md', 'docu/LEMMIX_REPLAY_IMPORT.md',
     'public/sw.js', 'public/manifest.webmanifest', 'public/favicon.ico', 'public/data/config.json',
     'public/data/README.md', 'public/data/lemmings/README.md', 'public/data/lemmings_ohNo/README.md',

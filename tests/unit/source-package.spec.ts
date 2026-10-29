@@ -11,7 +11,7 @@ import { packageSource } from '../../scripts/package-source.mjs';
 it('packages application source and notices without private game files', () => {
   const root = mkdtempSync(join(tmpdir(), 'lemmings-source-'));
   const files = [
-    'LICENSE', 'README.md', 'index.html', 'package.json', 'package-lock.json', 'tsconfig.json', 'vite.config.ts', 'playwright.config.ts',
+    '.gitignore', 'LICENSE', 'README.md', 'index.html', 'package.json', 'package-lock.json', 'tsconfig.json', 'vite.config.ts', 'playwright.config.ts',
     'scripts/verify-public-data.ts', 'scripts/package-source.mjs', 'docu/LICENCE_REVIEW.md', 'docu/ANDROID_DEVICE_CHECK.md', 'docu/LEMMIX_REPLAY_IMPORT.md',
     'public/sw.js', 'public/manifest.webmanifest', 'public/favicon.ico', 'public/data/config.json',
     'public/data/README.md', 'public/data/lemmings/README.md', 'public/data/lemmings_ohNo/README.md',
@@ -33,6 +33,7 @@ it('packages application source and notices without private game files', () => {
     packageSource(root, 'dist/source-code.zip');
     const archive = unzipSync(readFileSync(join(root, 'dist/source-code.zip')));
     expect(archive['src/main.ts']).toBeDefined();
+    expect(archive['.gitignore']).toBeDefined();
     expect(archive['tests/unit/example.spec.ts']).toBeDefined();
     expect(archive['public/data/lemmings/README.md']).toBeDefined();
     expect(archive['docu/LEMMIX_REPLAY_IMPORT.md']).toBeDefined();
