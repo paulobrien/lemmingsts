@@ -10,16 +10,17 @@ export function packageSource(root, output) {
   const add = path => { entries[path.split(sep).join('/')] = new Uint8Array(readFileSync(join(root, path))); };
   const visitSource = dir => {
     for (const entry of readdirSync(join(root, dir), { withFileTypes: true })) {
-      if (entry.name.startsWith('.')) continue;
+      if (entry.name.startsWith('.') || entry.name.endsWith('.tmp.spec.ts')) continue;
       const path = join(dir, entry.name);
       if (entry.isDirectory()) visitSource(path);
       else if (entry.isFile() && ['.ts', '.vue', '.css', '.svg', '.png', '.md'].includes(extname(entry.name))) add(path);
     }
   };
   visitSource('src');
+  visitSource('tests');
   for (const path of [
-    'LICENSE', 'README.md', 'index.html', 'package.json', 'package-lock.json', 'tsconfig.json', 'vite.config.ts',
-    'scripts/verify-public-data.ts', 'scripts/package-source.mjs', 'docu/LICENCE_REVIEW.md',
+    'LICENSE', 'README.md', 'index.html', 'package.json', 'package-lock.json', 'tsconfig.json', 'vite.config.ts', 'playwright.config.ts',
+    'scripts/verify-public-data.ts', 'scripts/package-source.mjs', 'docu/LICENCE_REVIEW.md', 'docu/ANDROID_DEVICE_CHECK.md',
     'public/sw.js', 'public/manifest.webmanifest', 'public/favicon.ico', 'public/data/config.json',
     'public/icons/icon-192.png', 'public/icons/icon-512.png', 'public/third-party.html',
     'public/licenses/GPL-2.0.txt', 'public/licenses/LGPL-2.1.txt',
