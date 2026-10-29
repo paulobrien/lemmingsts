@@ -898,6 +898,16 @@ export const TESTED_SOLUTIONS: readonly TestedSolution[] = [
   },
   {
     groupIndex: 3,
+    levelIndex: 18,
+    replay: '100=l1&143=l2&235=s3&235=l1&269=l2&330=s5&330=l0&551=l0&743=l0&935=l0&1052=s3&1052=l3&1127=s5&1127=l0&1319=l0&1511=l0&1703=l0&1895=l0&2082=s3&2082=l0&2201=s5&2201=l4',
+    hints: [
+      'Seal the lower drop and prepare a way up to the hall.',
+      'Use both Climbers to open the entrance, and interrupt the unfinished approach so the crowd waits safely below.',
+      'Time the final Bomber at the far wall, then repair the approach bridge to let the others through.',
+    ],
+  },
+  {
+    groupIndex: 3,
     levelIndex: 19,
     replay: '90=s4&90=l1&130=s6&130=l0&244=s5&244=l0&531=s7&531=l0&593=s1&593=l49&600=l0&940=s7&940=l49',
     hints: [
