@@ -1,4 +1,4 @@
-import { computed, defineComponent, onBeforeUnmount, onMounted, ref } from 'vue';
+import { computed, defineComponent, nextTick, onBeforeUnmount, onMounted, ref } from 'vue';
 import { useRoute, useRouter } from 'vue-router';
 import { Game } from '@/game/game';
 import { GameFactory } from '@/game/game-factory';
@@ -16,6 +16,8 @@ import { Level } from '@/game/resources/level';
 import { AudioPlayer } from '@/game/resources/sound/audio-player';
 import { SoundEffectsPlayer } from '@/game/resources/sound/sound-effects-player';
 import { Stage } from '@/game/view/stage';
+import { useGameFullscreen } from './use-game-fullscreen';
+import './game-fullscreen.css';
 
 const skillButtons = [
     { name: 'Climb', type: SkillTypes.CLIMBER }, { name: 'Float', type: SkillTypes.FLOATER },
@@ -28,7 +30,11 @@ export default defineComponent({
     setup() {
         const route = useRoute();
         const router = useRouter();
+        const gamePage = ref<HTMLElement | null>(null);
+        const pauseControl = ref<HTMLButtonElement | null>(null);
+        const pauseHeading = ref<HTMLElement | null>(null);
         const gameCanvas = ref<HTMLCanvasElement | null>(null);
+        const { fullscreenActive, fullscreenMode, toggleFullscreen } = useGameFullscreen(gamePage);
         const level = ref<Level | null>(null);
         const levelIndex = ref(Math.max(0, Number(route.query.level) || 0));
         const groupIndex = ref(Math.max(0, Number(route.query.group) || 0));
@@ -201,6 +207,26 @@ export default defineComponent({
             else music?.play();
         }
 
+        function openPauseMenu() {
+            if (!game || paused.value || finished.value) return;
+            togglePause();
+            void nextTick(() => { if (paused.value) pauseHeading.value?.focus(); });
+        }
+
+        function resumeFromMenu() {
+            if (!game || !paused.value || finished.value) return;
+            togglePause();
+            void nextTick(() => { if (!paused.value) pauseControl.value?.focus(); });
+        }
+
+        async function restartFromMenu() {
+            const generation = loadGeneration + 1;
+            await loadLevel();
+            if (disposed || generation !== loadGeneration || !canPlay.value) return;
+            await start();
+            if (!disposed && playing.value) await nextTick(() => pauseControl.value?.focus());
+        }
+
         function selectSkill(type: SkillTypes) {
             if (!game || finished.value) return;
             game.queueCommand(new CommandSelectSkill(type));
@@ -273,12 +299,21 @@ export default defineComponent({
         }
 
         function onKeyDown(event: KeyboardEvent) {
+            if (event.defaultPrevented) return;
+            if ((event.key === 'Escape' || event.key === 'BrowserBack') && paused.value && !fullscreenActive.value) {
+                const target = event.target as HTMLElement | null;
+                if (target?.tagName === 'SELECT') return;
+                event.preventDefault();
+                resumeFromMenu();
+                return;
+            }
             if (event.code !== 'Space' || event.repeat || event.altKey || event.ctrlKey || event.metaKey) return;
             const target = event.target as HTMLElement | null;
-            if (target?.isContentEditable || /^(INPUT|SELECT|TEXTAREA|BUTTON)$/.test(target?.tagName || '')) return;
+            if (target?.isContentEditable || /^(A|INPUT|SELECT|TEXTAREA|BUTTON)$/.test(target?.tagName || '')) return;
             if (!game || finished.value) return;
             event.preventDefault();
-            togglePause();
+            if (paused.value) resumeFromMenu();
+            else openPauseMenu();
         }
 
         async function changeLevel(delta: number) {
@@ -317,9 +352,10 @@ export default defineComponent({
             window.removeEventListener('keydown', onKeyDown);
         });
 
-        return { gameCanvas, level, levelIndex, groupName, title, error, loading, playing, paused,
+        return { gamePage, gameCanvas, pauseControl, pauseHeading, fullscreenActive, fullscreenMode, toggleFullscreen,
+            level, levelIndex, groupName, title, error, loading, playing, paused,
             finished, resultMessage, hints, visibleHintCount, nukeArmed, selectedSkill, skillCounts, releaseRate, gameTime, speed,
-            musicEnabled, soundEnabled, skillButtons, canPlay, start, togglePause, selectSkill, changeReleaseRate,
+            musicEnabled, soundEnabled, skillButtons, canPlay, start, openPauseMenu, resumeFromMenu, restartFromMenu, selectSkill, changeReleaseRate,
             setSpeed, onSpeedChange, toggleMusic, toggleSound, zoom, changeLevel, loadLevel, confirmNuke };
     },
 });

@@ -125,6 +125,49 @@ describe('game view lifecycle', () => {
         expect(mock.stage.dispose).toHaveBeenCalledOnce();
     });
 
+    it('moves focus to the pause menu and returns it when Escape or Back resumes', async () => {
+        const wrapper = mountView();
+        await flushPromises();
+        button(wrapper.container, 'Start level').click();
+        await flushPromises();
+
+        for (const key of ['Escape', 'BrowserBack']) {
+            button(wrapper.container, 'Pause').focus();
+            button(wrapper.container, 'Pause').click();
+            await nextTick();
+            const menu = wrapper.container.querySelector<HTMLElement>('[role="region"][aria-labelledby="pause-menu-heading"]');
+            expect(menu).not.toBeNull();
+            expect(document.activeElement).toBe(menu!.querySelector('h2'));
+            expect(menu!.textContent).toContain('Level selection');
+            expect(mock.timer.isRunning()).toBe(false);
+
+            window.dispatchEvent(new KeyboardEvent('keydown', { key, bubbles: true, cancelable: true }));
+            await nextTick();
+            expect(mock.timer.isRunning()).toBe(true);
+            expect(wrapper.container.querySelector('#pause-menu')).toBeNull();
+            expect(document.activeElement).toBe(button(wrapper.container, 'Pause'));
+        }
+        wrapper.unmount();
+    });
+
+    it('restarts the paused level and starts the new game', async () => {
+        const wrapper = mountView();
+        await flushPromises();
+        button(wrapper.container, 'Start level').click();
+        await flushPromises();
+        button(wrapper.container, 'Pause').click();
+        await nextTick();
+        button(wrapper.container, 'Restart level').click();
+        await flushPromises();
+        expect(mock.game.stop).toHaveBeenCalledOnce();
+        expect(mock.getGame).toHaveBeenCalledTimes(2);
+        expect(mock.game.start).toHaveBeenCalledTimes(2);
+        expect(mock.timer.isRunning()).toBe(true);
+        expect(wrapper.container.querySelector('#pause-menu')).toBeNull();
+        expect(document.activeElement).toBe(button(wrapper.container, 'Pause'));
+        wrapper.unmount();
+    });
+
     it('stops a game that finishes loading after the view is closed', async () => {
         let resolveGame!: (game: typeof mock.game) => void;
         mock.getGame.mockImplementation(() => new Promise(resolve => { resolveGame = resolve; }));

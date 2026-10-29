@@ -1,0 +1,52 @@
+/* The fallback occupies the visible viewport even when browser fullscreen is unavailable. */
+.game-page.is-fullscreen.is-fullscreen {
+  position: fixed;
+  inset: 0;
+  z-index: 1000;
+  box-sizing: border-box;
+  width: 100%;
+  max-width: none;
+  height: 100vh;
+  height: 100dvh;
+  min-height: 0;
+  overflow: auto;
+  padding: max(.6rem, env(safe-area-inset-top)) max(.6rem, env(safe-area-inset-right))
+    max(.6rem, env(safe-area-inset-bottom)) max(.6rem, env(safe-area-inset-left));
+}
+
+.game-page.is-fullscreen .canvas-frame canvas {
+  width: min(100%, calc(65dvh * 5 / 3));
+  margin-inline: auto;
+}
+
+.game-page.is-fullscreen > .hint,
+.game-page.is-fullscreen > .level-navigation { display: none; }
+
+@media (max-width: 600px) {
+  .game-page.is-fullscreen .game-header .quiet { padding: .4rem; font-size: .8rem; }
+}
+
+/* Keep the level and skill controls together on a short landscape screen. */
+@media (orientation: landscape) and (max-height: 600px) {
+  .game-page.is-fullscreen.is-fullscreen {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) minmax(250px, 34%);
+    align-content: start;
+    gap: .4rem .6rem;
+  }
+  .game-page.is-fullscreen .game-header { grid-column: 1 / -1; margin-bottom: 0; }
+  .game-page.is-fullscreen > .notice { grid-column: 1 / -1; }
+  .game-page.is-fullscreen .canvas-frame { grid-column: 1; grid-row: span 4; align-self: start; }
+  .game-page.is-fullscreen .canvas-frame canvas { width: min(100%, calc(75dvh * 5 / 3)); }
+  .game-page.is-fullscreen .game-toolbar,
+  .game-page.is-fullscreen .skill-section,
+  .game-page.is-fullscreen .pause-menu,
+  .game-page.is-fullscreen .hints,
+  .game-page.is-fullscreen .fullscreen-status { grid-column: 2; margin-top: 0; }
+  .game-page.is-fullscreen .game-toolbar { gap: .3rem; }
+  .game-page.is-fullscreen .game-toolbar button { padding: .4rem .45rem; }
+  .game-page.is-fullscreen .fullscreen-status { margin-bottom: 0; }
+  .game-page.is-fullscreen .skill-grid { grid-template-columns: repeat(4, minmax(0, 1fr)); }
+  .game-page.is-fullscreen .release-controls { gap: .3rem; margin-top: .35rem; }
+  .game-page.is-fullscreen .release-controls span { font-size: .85rem; }
+}
