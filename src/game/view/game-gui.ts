@@ -20,6 +20,11 @@ export class GameGui {
 
     private display?: DisplayImage;
     private deltaReleaseRate = 0;
+    private nukeRequestHandler: (() => void) | null = null;
+
+    public setNukeRequestHandler(handler: (() => void) | null) {
+        this.nukeRequestHandler = handler;
+    }
 
     constructor(private game: Game,
         private skillPanelSprites: SkillPanelSprites,
@@ -78,6 +83,11 @@ export class GameGui {
             return;
         }
 
+        if (panelIndex == 11) {
+            this.nukeRequestHandler?.();
+            return;
+        }
+
         const newSkill = this.getSkillByPanelIndex(panelIndex);
         if (newSkill == SkillTypes.UNKNOWN) return;
 
@@ -91,7 +101,7 @@ export class GameGui {
         const panelIndex = Math.trunc(x / 16);
 
         /// trigger the nuke for all lemmings
-        if (panelIndex == 11) {
+        if (panelIndex == 11 && !this.nukeRequestHandler) {
             this.game.queueCommand(new CommandNuke());
         }
     }

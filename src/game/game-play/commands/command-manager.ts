@@ -81,13 +81,15 @@ export class CommandManager {
     }
 
     /** add a command to execute queue */
-    public queueCommand(newCommand: ICommand) {
+    public queueCommand(newCommand: ICommand): boolean {
         let currentTick = this.gameTimer.getGameTicks();
 
         if (newCommand.execute(this.game)) {
             // only log commands that are executable
             this.loggedCommands.push({ tick: currentTick, command: newCommand });
+            return true;
         }
+        return false;
     }
 
 

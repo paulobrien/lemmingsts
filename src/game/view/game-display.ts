@@ -1,10 +1,10 @@
 import { Game } from '../game';
-import { CommandLemmingsAction } from '../game-play/commands/command-lemming-action';
 import { LemmingManager } from '../game-play/lemming-manager';
 import { ObjectManager } from '../game-play/object-manager';
 import { TriggerManager } from '../game-play/trigger-manager';
 import { Level } from '../resources/level';
 import { DisplayImage } from './display-image';
+import { assignPlayerSkill } from './player-assignment';
 
 export class GameDisplay {
 
@@ -27,13 +27,8 @@ export class GameDisplay {
                 return;
             }
 
-            //console.log(e.x +' '+ e.y);
-            let lem = this.lemmingManager.getLemmingAt(e.x, e.y, e.hitSlop);
-            if (!lem) {
-                return;
-            }
-
-            this.game.queueCommand(new CommandLemmingsAction(lem.id));
+            const lem = this.lemmingManager.getLemmingAt(e.x, e.y, e.hitSlop);
+            assignPlayerSkill(this.game, lem?.id ?? null);
         });
     }
 

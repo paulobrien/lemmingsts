@@ -20,6 +20,7 @@ import { LogHandler } from './utilities/log-handler';
 import { DisplayImage } from './view/display-image';
 import { GameDisplay } from './view/game-display';
 import { GameGui } from './view/game-gui';
+import { PlayerAssignmentResult } from './view/player-assignment-result';
 
 /** provides an game object to control the game */
 export class Game {
@@ -46,6 +47,7 @@ export class Game {
 
     public onGameEnd = new EventHandler<GameResult>();
     public readonly onSoundEffect = new EventHandler<SoundEffect>();
+    public readonly onPlayerAssignment = new EventHandler<PlayerAssignmentResult>();
 
     private finalGameState: GameStateTypes = GameStateTypes.UNKNOWN;
 
@@ -127,6 +129,10 @@ export class Game {
         }
     }
 
+    public setNukeRequestHandler(handler: (() => void) | null) {
+        this.gameGui.setNukeRequestHandler(handler);
+    }
+
 
     /** load a new game/level */
     public static async loadLevel(gameResources: GameResources, levelGroupIndex: number, levelIndex: number): Promise<Game | undefined> {
@@ -166,6 +172,8 @@ export class Game {
 
         this.onGameEnd.dispose();
         this.onSoundEffect.dispose();
+        this.onPlayerAssignment.dispose();
+        this.gameGui.setNukeRequestHandler(null);
         this.triggerManager.onSoundEffect.dispose();
     }
 
@@ -200,12 +208,12 @@ export class Game {
         return this.commandManager;
     }
 
-    public queueCommand(newCommand: ICommand) {
+    public queueCommand(newCommand: ICommand): boolean {
         if (!this.commandManager) {
-            return;
+            return false;
         }
 
-        this.commandManager.queueCommand(newCommand);
+        return this.commandManager.queueCommand(newCommand);
     }
 
     /** enables / disables the display of debug information */
