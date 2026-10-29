@@ -141,7 +141,7 @@ export default defineComponent({
         });
         watch(fullscreenControlsOpen, (open, wasOpen) => {
             if (open && fullscreenActive.value && paused.value) {
-                void nextTick(() => pauseHeading.value?.focus());
+                void nextTick(focusPauseMenu);
             } else if (!open && wasOpen && fullscreenActive.value && playing.value && !paused.value) {
                 void nextTick(() => gameCanvas.value?.focus());
             }
@@ -149,8 +149,8 @@ export default defineComponent({
         watch(fullscreenActive, active => {
             if (!active) clearCanvasGesture();
             void nextTick(() => {
-                if (active) (paused.value ? pauseHeading.value : playing.value ? gameCanvas.value : startControl.value)?.focus();
-                else (paused.value ? pauseHeading.value : fullscreenEnterButton.value)?.focus();
+                if (paused.value) focusPauseMenu();
+                else (active ? playing.value ? gameCanvas.value : startControl.value : fullscreenEnterButton.value)?.focus();
             });
         });
         const musicEnabled = ref(settings.musicEnabled);
@@ -346,7 +346,7 @@ export default defineComponent({
                         if (paused.value !== wasPaused) {
                             if (paused.value) {
                                 music?.suspend(); effects?.stop();
-                                void nextTick(() => { if (paused.value) pauseHeading.value?.focus(); });
+                                void nextTick(focusPauseMenu);
                             } else music?.play();
                         }
                     }
@@ -393,10 +393,20 @@ export default defineComponent({
             else music?.play();
         }
 
+        function focusPauseMenu() {
+            const heading = pauseHeading.value;
+            if (disposed || !paused.value || !heading?.isConnected ||
+                (fullscreenActive.value && !fullscreenControlsOpen.value)) return;
+            heading.focus({ preventScroll: true });
+            // The heading can fit while Resume is below the viewport. Reveal
+            // the whole menu without moving focus or animating the page.
+            heading.closest<HTMLElement>('.pause-menu')?.scrollIntoView?.({ block: 'nearest', behavior: 'instant' });
+        }
+
         function openPauseMenu() {
             if (!game || paused.value || finished.value) return;
             togglePause();
-            void nextTick(() => { if (paused.value) pauseHeading.value?.focus(); });
+            void nextTick(focusPauseMenu);
         }
 
         function resumeFromMenu() {

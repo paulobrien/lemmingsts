@@ -2,8 +2,9 @@ import { readdir } from 'node:fs/promises'
 import { resolve } from 'node:path'
 import { expect, test } from '@playwright/test'
 
-test('keeps level selection out of active play and available through the pause menu', async ({ page }) => {
+test('keeps level selection out of active play and available through the pause menu', async ({ page }, testInfo) => {
   test.skip(process.env.RUN_PRIVATE_GAME_TESTS !== '1', 'Requires local, untracked original game files')
+  if (testInfo.project.name === 'desktop') await page.setViewportSize({ width: 1280, height: 800 })
   const files = (await readdir(resolve('dos/lemmings')))
     .filter(name => name.toLowerCase().endsWith('.dat'))
     .map(name => resolve('dos/lemmings', name))
@@ -22,6 +23,9 @@ test('keeps level selection out of active play and available through the pause m
 
   const menu = page.getByRole('region', { name: 'Paused' })
   await expect(menu.getByRole('heading', { name: 'Paused' })).toBeFocused()
+  for (const action of await menu.locator('button, a').all()) {
+    await expect(action).toBeInViewport({ ratio: 1 })
+  }
   await expect(menu.getByRole('link', { name: 'Level selection', exact: true })).toBeVisible()
   await expect(page.getByRole('link', { name: 'Level selection', exact: true })).toHaveCount(1)
   await page.getByRole('button', { name: /^Dig\b/ }).click()
