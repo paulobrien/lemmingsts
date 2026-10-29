@@ -5,6 +5,11 @@
       <div>
         <p class="eyebrow">{{ groupName }} · Level {{ levelIndex + 1 }}</p>
         <h1>{{ title }}</h1>
+        <p v-if="level && !loading && !error" class="objective">
+          <template v-if="playing || finished">Saved {{ savedCount }} · </template>
+          Save at least {{ level.needCount }} of {{ level.releaseCount }} lemmings
+          <template v-if="!playing && !finished"> · {{ level.timeLimit }} {{ level.timeLimit === 1 ? 'minute' : 'minutes' }}</template>
+        </p>
       </div>
       <button class="quiet" type="button" :aria-pressed="musicEnabled" @click="toggleMusic">
         Music {{ musicEnabled ? 'on' : 'off' }}
@@ -18,17 +23,21 @@
     <p v-else-if="loading" class="notice" role="status">Getting the level ready…</p>
     <p v-else-if="resultMessage" class="notice" role="status">{{ resultMessage }}</p>
     <p v-else class="hint">Tap a skill, then tap a lemming. Drag the level to look around.</p>
+    <p v-if="saveWarning" class="notice error" role="status">{{ saveWarning }}</p>
 
     <div class="canvas-frame">
-      <canvas ref="gameCanvas" width="800" height="480" aria-label="Lemmings level. Drag to move the view.">
+      <canvas ref="gameCanvas" width="800" height="480" tabindex="0" aria-label="Lemmings level. Drag to move the view." aria-describedby="keyboard-instructions">
         Your browser does not support the game canvas.
       </canvas>
     </div>
+    <p id="keyboard-instructions" class="visually-hidden">Use left and right arrows to choose a lemming, Enter to assign the selected skill, and Space to pause.</p>
+    <p class="visually-hidden" role="status" aria-live="polite">{{ keyboardMessage }}</p>
 
     <div class="game-toolbar" aria-label="Level controls">
       <button v-if="!playing && !finished" class="primary" type="button" :disabled="!canPlay" @click="start">Start level</button>
       <button v-else-if="playing && !paused" ref="pauseControl" class="primary" type="button" aria-controls="pause-menu" :aria-expanded="paused" @click="openPauseMenu">Pause</button>
-      <button v-if="finished" class="primary" type="button" @click="loadLevel">Try again</button>
+      <button v-if="finished && levelSucceeded && nextLevelAvailable" class="primary" type="button" @click="changeLevel(1)">Next level</button>
+      <button v-if="finished" :class="{ primary: !levelSucceeded }" type="button" @click="loadLevel">Try again</button>
       <button type="button" :disabled="loading || !level" @click="loadLevel">Restart</button>
       <button type="button" aria-label="Zoom out" @click="zoom(-1)">−</button>
       <button type="button" aria-label="Zoom in" @click="zoom(1)">+</button>
@@ -58,7 +67,7 @@
       <div class="skill-grid">
         <button v-for="skill in skillButtons" :key="skill.type" type="button" class="skill-button"
           :class="{ selected: selectedSkill === skill.type }" :aria-pressed="selectedSkill === skill.type"
-          :disabled="finished" @click="selectSkill(skill.type)">
+          :disabled="finished || !skillCounts[skill.type]" @click="selectSkill(skill.type)">
           <span>{{ skill.name }}</span><strong>{{ skillCounts[skill.type] ?? 0 }}</strong>
         </button>
       </div>
@@ -66,16 +75,24 @@
         <span>Release rate: {{ releaseRate }}</span>
         <button type="button" aria-label="Decrease release rate" :disabled="finished" @click="changeReleaseRate(-1)">−</button>
         <button type="button" aria-label="Increase release rate" :disabled="finished" @click="changeReleaseRate(1)">+</button>
-        <button type="button" :disabled="finished" @click="confirmNuke">{{ nukeArmed ? 'Confirm nuke' : 'Nuke' }}</button>
+        <button type="button" :disabled="finished || nukeExecuted" @click="confirmNuke">{{ nukeArmed ? 'Confirm nuke' : 'Nuke' }}</button>
         <button v-if="nukeArmed" type="button" @click="nukeArmed = false">Cancel</button>
       </div>
+      <p v-if="nukeArmed" class="interaction-notice" role="status">Nuke will bomb all lemmings. Press Confirm nuke to proceed.</p>
+      <p class="interaction-notice" role="status" aria-live="polite">{{ assignmentMessage }}</p>
     </section>
 
     <section v-if="hints.length && !loading && !error" class="hints" aria-label="Hints">
       <button v-if="visibleHintCount < hints.length" type="button" @click="visibleHintCount++">{{ visibleHintCount ? 'Another hint' : 'Show a hint' }}</button>
-      <button v-if="visibleHintCount" type="button" @click="visibleHintCount = 0">Hide hints</button>
+      <button v-if="visibleHintCount" type="button" @click="hideHints">Hide hints</button>
       <ol v-if="visibleHintCount" aria-live="polite"><li v-for="hint in hints.slice(0, visibleHintCount)" :key="hint">{{ hint }}</li></ol>
+      <button v-if="visibleHintCount && !exampleMove" type="button" :disabled="exampleBusy" @click="showExample">{{ exampleBusy ? 'Finding example…' : 'Show example first move' }}</button>
+      <button v-if="exampleMove" type="button" @click="clearExample">Hide example</button>
+      <p v-if="exampleMove" role="status">Tested example, not live advice: use {{ exampleSkillName }} near the highlighted spot at about {{ exampleMove.gameSeconds }} game seconds.</p>
+      <p v-else-if="exampleError" role="status">{{ exampleError }}</p>
     </section>
+    <p v-else-if="availableHints.length && !loading && !error && hintCompatibility === 'different'" class="hint">Hints were verified for a different DOS data set. You can still play this level.</p>
+    <p v-else-if="availableHints.length && !loading && !error && hintCompatibility === 'unavailable'" class="hint">Hint compatibility could not be checked. You can still play this level.</p>
 
     <nav class="level-navigation" aria-label="Level navigation">
       <button type="button" :disabled="loading" @click="changeLevel(-1)">← Previous level</button>
@@ -94,12 +111,17 @@ h1 { font-size: clamp(1.2rem, 3vw, 2rem); margin: .1rem 0; line-height: 1.15; }
 .eyebrow { color: #c0e7a6; text-transform: uppercase; font-size: .7rem; letter-spacing: .12em; margin: 0; font-weight: bold; }
 .back-link { color: #d5f6c4; white-space: nowrap; }
 .hint, .notice { color: #d9dfd0; min-height: 1.4rem; margin: .5rem 0; }
+.objective { color: #e1f3d2; margin: .4rem 0; font-weight: 600; }
+.interaction-notice { color: #f9e3b3; margin: .4rem .2rem 0; }
+.interaction-notice:empty { display: none; }
 .error { color: #ffd3b8; }
 .canvas-frame { background: #000; border: 4px solid; border-color: #999a87 #34382f #34382f #999a87; overflow: hidden; }
 canvas { display: block; width: 100%; height: auto; aspect-ratio: 5 / 3; image-rendering: pixelated; touch-action: none; }
 button, select { min-height: 44px; padding: .55rem .8rem; border-radius: 2px; border: 2px solid; border-color: #a4a894 #292d26 #292d26 #a4a894; color: #f9f9ea; background: #4a4d41; font: inherit; cursor: pointer; }
 button:hover:not(:disabled) { background: #5c6050; }
 button:focus-visible, select:focus-visible { outline: 2px solid #c4f79e; outline-offset: 2px; }
+canvas:focus-visible { outline: 2px solid #c4f79e; outline-offset: -3px; }
+.visually-hidden { position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px; overflow: hidden; clip: rect(0, 0, 0, 0); white-space: nowrap; border: 0; }
 button:disabled { cursor: default; opacity: .45; }
 button.primary { background: #b0df8e; color: #172417; border-color: #d9f4bd #527a43 #527a43 #d9f4bd; font-weight: bold; }
 button.primary:hover:not(:disabled) { background: #c4eca7; }
@@ -123,4 +145,5 @@ button.skill-button.selected:hover:not(:disabled) { background: #c4eca7; }
 .hints { margin-top: 1rem; color: #d9dfd0; }.hints button + button { margin-left: .5rem; }.hints ol { padding-left: 1.5rem; line-height: 1.6; }
 .level-navigation { justify-content: space-between; margin-bottom: 1rem; }
 @media (max-width: 600px) { .game-page { padding: .6rem; } .game-header { gap: .5rem; } .skill-grid { grid-template-columns: repeat(4, minmax(0, 1fr)); } .skill-button { min-height: 48px; } }
+@media (orientation: landscape) and (max-height: 600px) { .game-page.is-fullscreen .eyebrow { display: none; } .game-page.is-fullscreen .objective { font-size: .8rem; margin: 0; } }
 </style>

@@ -10,12 +10,17 @@ import { CommandReleaseRateIncrease } from '@/game/game-play/commands/command-re
 import { CommandNuke } from '@/game/game-play/commands/command-nuke';
 import { CommandSelectSkill } from '@/game/game-play/commands/command-select-skill';
 import { SkillTypes } from '@/game/game-play/skill-types';
-import { readSettings, recordCompletion, saveSettings } from '@/game/progress';
+import { readSettings, recordCompletion, rememberLevel, saveSettings } from '@/game/progress';
 import { getTestedSolution } from '@/game/solutions/tested-solutions';
+import { verifyHintData, type HintCompatibility } from '@/game/solutions/hint-compatibility';
+import { getExampleFirstMove, type ExampleFirstMove } from '@/game/solutions/example-first-move';
+import { Position2D } from '@/game/utilities/position2d';
 import { Level } from '@/game/resources/level';
 import { AudioPlayer } from '@/game/resources/sound/audio-player';
 import { SoundEffectsPlayer } from '@/game/resources/sound/sound-effects-player';
 import { Stage } from '@/game/view/stage';
+import { KeyboardTargeting } from '@/game/view/keyboard-targeting';
+import { assignPlayerSkill } from '@/game/view/player-assignment';
 import { useGameFullscreen } from './use-game-fullscreen';
 import './game-fullscreen.css';
 
@@ -44,9 +49,20 @@ export default defineComponent({
         const playing = ref(false);
         const paused = ref(false);
         const finished = ref(false);
+        const levelSucceeded = ref(false);
+        const nextLevelAvailable = ref(false);
+        const savedCount = ref(0);
+        const saveWarning = ref('');
+        const assignmentMessage = ref('');
+        const keyboardMessage = ref('');
         const resultMessage = ref('');
         const visibleHintCount = ref(0);
+        const hintCompatibility = ref<HintCompatibility | 'checking'>('checking');
+        const exampleMove = ref<ExampleFirstMove | null>(null);
+        const exampleBusy = ref(false);
+        const exampleError = ref('');
         const nukeArmed = ref(false);
+        const nukeExecuted = ref(false);
         const selectedSkill = ref<SkillTypes>(SkillTypes.CLIMBER);
         const skillCounts = ref<Record<number, number>>({});
         const releaseRate = ref(0);
@@ -60,16 +76,52 @@ export default defineComponent({
         let resources: GameResources | null = null;
         let game: Game | null = null;
         let stage: Stage | null = null;
+        let keyboardTargeting: KeyboardTargeting | null = null;
         let music: AudioPlayer | null = null;
         let effects: SoundEffectsPlayer | null = null;
         let disposed = false;
         let loadGeneration = 0;
         let musicGeneration = 0;
+        let exampleGeneration = 0;
 
         const title = computed(() => level.value?.name || 'Loading level');
         const canPlay = computed(() => !!level.value && !loading.value && !error.value);
-        const hints = computed(() => gameType === GameTypes.LEMMINGS
+        const availableHints = computed(() => gameType === GameTypes.LEMMINGS
             ? getTestedSolution(groupIndex.value, levelIndex.value)?.hints ?? [] : []);
+        const hints = computed(() => hintCompatibility.value === 'verified' ? availableHints.value : []);
+        const exampleSkillName = computed(() => skillButtons.find(skill => skill.type === exampleMove.value?.skill)?.name || 'skill');
+
+        function clearExample() {
+            ++exampleGeneration;
+            exampleMove.value = null;
+            exampleBusy.value = false;
+            exampleError.value = '';
+            stage?.setExampleHint(null);
+        }
+
+        function hideHints() {
+            visibleHintCount.value = 0;
+            clearExample();
+        }
+
+        async function showExample() {
+            if (!hints.value.length || !visibleHintCount.value || exampleBusy.value) return;
+            const generation = ++exampleGeneration;
+            const levelGeneration = loadGeneration;
+            exampleBusy.value = true;
+            exampleError.value = '';
+            try {
+                const move = await getExampleFirstMove(factory, groupIndex.value, levelIndex.value);
+                if (disposed || generation !== exampleGeneration || levelGeneration !== loadGeneration) return;
+                if (!move) { exampleError.value = 'No visual example is available for this level.'; return; }
+                exampleMove.value = move;
+                stage?.setExampleHint(new Position2D(move.x, move.y));
+            } catch {
+                if (!disposed && generation === exampleGeneration && levelGeneration === loadGeneration) exampleError.value = 'Could not show this example. Please try again.';
+            } finally {
+                if (generation === exampleGeneration) exampleBusy.value = false;
+            }
+        }
 
         function stopMusic() {
             musicGeneration++;
@@ -85,10 +137,12 @@ export default defineComponent({
             skillCounts.value = counts;
             selectedSkill.value = skills.getSelectedSkill();
             releaseRate.value = game.getVictoryCondition().getCurrentReleaseRate();
+            savedCount.value = game.getVictoryCondition().getSurvivorsCount();
             gameTime.value = game.getGameTimer().getGameLeftTimeString();
         }
 
         function disposeGame() {
+            keyboardTargeting?.reset();
             effects?.stop();
             effects = null;
             game?.stop();
@@ -105,9 +159,14 @@ export default defineComponent({
             loading.value = true;
             error.value = '';
             finished.value = false;
+            levelSucceeded.value = false;
             nukeArmed.value = false;
+            nukeExecuted.value = false;
+            assignmentMessage.value = '';
+            savedCount.value = 0;
             resultMessage.value = '';
-            visibleHintCount.value = 0;
+            hideHints();
+            hintCompatibility.value = 'checking';
             try {
                 const config = await factory.getConfig(gameType);
                 if (!config) throw new Error('The selected game is not available.');
@@ -120,6 +179,15 @@ export default defineComponent({
                 if (!nextLevel) throw new Error('Could not load this level.');
                 if (disposed || generation !== loadGeneration) return;
                 level.value = nextLevel;
+                nextLevelAvailable.value = levelIndex.value + 1 < group.length || groupIndex.value + 1 < config.level.order.length;
+                noteSaveResult(rememberLevel(gameType, groupIndex.value, levelIndex.value));
+                if (gameType === GameTypes.LEMMINGS) {
+                    void verifyHintData().then(result => {
+                        if (!disposed && generation === loadGeneration) hintCompatibility.value = result;
+                    }).catch(() => {
+                        if (!disposed && generation === loadGeneration) hintCompatibility.value = 'unavailable';
+                    });
+                }
                 if (stage) {
                     const display = stage.getGameDisplay();
                     stage.resetFade();
@@ -155,6 +223,20 @@ export default defineComponent({
                     return;
                 }
                 game = nextGame;
+                const skills = game.getGameSkills();
+                if (skills.getSkill(skills.getSelectedSkill()) <= 0) {
+                    const firstAvailable = skillButtons.find(skill => skills.getSkill(skill.type) > 0);
+                    if (firstAvailable) game.queueCommand(new CommandSelectSkill(firstAvailable.type));
+                }
+                game.setNukeRequestHandler(confirmNuke);
+                game.onPlayerAssignment.on(result => {
+                    switch (result) {
+                        case 'miss': assignmentMessage.value = 'No lemming found there. Tap closer to a lemming.'; break;
+                        case 'unavailable': assignmentMessage.value = 'No uses of this skill remain. Choose another skill.'; break;
+                        case 'rejected': assignmentMessage.value = 'That lemming cannot use this skill right now.'; break;
+                        case 'assigned': assignmentMessage.value = ''; updateStats(); break;
+                    }
+                });
                 const activeResources = resources;
                 effects = activeResources ? new SoundEffectsPlayer(index => activeResources.getSoundTrack(index)) : null;
                 game.onSoundEffect.on(effect => {
@@ -180,11 +262,13 @@ export default defineComponent({
                     playing.value = false;
                     paused.value = false;
                     finished.value = true;
+                    nukeArmed.value = false;
+                    levelSucceeded.value = result.state === GameStateTypes.SUCCEEDED;
                     resultMessage.value = result.state === GameStateTypes.SUCCEEDED
                         ? `Level complete! You saved ${result.survivorPercentage}%.`
                         : `Try again — you saved ${result.survivorPercentage}%.`;
                     if (result.state === GameStateTypes.SUCCEEDED) {
-                        recordCompletion(gameType, groupIndex.value, levelIndex.value, result.survivorPercentage);
+                        noteSaveResult(recordCompletion(gameType, groupIndex.value, levelIndex.value, result.survivorPercentage));
                     }
                 });
                 game.start();
@@ -240,16 +324,20 @@ export default defineComponent({
         }
 
         function confirmNuke() {
-            if (!game || finished.value) return;
+            if (!game || finished.value || nukeExecuted.value) return;
             if (!nukeArmed.value) { nukeArmed.value = true; return; }
-            game.queueCommand(new CommandNuke());
+            nukeExecuted.value = game.queueCommand(new CommandNuke());
             nukeArmed.value = false;
+        }
+
+        function noteSaveResult(saved: boolean) {
+            if (!saved) saveWarning.value = 'Progress or preferences could not be saved on this device.';
         }
 
         function setSpeed(value: number) {
             speed.value = value;
             if (game) game.getGameTimer().speedFactor = value;
-            saveSettings({ speed: value, musicEnabled: musicEnabled.value, soundEnabled: soundEnabled.value });
+            noteSaveResult(saveSettings({ speed: value, musicEnabled: musicEnabled.value, soundEnabled: soundEnabled.value }));
         }
 
         function onSpeedChange(event: Event) {
@@ -269,21 +357,21 @@ export default defineComponent({
             } catch {
                 if (generation === musicGeneration) {
                     musicEnabled.value = false;
-                    saveSettings({ speed: speed.value, musicEnabled: false, soundEnabled: soundEnabled.value });
+                    noteSaveResult(saveSettings({ speed: speed.value, musicEnabled: false, soundEnabled: soundEnabled.value }));
                 }
             }
         }
 
         function toggleMusic() {
             musicEnabled.value = !musicEnabled.value;
-            saveSettings({ speed: speed.value, musicEnabled: musicEnabled.value, soundEnabled: soundEnabled.value });
+            noteSaveResult(saveSettings({ speed: speed.value, musicEnabled: musicEnabled.value, soundEnabled: soundEnabled.value }));
             if (musicEnabled.value) void playMusic();
             else stopMusic();
         }
 
         function toggleSound() {
             soundEnabled.value = !soundEnabled.value;
-            saveSettings({ speed: speed.value, musicEnabled: musicEnabled.value, soundEnabled: soundEnabled.value });
+            noteSaveResult(saveSettings({ speed: speed.value, musicEnabled: musicEnabled.value, soundEnabled: soundEnabled.value }));
             if (!soundEnabled.value) effects?.stop();
         }
 
@@ -338,6 +426,7 @@ export default defineComponent({
         onMounted(() => {
             if (!gameCanvas.value) return;
             stage = new Stage(gameCanvas.value);
+            keyboardTargeting = new KeyboardTargeting(gameCanvas.value, stage, () => game, assignPlayerSkill, message => { keyboardMessage.value = message; });
             document.addEventListener('visibilitychange', onVisibilityChange);
             window.addEventListener('keydown', onKeyDown);
             void loadLevel();
@@ -345,8 +434,10 @@ export default defineComponent({
         onBeforeUnmount(() => {
             disposed = true;
             ++loadGeneration;
+            clearExample();
             disposeGame();
             stopMusic();
+            keyboardTargeting?.dispose();
             stage?.dispose();
             document.removeEventListener('visibilitychange', onVisibilityChange);
             window.removeEventListener('keydown', onKeyDown);
@@ -354,7 +445,7 @@ export default defineComponent({
 
         return { gamePage, gameCanvas, pauseControl, pauseHeading, fullscreenActive, fullscreenMode, toggleFullscreen,
             level, levelIndex, groupName, title, error, loading, playing, paused,
-            finished, resultMessage, hints, visibleHintCount, nukeArmed, selectedSkill, skillCounts, releaseRate, gameTime, speed,
+            finished, levelSucceeded, nextLevelAvailable, savedCount, saveWarning, assignmentMessage, keyboardMessage, resultMessage, hints, availableHints, hintCompatibility, visibleHintCount, exampleMove, exampleBusy, exampleError, exampleSkillName, hideHints, showExample, clearExample, nukeArmed, nukeExecuted, selectedSkill, skillCounts, releaseRate, gameTime, speed,
             musicEnabled, soundEnabled, skillButtons, canPlay, start, openPauseMenu, resumeFromMenu, restartFromMenu, selectSkill, changeReleaseRate,
             setSpeed, onSpeedChange, toggleMusic, toggleSound, zoom, changeLevel, loadLevel, confirmNuke };
     },
