@@ -7,6 +7,16 @@ const indexPath = new URL('index.html', base).pathname;
 const gamePath = new URL('game/', base).pathname;
 const localGamePath = new URL('data/local-game/', base).pathname;
 
+function isUsableShellResource(url, response) {
+  const contentType = (response.headers.get('content-type') || '').split(';')[0].trim().toLowerCase();
+  const path = new URL(url).pathname;
+  if (path.endsWith('.js')) return /^(?:text|application)\/(?:x-)?(?:java|ecma)script$/.test(contentType);
+  if (path.endsWith('.css')) return contentType === 'text/css';
+  // Missing assets on SPA hosts can return the app document with status 200.
+  // Do not let those responses replace a working icon or configuration either.
+  return contentType !== 'text/html';
+}
+
 // Never replace a working offline document until all of its hashed assets
 // have been cached. Keep old assets for tabs still running the previous build.
 async function cacheShell(cache, response) {
@@ -20,12 +30,7 @@ async function cacheShell(cache, response) {
   // status 200. Do not commit a shell until each asset is actually usable.
   const staged = await Promise.all([...new Set(resources)].map(async url => {
     const asset = await fetch(url);
-    const contentType = (asset.headers.get('content-type') || '').split(';')[0].trim().toLowerCase();
-    const javascript = new URL(url).pathname.endsWith('.js');
-    const validType = javascript
-      ? /^(?:text|application)\/(?:x-)?(?:java|ecma)script$/.test(contentType)
-      : contentType === 'text/css';
-    if (!asset.ok || !validType) throw new Error('App shell asset unavailable or invalid');
+    if (!asset.ok || !isUsableShellResource(url, asset)) throw new Error('App shell asset unavailable or invalid');
     return { url, asset };
   }));
   for (const { url, asset } of staged) await cache.put(url, asset);
@@ -66,10 +71,13 @@ self.addEventListener('fetch', event => {
   const shellResource = /\.(?:js|css|webmanifest|png)$/.test(url.pathname) || url.pathname === new URL('data/config.json', base).pathname;
   if (!navigation && !shellResource) return;
   event.respondWith((async () => {
-    const cache = await caches.open(CACHE);
+    let cache;
+    try { cache = await caches.open(CACHE); }
+    catch { return fetch(request); }
+    let response;
     try {
-      const response = await fetch(request);
-      if (response.ok) {
+      response = await fetch(request);
+      if (response.ok && (navigation || isUsableShellResource(url, response))) {
         // Both app routes must stage a complete shell before it becomes the
         // offline document. Non-app HTML never reaches this handler.
         if (navigation) await cacheShell(cache, response);
@@ -84,6 +92,9 @@ self.addEventListener('fetch', event => {
     } catch (error) {
       const cached = await cache.match(navigation ? appUrl : request, { ignoreVary: true });
       if (cached) return cached;
+      // Storage may be full or evicted. A successful network response should
+      // still work online when there is no cached version to fall back to.
+      if (response?.ok) return response;
       throw error;
     }
   })());

@@ -20,6 +20,7 @@ test('keeps the previous offline shell when a new build is incomplete', async ({
   const worker = await readFile('public/sw.js')
   let version = 'old'
   let missingAsset = false
+  let oldAssetsRemoved = false
   const server = createServer((request, response) => {
     response.setHeader('Cache-Control', 'no-store')
     const path = new URL(request.url || '/', 'http://localhost').pathname
@@ -30,6 +31,9 @@ test('keeps the previous offline shell when a new build is incomplete', async ({
       return
     }
     if (path === '/assets/new.css' && missingAsset) {
+      response.setHeader('Content-Type', 'text/html'); response.end('<h1>SPA fallback</h1>'); return
+    }
+    if (oldAssetsRemoved && ['/assets/old.js', '/assets/old.css'].includes(path)) {
       response.setHeader('Content-Type', 'text/html'); response.end('<h1>SPA fallback</h1>'); return
     }
     if (path.startsWith('/assets/')) { response.setHeader('Content-Type', path.endsWith('.js') ? 'text/javascript' : 'text/css'); response.end(path.endsWith('.js') ? 'export {}' : 'body{}'); return }
@@ -54,10 +58,15 @@ test('keeps the previous offline shell when a new build is incomplete', async ({
     missingAsset = false
     await page.reload()
     await expect(page.getByRole('heading', { name: 'new shell' })).toBeVisible()
+    oldAssetsRemoved = true
+    // Already-open versions may request their old hashed assets after deployment.
+    // A host's HTTP 200 HTML fallback must not overwrite those cached resources.
+    expect(await page.evaluate(async () => (await fetch('/assets/old.js')).text())).toBe('export {}')
+    expect(await page.evaluate(async () => (await fetch('/assets/old.css')).text())).toBe('body{}')
     await context.setOffline(true)
     await page.reload()
     await expect(page.getByRole('heading', { name: 'new shell' })).toBeVisible()
-    expect(await page.evaluate(async () => (await fetch('/assets/old.js')).ok)).toBe(true)
+    expect(await page.evaluate(async () => (await fetch('/assets/old.js')).text())).toBe('export {}')
   } finally {
     await context.setOffline(false)
     await new Promise<void>(resolve => server.close(() => resolve()))
