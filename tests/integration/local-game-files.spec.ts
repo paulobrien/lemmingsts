@@ -12,10 +12,42 @@ import { TriggerTypes } from '../../src/game/resources/lemmings/trigger-types';
 import { getTestedSolution, TESTED_SOLUTIONS } from '../../src/game/solutions/tested-solutions';
 import { clearLemmingsFiles, importLemmingsFiles } from '../../src/game/resources/file/game-file-store';
 import { loadHomeArtwork } from '../../src/game/resources/home-artwork';
+import { verifyHintData } from '../../src/game/solutions/hint-compatibility';
+import { getExampleFirstMove } from '../../src/game/solutions/example-first-move';
+import { webcrypto } from 'node:crypto';
 
 const localTest = process.env.RUN_PRIVATE_GAME_TESTS === '1' ? it : it.skip;
 
 describe('local original DOS assets', () => {
+  localTest('reconstructs a valid visual first-move example for every verified level', async () => {
+    vi.stubGlobal('indexedDB', indexedDB);
+    vi.stubGlobal('window', { atob });
+    vi.spyOn(console, 'log').mockImplementation(() => undefined);
+    vi.spyOn(console, 'dir').mockImplementation(() => undefined);
+    const directory = resolve('dos/lemmings');
+    const names = await readdir(directory);
+    try {
+      await importLemmingsFiles(await Promise.all(names.map(async name =>
+        new File([Uint8Array.from(await readFile(resolve(directory, name)))], name))));
+      const configuration = await readFile(resolve('public/data/config.json'), 'utf8');
+      vi.stubGlobal('fetch', async () => new Response(configuration));
+      const factory = new GameFactory('/data');
+      for (const solution of TESTED_SOLUTIONS) {
+        const example = await getExampleFirstMove(factory, solution.groupIndex, solution.levelIndex);
+        expect.soft(example, `level ${solution.groupIndex + 1}/${solution.levelIndex + 1}`).not.toBeNull();
+        if (example) {
+          expect.soft(example.x).toBeGreaterThanOrEqual(0);
+          expect.soft(example.x).toBeLessThan(1600);
+          expect.soft(example.y).toBeGreaterThanOrEqual(0);
+        }
+      }
+    } finally {
+      await clearLemmingsFiles();
+      vi.unstubAllGlobals();
+      vi.restoreAllMocks();
+    }
+  }, 60_000);
+
   it.skipIf(process.env.REQUIRE_ALL_LEVEL_SOLUTIONS !== '1')('covers all 120 levels with replay solutions', () => {
     expect(process.env.RUN_PRIVATE_GAME_TESTS, 'Set RUN_PRIVATE_GAME_TESTS=1 so the replays are actually exercised').toBe('1');
     const missing: string[] = [];
@@ -39,6 +71,7 @@ describe('local original DOS assets', () => {
     ));
     try {
       await importLemmingsFiles(files);
+      expect(await verifyHintData(undefined, webcrypto.subtle as unknown as SubtleCrypto)).toBe('verified');
       const artwork = await loadHomeArtwork();
       expect(artwork?.logo.width).toBe(632);
       expect(artwork?.logo.height).toBe(94);
