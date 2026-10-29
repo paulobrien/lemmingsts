@@ -1,6 +1,6 @@
 // @vitest-environment jsdom
 import { beforeEach, describe, expect, it, vi } from 'vitest';
-import { createApp, defineComponent, h, nextTick } from 'vue';
+import { createApp, defineComponent, h, nextTick, reactive } from 'vue';
 import GameView from '../../src/views/game-view.vue';
 import { GameStateTypes } from '../../src/game/game-state-types';
 import { readProgress } from '../../src/game/progress';
@@ -42,13 +42,14 @@ const mock = vi.hoisted(() => {
     const config = { level: { groups: ['Fun'], order: [[0, 1]], getGroupLength: () => 2 } };
     const getGame = vi.fn(async () => game);
     const replace = vi.fn(async () => undefined);
+    const route = { params: { gameType: '1' }, query: {} as Record<string, string | number> };
     const verifyHints = vi.fn(async (): Promise<'verified' | 'different' | 'unavailable'> => 'verified');
     const exampleMove = vi.fn(async (): Promise<{ x: number; y: number; skill: number; gameSeconds: number } | null> => ({ x: 100, y: 60, skill: 8, gameSeconds: 5 }));
-    return { timer, level, stage, game, skills, resources, music, config, getGame, replace, endEvent, soundEvent, effects, assignmentEvent, nukeRequest, verifyHints, exampleMove, graphicsError, zoomChange };
+    return { timer, level, stage, game, skills, resources, music, config, getGame, replace, route, endEvent, soundEvent, effects, assignmentEvent, nukeRequest, verifyHints, exampleMove, graphicsError, zoomChange };
 });
 
 vi.mock('vue-router', () => ({
-    useRoute: () => ({ params: { gameType: '1' }, query: {} }),
+    useRoute: () => reactive(mock.route),
     useRouter: () => ({ replace: mock.replace }),
 }));
 vi.mock('@/game/view/stage', () => ({ Stage: vi.fn(function () { return mock.stage; }) }));
@@ -85,6 +86,8 @@ describe('game view lifecycle', () => {
         vi.clearAllMocks();
         localStorage.clear();
         mock.timer.running = false;
+        mock.route.params.gameType = '1';
+        mock.route.query = {};
         mock.getGame.mockImplementation(async () => mock.game);
         mock.skills.getSkill.mockImplementation(() => 10);
         mock.verifyHints.mockResolvedValue('verified');
@@ -182,6 +185,73 @@ describe('game view lifecycle', () => {
             expect(wrapper.container.querySelector('#pause-menu')).toBeNull();
             expect(document.activeElement).toBe(button(wrapper.container, 'Pause'));
         }
+        wrapper.unmount();
+    });
+
+    it('loads the URL level when the router reuses a running game view', async () => {
+        const wrapper = mountView();
+        await flushPromises();
+        button(wrapper.container, 'Start level').click();
+        await flushPromises();
+        button(wrapper.container, 'Music off').click();
+        await flushPromises();
+        const route = reactive(mock.route);
+        route.query = { group: 0, level: 1 };
+        await flushPromises();
+        expect(mock.game.stop).toHaveBeenCalledOnce();
+        expect(mock.music.stop).toHaveBeenCalledOnce();
+        expect(mock.resources.getLevel).toHaveBeenLastCalledWith(0, 1);
+        expect(wrapper.container.textContent).toContain('Level 2');
+        expect(button(wrapper.container, 'Start level').disabled).toBe(false);
+        button(wrapper.container, 'Start level').click();
+        await flushPromises();
+        expect(mock.getGame).toHaveBeenLastCalledWith(1, 0, 1);
+
+        route.params.gameType = '2';
+        await flushPromises();
+        button(wrapper.container, 'Start level').click();
+        await flushPromises();
+        expect(mock.getGame).toHaveBeenLastCalledWith(2, 0, 1);
+        expect(wrapper.container.textContent).not.toContain('Show a hint');
+        wrapper.unmount();
+    });
+
+    it('does not reload again for its own level-navigation URL update', async () => {
+        const wrapper = mountView();
+        await flushPromises();
+        button(wrapper.container, 'Next level →').click();
+        await flushPromises();
+        expect(mock.resources.getLevel).toHaveBeenCalledTimes(2);
+        reactive(mock.route).query = { group: 0, level: 1 };
+        await flushPromises();
+        expect(mock.resources.getLevel).toHaveBeenCalledTimes(2);
+        wrapper.unmount();
+    });
+
+    it('ignores a level load superseded by later route navigation', async () => {
+        const wrapper = mountView();
+        await flushPromises();
+        let finish!: (level: typeof mock.level) => void;
+        mock.resources.getLevel.mockImplementationOnce(() => new Promise(resolve => { finish = resolve; }));
+        const route = reactive(mock.route);
+        route.query = { level: 1 };
+        await flushPromises();
+        route.query = { level: 0 };
+        await flushPromises();
+        finish({ ...mock.level, name: 'Old level result' });
+        await flushPromises();
+        expect(wrapper.container.querySelector('h1')!.textContent).toBe('Just dig!');
+        expect(mock.resources.getLevel).toHaveBeenLastCalledWith(0, 0);
+        expect(button(wrapper.container, 'Start level').disabled).toBe(false);
+        wrapper.unmount();
+    });
+
+    it.each(['0.5', 'Infinity', 'NaN', '-1'])('normalizes invalid level indices in links (%s)', async index => {
+        mock.route.query = { group: index, level: index };
+        const wrapper = mountView();
+        await flushPromises();
+        expect(mock.resources.getLevel).toHaveBeenCalledWith(0, 0);
+        expect(button(wrapper.container, 'Start level').disabled).toBe(false);
         wrapper.unmount();
     });
 

@@ -32,6 +32,11 @@ const skillButtons = [
     { name: 'Mine', type: SkillTypes.MINER }, { name: 'Dig', type: SkillTypes.DIGGER },
 ];
 
+function readLevelIndex(value: unknown): number {
+    const index = Number(value);
+    return Number.isSafeInteger(index) && index >= 0 ? index : 0;
+}
+
 export default defineComponent({
     setup() {
         const route = useRoute();
@@ -103,8 +108,8 @@ export default defineComponent({
             if (event.target === gameCanvas.value || (pointerId !== null && pointerId === canvasGestureId)) scheduleCanvasGestureEnd(0);
         }
         const level = ref<Level | null>(null);
-        const levelIndex = ref(Math.max(0, Number(route.query.level) || 0));
-        const groupIndex = ref(Math.max(0, Number(route.query.group) || 0));
+        const levelIndex = ref(readLevelIndex(route.query.level));
+        const groupIndex = ref(readLevelIndex(route.query.group));
         const groupName = ref('');
         const error = ref('');
         const loading = ref(true);
@@ -150,7 +155,7 @@ export default defineComponent({
         });
         const musicEnabled = ref(settings.musicEnabled);
         const soundEnabled = ref(settings.soundEnabled);
-        const gameType = (Number(route.params.gameType) || GameTypes.LEMMINGS) as GameTypes;
+        const gameType = ref((Number(route.params.gameType) || GameTypes.LEMMINGS) as GameTypes);
         const factory = new GameFactory(`${import.meta.env.BASE_URL}data`);
         let resources: GameResources | null = null;
         let game: Game | null = null;
@@ -165,7 +170,7 @@ export default defineComponent({
 
         const title = computed(() => level.value?.name || 'Loading level');
         const canPlay = computed(() => !!level.value && !loading.value && !error.value);
-        const availableHints = computed(() => gameType === GameTypes.LEMMINGS
+        const availableHints = computed(() => gameType.value === GameTypes.LEMMINGS
             ? getTestedSolution(groupIndex.value, levelIndex.value)?.hints ?? [] : []);
         const hints = computed(() => hintCompatibility.value === 'verified' ? availableHints.value : []);
         const exampleSkillName = computed(() => skillButtons.find(skill => skill.type === exampleMove.value?.skill)?.name || 'skill');
@@ -238,6 +243,9 @@ export default defineComponent({
 
         async function loadLevel() {
             const generation = ++loadGeneration;
+            const requestedGame = gameType.value;
+            const requestedGroup = groupIndex.value;
+            const requestedLevel = levelIndex.value;
             disposeGame();
             stopMusic();
             loading.value = true;
@@ -252,20 +260,21 @@ export default defineComponent({
             hideHints();
             hintCompatibility.value = 'checking';
             try {
-                const config = await factory.getConfig(gameType);
+                const config = await factory.getConfig(requestedGame);
                 if (!config) throw new Error('The selected game is not available.');
-                const group = config.level.order[groupIndex.value];
-                if (!group || levelIndex.value >= group.length) throw new Error('The selected level is not available.');
-                groupName.value = config.level.groups[groupIndex.value] || `Group ${groupIndex.value + 1}`;
-                resources = await factory.getGameResources(gameType) || null;
-                if (!resources) throw new Error('Could not load the game files.');
-                const nextLevel = await resources.getLevel(groupIndex.value, levelIndex.value);
+                const group = config.level.order[requestedGroup];
+                if (!group || requestedLevel >= group.length) throw new Error('The selected level is not available.');
+                const nextResources = await factory.getGameResources(requestedGame);
+                if (!nextResources) throw new Error('Could not load the game files.');
+                const nextLevel = await nextResources.getLevel(requestedGroup, requestedLevel);
                 if (!nextLevel) throw new Error('Could not load this level.');
                 if (disposed || generation !== loadGeneration) return;
+                resources = nextResources;
+                groupName.value = config.level.groups[requestedGroup] || `Group ${requestedGroup + 1}`;
                 level.value = nextLevel;
                 nextLevelAvailable.value = levelIndex.value + 1 < group.length || groupIndex.value + 1 < config.level.order.length;
-                noteSaveResult(rememberLevel(gameType, groupIndex.value, levelIndex.value));
-                if (gameType === GameTypes.LEMMINGS) {
+                noteSaveResult(rememberLevel(requestedGame, requestedGroup, requestedLevel));
+                if (requestedGame === GameTypes.LEMMINGS) {
                     void verifyHintData().then(result => {
                         if (!disposed && generation === loadGeneration) hintCompatibility.value = result;
                     }).catch(() => {
@@ -300,7 +309,7 @@ export default defineComponent({
             error.value = '';
             const generation = loadGeneration;
             try {
-                const nextGame = await factory.getGame(gameType, groupIndex.value, levelIndex.value);
+                const nextGame = await factory.getGame(gameType.value, groupIndex.value, levelIndex.value);
                 if (!nextGame) throw new Error('Could not start this level.');
                 if (disposed || generation !== loadGeneration || !stage) {
                     nextGame.stop();
@@ -357,7 +366,7 @@ export default defineComponent({
                         ? `Level complete! You saved ${result.survivorPercentage}%.`
                         : `Try again — you saved ${result.survivorPercentage}%.`;
                     if (result.state === GameStateTypes.SUCCEEDED) {
-                        noteSaveResult(recordCompletion(gameType, groupIndex.value, levelIndex.value, result.survivorPercentage));
+                        noteSaveResult(recordCompletion(gameType.value, groupIndex.value, levelIndex.value, result.survivorPercentage));
                     }
                 });
                 game.start();
@@ -535,7 +544,7 @@ export default defineComponent({
 
         async function changeLevel(delta: number) {
             try {
-                const config = await factory.getConfig(gameType);
+                const config = await factory.getConfig(gameType.value);
                 if (!config || disposed) return;
                 let next = levelIndex.value + delta;
                 let group = groupIndex.value;
@@ -551,6 +560,20 @@ export default defineComponent({
                 if (!disposed) error.value = 'Could not change levels. Please try again.';
             }
         }
+
+        // Vue Router reuses this component between game URLs. Keep external
+        // navigation (including history) in sync without reloading for the
+        // query update produced by our own Previous/Next controls.
+        watch(() => [route.params.gameType, route.query.group, route.query.level], () => {
+            const nextGame = (Number(route.params.gameType) || GameTypes.LEMMINGS) as GameTypes;
+            const nextGroup = readLevelIndex(route.query.group);
+            const nextLevel = readLevelIndex(route.query.level);
+            if (nextGame === gameType.value && nextGroup === groupIndex.value && nextLevel === levelIndex.value) return;
+            gameType.value = nextGame;
+            groupIndex.value = nextGroup;
+            levelIndex.value = nextLevel;
+            if (stage) void loadLevel();
+        });
 
         onMounted(() => {
             if (!gameCanvas.value) return;
