@@ -40,7 +40,7 @@
           <button v-if="ready" class="text-button" type="button" :disabled="busy" @click="removeFiles">Remove game files</button>
         </div>
       </section>
-      <footer>Made for a little more play <span aria-hidden="true">✳</span></footer>
+      <footer>Made for a little more play <span aria-hidden="true">✳</span> · <a :href="`${baseUrl}third-party.html`">Source and licences</a></footer>
     </div>
   </main>
 </template>
@@ -51,6 +51,8 @@ import { clearLemmingsFiles, hasLemmingsFiles, importLemmingsFiles } from '@/gam
 import { GameFactory } from '@/game/game-factory';
 import { GameTypes } from '@/game/game-types';
 import { readProgress } from '@/game/progress';
+
+const baseUrl = import.meta.env.BASE_URL;
 
 const ready = ref(false);
 const busy = ref(true);

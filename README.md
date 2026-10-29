@@ -50,6 +50,6 @@ Music and sound effects have separate switches and start off by default. The opt
 
 ## Licence and acknowledgements
 
-The project code is licensed under the MIT licence. The included OPL emulator has a separate LGPL licence; see [LICENSE](LICENSE). The original Lemmings game files have their own rights and are not covered by the project licence. This project does not claim rights to the original game.
+The repository's [LICENSE](LICENSE) includes an MIT licence and a separate LGPL notice for an OPL emulator. However, the bundled DOSBox-derived [DBOPL source](src/game/resources/sound/DBOPL/db-opl3.ts) explicitly carries a GPL-2.0-or-later notice. These inherited notices do not establish that the complete application is solely MIT or that DBOPL is LGPL. See [licence review](docu/LICENCE_REVIEW.md) before distributing the application. The original Lemmings game files have their own rights and are not covered by the project licence; this project does not claim rights to them.
 
 Thanks to DMA for the original game; Volker Oth, ccexplore and Mindless for reverse-engineering the level and graphics formats; and the DOSBox project for its OPL emulator.
