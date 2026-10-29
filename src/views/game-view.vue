@@ -24,6 +24,7 @@
     <p v-else-if="resultMessage" class="notice" role="status">{{ resultMessage }}</p>
     <p v-else class="hint">Tap a skill, then tap a lemming. Drag the level to look around.</p>
     <p v-if="saveWarning" class="notice error" role="status">{{ saveWarning }}</p>
+    <p v-if="graphicsError" class="notice error" role="status">{{ graphicsError }}</p>
 
     <div class="canvas-frame">
       <canvas ref="gameCanvas" width="800" height="480" tabindex="0" aria-label="Lemmings level. Drag to move the view." aria-describedby="keyboard-instructions">
@@ -51,6 +52,25 @@
     </div>
 
     <p v-if="fullscreenMode === 'expanded'" class="fullscreen-status" role="status">Expanded view (browser fullscreen unavailable)</p>
+
+    <details class="display-settings" @toggle="onDisplaySettingsToggle">
+      <summary>Display settings</summary>
+      <fieldset :key="graphicsError">
+        <legend>Graphics style</legend>
+        <label><input type="radio" name="graphics-mode" value="original" :checked="graphicsMode === 'original'" @change="setGraphicsMode('original')"> Original</label>
+        <label><input type="radio" name="graphics-mode" value="enhanced" :checked="graphicsMode === 'enhanced'" @change="setGraphicsMode('enhanced')"> Enhanced</label>
+      </fieldset>
+      <p>Graphics affect appearance only. Level rules and physics stay the same. This device-specific setting is not included in progress backups.</p>
+      <p>Enhanced graphics and live comparison are experimental and may slow play, especially at high speed or on phones.</p>
+      <button type="button" :disabled="!canPlay && !comparingGraphics" :aria-expanded="comparingGraphics" aria-controls="graphics-comparison" @click="toggleGraphicsComparison">{{ comparingGraphics ? 'Close comparison' : 'Compare styles' }}</button>
+      <section v-if="comparingGraphics" id="graphics-comparison" aria-label="Graphics comparison">
+        <p>Both previews show the same moment and view. Scroll sideways on a small screen. Play using the main game above.</p>
+        <div class="comparison-grid" role="region" aria-label="Scrollable graphics previews" tabindex="0" data-game-shortcuts-ignore>
+          <figure><figcaption>Original</figcaption><canvas ref="originalPreview" width="800" height="480" aria-hidden="true"></canvas></figure>
+          <figure><figcaption>Enhanced</figcaption><canvas ref="enhancedPreview" width="800" height="480" aria-hidden="true"></canvas></figure>
+        </div>
+      </section>
+    </details>
 
     <section v-if="playing && paused" id="pause-menu" class="pause-menu" role="region" aria-labelledby="pause-menu-heading">
       <h2 id="pause-menu-heading" ref="pauseHeading" tabindex="-1">Paused</h2>
@@ -133,6 +153,19 @@ button.quiet { background: transparent; }
 .pause-link { display: inline-flex; align-items: center; min-height: 44px; box-sizing: border-box; padding: .55rem .8rem; border: 2px solid; border-color: #a4a894 #292d26 #292d26 #a4a894; border-radius: 2px; color: #f9f9ea; background: #4a4d41; text-decoration: none; }
 .pause-link:hover { background: #5c6050; }.pause-link:focus-visible { outline: 2px solid #c4f79e; outline-offset: 2px; }
 .fullscreen-status { color: #d9dfd0; font-size: .85rem; }
+.display-settings { margin-top: .75rem; padding: .6rem; border: 2px solid; border-color: #858878 #292d26 #292d26 #858878; background: #3c4036; }
+.display-settings summary { cursor: pointer; min-height: 44px; display: flex; align-items: center; font-weight: 600; }
+.display-settings summary::before { content: '▸'; margin-right: .5rem; }.display-settings[open] summary::before { content: '▾'; }
+.display-settings summary:focus-visible, .display-settings input:focus-visible { outline: 2px solid #c4f79e; outline-offset: 2px; }
+.display-settings fieldset { display: flex; flex-wrap: wrap; gap: .5rem; border: 0; margin: .3rem 0; padding: 0; }
+.display-settings legend { padding: 0; font-weight: 600; }
+.display-settings label { display: inline-flex; align-items: center; gap: .45rem; min-height: 44px; padding: 0 .5rem; }
+.display-settings input { width: 1.1rem; height: 1.1rem; accent-color: #b0df8e; }
+.display-settings p { margin: .4rem 0 .6rem; color: #d9dfd0; }
+.comparison-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: .5rem; overflow-x: auto; }
+.comparison-grid:focus-visible { outline: 2px solid #c4f79e; outline-offset: 2px; }
+.comparison-grid figure { margin: 0; min-width: 0; }.comparison-grid figcaption { margin-bottom: .3rem; font-weight: 600; }
+.comparison-grid canvas { background: #000; border: 2px solid #858878; box-sizing: border-box; touch-action: auto; }
 .speed { display: flex; align-items: center; gap: .4rem; }
 .time { margin-left: auto; padding: .3rem .45rem; color: #d8f6bd; background: #20291e; font-family: monospace; font-variant-numeric: tabular-nums; }
 .skill-section { margin-top: .75rem; padding: .45rem; border: 2px solid; border-color: #858878 #292d26 #292d26 #858878; background: #3c4036; }
@@ -144,6 +177,7 @@ button.skill-button.selected:hover:not(:disabled) { background: #c4eca7; }
 .release-controls span { margin-right: .2rem; }
 .hints { margin-top: 1rem; color: #d9dfd0; }.hints button + button { margin-left: .5rem; }.hints ol { padding-left: 1.5rem; line-height: 1.6; }
 .level-navigation { justify-content: space-between; margin-bottom: 1rem; }
-@media (max-width: 600px) { .game-page { padding: .6rem; } .game-header { gap: .5rem; } .skill-grid { grid-template-columns: repeat(4, minmax(0, 1fr)); } .skill-button { min-height: 48px; } }
+@media (max-width: 600px) { .game-page { padding: .6rem; } .game-header { gap: .5rem; } .skill-grid { grid-template-columns: repeat(4, minmax(0, 1fr)); } .skill-button { min-height: 48px; } .comparison-grid { grid-template-columns: repeat(2, minmax(260px, 1fr)); } }
 @media (orientation: landscape) and (max-height: 600px) { .game-page.is-fullscreen .eyebrow { display: none; } .game-page.is-fullscreen .objective { font-size: .8rem; margin: 0; } }
+@media (orientation: landscape) and (max-height: 600px) { .game-page.is-fullscreen .display-settings { grid-column: 2; margin-top: 0; order: 1; } }
 </style>

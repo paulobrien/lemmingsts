@@ -22,6 +22,7 @@ import { Stage } from '@/game/view/stage';
 import { KeyboardTargeting } from '@/game/view/keyboard-targeting';
 import { assignPlayerSkill } from '@/game/view/player-assignment';
 import { useGameFullscreen } from './use-game-fullscreen';
+import { readGraphicsMode, saveGraphicsMode, type GraphicsMode } from './graphics-preference';
 import './game-fullscreen.css';
 
 const skillButtons = [
@@ -39,6 +40,11 @@ export default defineComponent({
         const pauseControl = ref<HTMLButtonElement | null>(null);
         const pauseHeading = ref<HTMLElement | null>(null);
         const gameCanvas = ref<HTMLCanvasElement | null>(null);
+        const originalPreview = ref<HTMLCanvasElement | null>(null);
+        const enhancedPreview = ref<HTMLCanvasElement | null>(null);
+        const graphicsMode = ref<GraphicsMode>(readGraphicsMode());
+        const comparingGraphics = ref(false);
+        const graphicsError = ref('');
         const { fullscreenActive, fullscreenMode, toggleFullscreen } = useGameFullscreen(gamePage);
         const level = ref<Level | null>(null);
         const levelIndex = ref(Math.max(0, Number(route.query.level) || 0));
@@ -339,6 +345,35 @@ export default defineComponent({
             if (!saved) saveWarning.value = 'Progress or preferences could not be saved on this device.';
         }
 
+        function setGraphicsMode(mode: GraphicsMode) {
+            graphicsMode.value = mode;
+            graphicsError.value = '';
+            noteSaveResult(saveGraphicsMode(mode));
+            stage?.setGraphicsMode(mode);
+        }
+
+        function onGraphicsError(message?: string) {
+            graphicsMode.value = 'original';
+            graphicsError.value = message || 'Enhanced graphics are unavailable. Original graphics have been restored.';
+            noteSaveResult(saveGraphicsMode('original'));
+            // Stage has already disconnected failed previews before emitting this event.
+            comparingGraphics.value = false;
+        }
+
+        async function toggleGraphicsComparison() {
+            comparingGraphics.value = !comparingGraphics.value;
+            if (!comparingGraphics.value) {
+                stage?.setComparisonCanvases(null, null);
+                return;
+            }
+            await nextTick();
+            if (!disposed && comparingGraphics.value) stage?.setComparisonCanvases(originalPreview.value, enhancedPreview.value);
+        }
+
+        function onDisplaySettingsToggle(event: Event) {
+            if (!(event.target as HTMLDetailsElement).open && comparingGraphics.value) void toggleGraphicsComparison();
+        }
+
         function setSpeed(value: number) {
             speed.value = value;
             if (game) game.getGameTimer().speedFactor = value;
@@ -402,7 +437,7 @@ export default defineComponent({
             }
             if (event.code !== 'Space' || event.repeat || event.altKey || event.ctrlKey || event.metaKey) return;
             const target = event.target as HTMLElement | null;
-            if (target?.isContentEditable || /^(A|INPUT|SELECT|TEXTAREA|BUTTON)$/.test(target?.tagName || '')) return;
+            if (target?.isContentEditable || target?.closest('[data-game-shortcuts-ignore]') || /^(A|INPUT|SELECT|TEXTAREA|BUTTON|SUMMARY)$/.test(target?.tagName || '')) return;
             if (!game || finished.value) return;
             event.preventDefault();
             if (paused.value) resumeFromMenu();
@@ -431,6 +466,8 @@ export default defineComponent({
         onMounted(() => {
             if (!gameCanvas.value) return;
             stage = new Stage(gameCanvas.value);
+            stage.onGraphicsError.on(onGraphicsError);
+            stage.setGraphicsMode(graphicsMode.value);
             keyboardTargeting = new KeyboardTargeting(gameCanvas.value, stage, () => game, assignPlayerSkill, message => { keyboardMessage.value = message; });
             document.addEventListener('visibilitychange', onVisibilityChange);
             window.addEventListener('keydown', onKeyDown);
@@ -442,13 +479,15 @@ export default defineComponent({
             clearExample();
             disposeGame();
             stopMusic();
+            stage?.setComparisonCanvases(null, null);
+            stage?.onGraphicsError.off(onGraphicsError);
             keyboardTargeting?.dispose();
             stage?.dispose();
             document.removeEventListener('visibilitychange', onVisibilityChange);
             window.removeEventListener('keydown', onKeyDown);
         });
 
-        return { gamePage, gameCanvas, pauseControl, pauseHeading, fullscreenActive, fullscreenMode, toggleFullscreen,
+        return { gamePage, gameCanvas, originalPreview, enhancedPreview, graphicsMode, comparingGraphics, graphicsError, setGraphicsMode, toggleGraphicsComparison, onDisplaySettingsToggle, pauseControl, pauseHeading, fullscreenActive, fullscreenMode, toggleFullscreen,
             level, levelIndex, groupName, title, error, loading, playing, paused,
             finished, levelSucceeded, nextLevelAvailable, savedCount, saveWarning, assignmentMessage, keyboardMessage, resultMessage, hints, availableHints, hintCompatibility, visibleHintCount, exampleMove, exampleBusy, exampleError, exampleSkillName, exampleClock, hideHints, showExample, clearExample, nukeArmed, nukeExecuted, selectedSkill, skillCounts, releaseRate, gameTime, speed,
             musicEnabled, soundEnabled, skillButtons, canPlay, start, openPauseMenu, resumeFromMenu, restartFromMenu, selectSkill, changeReleaseRate,

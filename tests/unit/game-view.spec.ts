@@ -19,7 +19,8 @@ const mock = vi.hoisted(() => {
     const level = { name: 'Just dig!', screenPositionX: 0, needCount: 8, releaseCount: 10, timeLimit: 5, render: vi.fn() };
     const event = { on: vi.fn() };
     const display = { onMouseDown: event, clear: vi.fn(), redraw: vi.fn(), setScreenPosition: vi.fn() };
-    const stage = { getGameDisplay: vi.fn(() => display), getGuiDisplay: vi.fn(() => display), resetFade: vi.fn(), clearInputBindings: vi.fn(), dispose: vi.fn(), zoomGame: vi.fn(), setExampleHint: vi.fn() };
+    const graphicsError: { handler?: (message?: string) => void } = {};
+    const stage = { getGameDisplay: vi.fn(() => display), getGuiDisplay: vi.fn(() => display), resetFade: vi.fn(), clearInputBindings: vi.fn(), dispose: vi.fn(), zoomGame: vi.fn(), setExampleHint: vi.fn(), setGraphicsMode: vi.fn(), setComparisonCanvases: vi.fn(), onGraphicsError: { on: vi.fn((handler: (message?: string) => void) => { graphicsError.handler = handler; }), off: vi.fn() } };
     const skills = { getSkill: vi.fn((_type: number) => 10), getSelectedSkill: vi.fn(() => 1) };
     const endEvent: { handler?: (result: { state: number; survivorPercentage: number }) => void } = {};
     const soundEvent: { handler?: (effect: number) => void } = {};
@@ -41,7 +42,7 @@ const mock = vi.hoisted(() => {
     const replace = vi.fn(async () => undefined);
     const verifyHints = vi.fn(async (): Promise<'verified' | 'different' | 'unavailable'> => 'verified');
     const exampleMove = vi.fn(async (): Promise<{ x: number; y: number; skill: number; gameSeconds: number } | null> => ({ x: 100, y: 60, skill: 8, gameSeconds: 5 }));
-    return { timer, level, stage, game, skills, resources, config, getGame, replace, endEvent, soundEvent, effects, assignmentEvent, nukeRequest, verifyHints, exampleMove };
+    return { timer, level, stage, game, skills, resources, config, getGame, replace, endEvent, soundEvent, effects, assignmentEvent, nukeRequest, verifyHints, exampleMove, graphicsError };
 });
 
 vi.mock('vue-router', () => ({
@@ -86,6 +87,7 @@ describe('game view lifecycle', () => {
         mock.skills.getSkill.mockImplementation(() => 10);
         mock.verifyHints.mockResolvedValue('verified');
         mock.exampleMove.mockResolvedValue({ x: 100, y: 60, skill: 8, gameSeconds: 5 });
+        mock.resources.getLevel.mockImplementation(async () => mock.level);
     });
 
     it('persists the sound toggle and silences effects on pause and teardown', async () => {
@@ -285,6 +287,66 @@ describe('game view lifecycle', () => {
             wrapper.unmount();
             failedSave.mockRestore();
         }
+    });
+
+    it('keeps original graphics by default, saves an opt-in mode and disconnects comparisons', async () => {
+        const wrapper = mountView();
+        await flushPromises();
+        expect(mock.stage.setGraphicsMode).toHaveBeenCalledWith('original');
+        const enhanced = wrapper.container.querySelector<HTMLInputElement>('input[value="enhanced"]')!;
+        enhanced.checked = true;
+        enhanced.dispatchEvent(new Event('change', { bubbles: true }));
+        expect(mock.stage.setGraphicsMode).toHaveBeenLastCalledWith('enhanced');
+        expect(localStorage.getItem('lemmings.graphics.v1')).toBe('enhanced');
+        button(wrapper.container, 'Compare styles').click();
+        await nextTick();
+        expect(mock.stage.setComparisonCanvases).toHaveBeenLastCalledWith(expect.any(HTMLCanvasElement), expect.any(HTMLCanvasElement));
+        expect(wrapper.container.textContent).toContain('Both previews show the same moment and view');
+        button(wrapper.container, 'Close comparison').click();
+        await nextTick();
+        expect(mock.stage.setComparisonCanvases).toHaveBeenLastCalledWith(null, null);
+        wrapper.unmount();
+        expect(mock.stage.onGraphicsError.off).toHaveBeenCalledOnce();
+    });
+
+    it('restores this device’s graphics preference and disables empty previews on load failure', async () => {
+        localStorage.setItem('lemmings.graphics.v1', 'enhanced');
+        mock.resources.getLevel.mockRejectedValueOnce(new Error('Could not load this level.'));
+        const wrapper = mountView();
+        await flushPromises();
+        expect(mock.stage.setGraphicsMode).toHaveBeenCalledWith('enhanced');
+        expect(button(wrapper.container, 'Compare styles').disabled).toBe(true);
+        expect(wrapper.container.textContent).toContain('Could not load this level.');
+        wrapper.unmount();
+    });
+
+    it('does not intercept Space on the display settings summary', async () => {
+        const wrapper = mountView();
+        await flushPromises();
+        button(wrapper.container, 'Start level').click();
+        await flushPromises();
+        const event = new KeyboardEvent('keydown', { key: ' ', code: 'Space', bubbles: true, cancelable: true });
+        wrapper.container.querySelector('summary')!.dispatchEvent(event);
+        expect(event.defaultPrevented).toBe(false);
+        expect(mock.timer.isRunning()).toBe(true);
+        wrapper.unmount();
+    });
+
+    it('returns to the original mode and explains a rendering failure', async () => {
+        const wrapper = mountView();
+        await flushPromises();
+        const enhanced = wrapper.container.querySelector<HTMLInputElement>('input[value="enhanced"]')!;
+        enhanced.checked = true;
+        enhanced.dispatchEvent(new Event('change', { bubbles: true }));
+        button(wrapper.container, 'Compare styles').click();
+        await nextTick();
+        mock.graphicsError.handler?.('Enhanced graphics could not be displayed. Original graphics restored.');
+        await nextTick();
+        expect(wrapper.container.textContent).toContain('Original graphics restored.');
+        expect(wrapper.container.querySelector<HTMLInputElement>('input[value="original"]')!.checked).toBe(true);
+        expect(localStorage.getItem('lemmings.graphics.v1')).toBe('original');
+        expect(wrapper.container.querySelector('#graphics-comparison')).toBeNull();
+        wrapper.unmount();
     });
 
     it('reveals verified hints one at a time and hides them on level change', async () => {
