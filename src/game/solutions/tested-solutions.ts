@@ -938,6 +938,16 @@ export const TESTED_SOLUTIONS: readonly TestedSolution[] = [
   },
   {
     groupIndex: 3,
+    levelIndex: 17,
+    replay: '120=l0&160=l1&195=s5&195=l1&198=l0&312=s7&312=l2&325=s4&325=l3&360=s5&360=l5&387=l1&390=l0&552=l5&582=l0&615=s4&615=l1&694=s5&694=l0&886=l0&966=l0&967=l2&1158=l0&1159=l2&1200=s3&1200=l1&1305=s5&1305=l5&1335=l0&1351=l2&1367=l2&1437=l2&1545=l5&1630=l4&1737=l5&1929=l5&2000=s3&2000=l3',
+    hints: [
+      'Work on all four entrances: each group needs a path toward the central exit.',
+      'Send Climbers out of the lower rooms and bridge the water, while a Miner opens the upper-right route and a Blocker holds the upper-left group.',
+      'Connect the bridges to the central platform, then release the upper-left Blocker after the route is ready.',
+    ],
+  },
+  {
+    groupIndex: 3,
     levelIndex: 18,
     replay: '100=l1&143=l2&235=s3&235=l1&269=l2&330=s5&330=l0&551=l0&743=l0&935=l0&1052=s3&1052=l3&1127=s5&1127=l0&1319=l0&1511=l0&1703=l0&1895=l0&2082=s3&2082=l0&2201=s5&2201=l4',
     hints: [
