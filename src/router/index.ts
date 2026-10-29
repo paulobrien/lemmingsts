@@ -1,8 +1,6 @@
-import { createRouter, createWebHistory, RouteRecordRaw } from 'vue-router'
+import { createRouter, createWebHistory, type RouteRecordRaw } from 'vue-router'
 import MainView from '@/views/main-view.vue';
 import GameView from '@/views/game-view.vue';
-
-import {GameFactory } from '@/game/game-factory';
 
 const routes: Array<RouteRecordRaw> = [
   {
@@ -14,6 +12,10 @@ const routes: Array<RouteRecordRaw> = [
     path: '/game/:gameType',
     name: 'game',
     component: GameView
+  },
+  {
+    path: '/:pathMatch(.*)*',
+    redirect: { name: 'main' }
   }
 ]
 
