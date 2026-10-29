@@ -14,7 +14,7 @@ test('keeps level details and sound controls readable on narrow screens', async 
 
   for (const width of [320, 360, 390, 768]) {
     await page.setViewportSize({ width, height: 844 })
-    const dimensions = await page.locator('.game-header > div').evaluate(element => ({
+    const dimensions = await page.locator('.level-heading').evaluate(element => ({
       width: element.clientWidth,
       contentWidth: element.scrollWidth,
       pageWidth: document.documentElement.scrollWidth,

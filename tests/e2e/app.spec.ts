@@ -45,7 +45,7 @@ test('keeps the offline app shell after visiting the licence notices', async ({ 
 
   // A direct navigation to a Vue route still needs the shell when offline.
   await page.goto('/game/0')
-  await expect(page.getByRole('link', { name: '← Levels' })).toBeVisible()
+  await expect(page.getByRole('link', { name: 'Level selection' })).toBeVisible()
 })
 
 test('imports the local DOS files, plays, and reloads offline', async ({ page, context }) => {
@@ -161,7 +161,7 @@ test('completes the first level with a canvas interaction and keeps progress', a
     return counts.opened - counts.closed
   })).toBe(0)
 
-  await page.getByRole('link', { name: '← Levels' }).click()
+  await page.getByRole('link', { name: 'Level selection' }).click()
   await page.reload()
   await expect(page.getByLabel('Level').locator('option').first()).toHaveText('1 · best 100%')
 })
