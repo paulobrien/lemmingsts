@@ -20,8 +20,11 @@ export function packageSource(root, output) {
   visitSource('tests');
   for (const path of [
     'LICENSE', 'README.md', 'index.html', 'package.json', 'package-lock.json', 'tsconfig.json', 'vite.config.ts', 'playwright.config.ts',
-    'scripts/verify-public-data.ts', 'scripts/package-source.mjs', 'docu/LICENCE_REVIEW.md', 'docu/ANDROID_DEVICE_CHECK.md',
+    'scripts/verify-public-data.ts', 'scripts/package-source.mjs', 'docu/LICENCE_REVIEW.md', 'docu/ANDROID_DEVICE_CHECK.md', 'docu/LEMMIX_REPLAY_IMPORT.md',
     'public/sw.js', 'public/manifest.webmanifest', 'public/favicon.ico', 'public/data/config.json',
+    'public/data/README.md', 'public/data/lemmings/README.md', 'public/data/lemmings_ohNo/README.md',
+    'public/data/lemmings_Holiday93/README.md', 'public/data/lemmings_Holiday94/README.md',
+    'public/data/lemmings_X-Mas91/README.md', 'public/data/lemmings_X-Mas92/README.md',
     'public/icons/icon-192.png', 'public/icons/icon-512.png', 'public/third-party.html',
     'public/licenses/GPL-2.0.txt', 'public/licenses/LGPL-2.1.txt',
   ]) add(path);
