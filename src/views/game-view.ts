@@ -45,6 +45,7 @@ export default defineComponent({
         const graphicsMode = ref<GraphicsMode>(readGraphicsMode());
         const comparingGraphics = ref(false);
         const graphicsError = ref('');
+        const zoomChanged = ref(false);
         const { fullscreenActive, fullscreenMode, toggleFullscreen } = useGameFullscreen(gamePage);
         const level = ref<Level | null>(null);
         const levelIndex = ref(Math.max(0, Number(route.query.level) || 0));
@@ -416,6 +417,8 @@ export default defineComponent({
         }
 
         function zoom(delta: number) { stage?.zoomGame(delta); }
+        function resetZoom() { stage?.resetZoom(); }
+        function onZoomChange(changed?: boolean) { zoomChanged.value = !!changed; }
 
         function onVisibilityChange() {
             if (document.hidden && game && game.getGameTimer().isRunning()) {
@@ -467,6 +470,7 @@ export default defineComponent({
             if (!gameCanvas.value) return;
             stage = new Stage(gameCanvas.value);
             stage.onGraphicsError.on(onGraphicsError);
+            stage.onZoomChange.on(onZoomChange);
             stage.setGraphicsMode(graphicsMode.value);
             keyboardTargeting = new KeyboardTargeting(gameCanvas.value, stage, () => game, assignPlayerSkill, message => { keyboardMessage.value = message; });
             document.addEventListener('visibilitychange', onVisibilityChange);
@@ -481,6 +485,7 @@ export default defineComponent({
             stopMusic();
             stage?.setComparisonCanvases(null, null);
             stage?.onGraphicsError.off(onGraphicsError);
+            stage?.onZoomChange.off(onZoomChange);
             keyboardTargeting?.dispose();
             stage?.dispose();
             document.removeEventListener('visibilitychange', onVisibilityChange);
@@ -491,6 +496,6 @@ export default defineComponent({
             level, levelIndex, groupName, title, error, loading, playing, paused,
             finished, levelSucceeded, nextLevelAvailable, savedCount, saveWarning, assignmentMessage, keyboardMessage, resultMessage, hints, availableHints, hintCompatibility, visibleHintCount, exampleMove, exampleBusy, exampleError, exampleSkillName, exampleClock, hideHints, showExample, clearExample, nukeArmed, nukeExecuted, selectedSkill, skillCounts, releaseRate, gameTime, speed,
             musicEnabled, soundEnabled, skillButtons, canPlay, start, openPauseMenu, resumeFromMenu, restartFromMenu, selectSkill, changeReleaseRate,
-            setSpeed, onSpeedChange, toggleMusic, toggleSound, zoom, changeLevel, loadLevel, confirmNuke };
+            setSpeed, onSpeedChange, toggleMusic, toggleSound, zoom, zoomChanged, resetZoom, changeLevel, loadLevel, confirmNuke };
     },
 });

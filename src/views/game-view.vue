@@ -42,6 +42,7 @@
       <button type="button" :disabled="loading || !level" @click="loadLevel">Restart</button>
       <button type="button" aria-label="Zoom out" @click="zoom(-1)">−</button>
       <button type="button" aria-label="Zoom in" @click="zoom(1)">+</button>
+      <button type="button" :disabled="!zoomChanged" @click="resetZoom">Reset zoom</button>
       <button v-if="!paused" type="button" :aria-pressed="fullscreenActive" @click="toggleFullscreen">{{ fullscreenActive ? 'Exit fullscreen' : 'Fullscreen' }}</button>
       <label class="speed">Speed
         <select :value="speed" @change="onSpeedChange">

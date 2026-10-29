@@ -27,9 +27,13 @@ export class Stage {
     private enhancedPixels: Uint8ClampedArray<ArrayBuffer> | null = null;
     private enhancedImage: ImageData | null = null;
     public readonly onGraphicsError = new EventHandler<string>();
+    /** True when the playfield is away from its starting scale. */
+    public readonly onZoomChange = new EventHandler<boolean>();
+    private readonly defaultZoom: number;
 
 
     constructor(canvasForOutput: HTMLCanvasElement, zoom = 2) {
+        this.defaultZoom = zoom;
         this.controller = new UserInputManager(canvasForOutput);
 
         this.handleOnMouseUp();
@@ -168,9 +172,14 @@ export class Stage {
             }
 
             const stageImage = this.getStageImageAt(e.x, e.y);
-            if (stageImage == null) {
+            // The classic panel must stay at its original scale; wheel zoom is
+            // for inspecting the level only.
+            if (stageImage !== this.gameImgProps || !stageImage.display) {
                 return;
             }
+            const scene = this.calcPosition2D(stageImage, e);
+            if (scene.x < 0 || scene.y < 0 || scene.x >= stageImage.display.getWidth() || scene.y >= stageImage.display.getHeight()) return;
+            e.handled = true;
             this.updateViewPoint(stageImage, 0, 0, e.deltaZoom);
         });
     }
@@ -186,6 +195,12 @@ export class Stage {
 
     public zoomGame(delta: number): void {
         this.updateViewPoint(this.gameImgProps, 0, 0, delta);
+    }
+
+    /** Restore the level scale without moving its camera more than bounds require. */
+    public resetZoom(): void {
+        const image = this.gameImgProps;
+        this.updateViewPoint(image, 0, 0, (this.defaultZoom - image.viewPoint.scale) / 0.5);
     }
 
     /** Graphics modes affect presentation only; simulation and input stay unchanged. */
@@ -272,6 +287,7 @@ export class Stage {
         this.comparisonEnhanced = null;
         this.releaseEnhancedFrame();
         this.onGraphicsError.dispose();
+        this.onZoomChange.dispose();
         this.controller.dispose();
         this.resetFade();
     }
@@ -282,6 +298,7 @@ export class Stage {
             return;
         }
 
+        const previousScale = stageImage.viewPoint.scale;
         stageImage.viewPoint.scale += deltaZoom * 0.5;
         stageImage.viewPoint.scale = this.limitValue(0.5, stageImage.viewPoint.scale, 10);
 
@@ -290,6 +307,10 @@ export class Stage {
 
         stageImage.viewPoint.x = this.limitValue(0, stageImage.viewPoint.x, stageImage.display.getWidth() - stageImage.width / stageImage.viewPoint.scale);
         stageImage.viewPoint.y = this.limitValue(0, stageImage.viewPoint.y, stageImage.display.getHeight() - stageImage.height / stageImage.viewPoint.scale);
+
+        if (stageImage === this.gameImgProps && stageImage.viewPoint.scale !== previousScale) {
+            this.onZoomChange.trigger(this.gameImgProps.viewPoint.scale !== this.defaultZoom);
+        }
 
 
         /// redraw

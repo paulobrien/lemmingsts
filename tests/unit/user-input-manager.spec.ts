@@ -22,6 +22,56 @@ function pointer(element: HTMLElement, type: string, x: number, y: number, id = 
 }
 
 describe('canvas input', () => {
+    it('reports and resets level zoom while the panel ignores the mouse wheel', () => {
+        const element = canvas();
+        const stage = new Stage(element, 3);
+        const changed = vi.fn();
+        stage.onZoomChange.on(changed);
+        stage.zoomGame(1); // No playfield has been created yet.
+        expect(changed).not.toHaveBeenCalled();
+        const display = stage.getGameDisplay();
+        vi.spyOn(display, 'getWidth').mockReturnValue(1600);
+        vi.spyOn(display, 'getHeight').mockReturnValue(160);
+        stage.getGuiDisplay();
+        const game = stage.getStageImageAt(100, 100)!;
+        const panel = stage.getStageImageAt(100, 450)!;
+
+        stage.zoomGame(1);
+        expect(game.viewPoint.scale).toBe(3.5);
+        expect(changed).toHaveBeenLastCalledWith(true);
+        const panelWheel = new WheelEvent('wheel', { clientX: 110, clientY: 225, deltaY: -1, cancelable: true });
+        element.dispatchEvent(panelWheel);
+        expect(panelWheel.defaultPrevented).toBe(false);
+        expect(panel.viewPoint.scale).toBe(3);
+        expect(game.viewPoint.scale).toBe(3.5);
+        stage.resetZoom();
+        expect(game.viewPoint.scale).toBe(3);
+        expect(panel.viewPoint.scale).toBe(3);
+        expect(changed).toHaveBeenLastCalledWith(false);
+
+        const levelWheel = new WheelEvent('wheel', { clientX: 110, clientY: 70, deltaY: 1, cancelable: true });
+        element.dispatchEvent(levelWheel);
+        expect(levelWheel.defaultPrevented).toBe(true);
+        expect(game.viewPoint.scale).toBe(2.5);
+        expect(changed).toHaveBeenLastCalledWith(true);
+        stage.resetZoom();
+        expect(changed).toHaveBeenLastCalledWith(false);
+        const calls = changed.mock.calls.length;
+        element.dispatchEvent(new WheelEvent('wheel', { clientX: 110, clientY: 225, deltaY: -1, cancelable: true }));
+        expect(panel.viewPoint.scale).toBe(3);
+        expect(changed).toHaveBeenCalledTimes(calls);
+        stage.dispose();
+    });
+
+    it('allows normal scrolling over a level area with no displayed scene', () => {
+        const element = canvas();
+        const stage = new Stage(element);
+        const empty = new WheelEvent('wheel', { clientX: 110, clientY: 70, deltaY: 1, cancelable: true });
+        element.dispatchEvent(empty);
+        expect(empty.defaultPrevented).toBe(false);
+        stage.dispose();
+    });
+
     it('maps touch coordinates into the drawing buffer and releases the last pointer', () => {
         const element = canvas();
         const input = new UserInputManager(element);

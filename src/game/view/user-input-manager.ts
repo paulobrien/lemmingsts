@@ -11,6 +11,8 @@ export class MouseMoveEventArguments extends Position2D {
 }
 
 export class ZoomEventArguments extends Position2D {
+    /** The stage sets this only when the wheel is used to zoom the level. */
+    public handled = false;
     constructor(x = 0, y = 0, public deltaZoom = 0) {
         super(x, y);
     }
@@ -116,7 +118,9 @@ export class UserInputManager {
 
     private wheel = (event: WheelEvent): void => {
         const position = this.getRelativePosition(event.clientX, event.clientY);
-        if (event.deltaY !== 0) this.onZoom.trigger(new ZoomEventArguments(position.x, position.y, event.deltaY < 0 ? 1 : -1));
-        event.preventDefault();
+        if (event.deltaY === 0) return;
+        const zoom = new ZoomEventArguments(position.x, position.y, event.deltaY < 0 ? 1 : -1);
+        this.onZoom.trigger(zoom);
+        if (zoom.handled) event.preventDefault();
     };
 }

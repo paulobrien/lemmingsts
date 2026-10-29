@@ -20,7 +20,8 @@ const mock = vi.hoisted(() => {
     const event = { on: vi.fn() };
     const display = { onMouseDown: event, clear: vi.fn(), redraw: vi.fn(), setScreenPosition: vi.fn() };
     const graphicsError: { handler?: (message?: string) => void } = {};
-    const stage = { getGameDisplay: vi.fn(() => display), getGuiDisplay: vi.fn(() => display), resetFade: vi.fn(), clearInputBindings: vi.fn(), dispose: vi.fn(), zoomGame: vi.fn(), setExampleHint: vi.fn(), setGraphicsMode: vi.fn(), setComparisonCanvases: vi.fn(), onGraphicsError: { on: vi.fn((handler: (message?: string) => void) => { graphicsError.handler = handler; }), off: vi.fn() } };
+    const zoomChange: { handler?: (changed?: boolean) => void } = {};
+    const stage = { getGameDisplay: vi.fn(() => display), getGuiDisplay: vi.fn(() => display), resetFade: vi.fn(), clearInputBindings: vi.fn(), dispose: vi.fn(), zoomGame: vi.fn(), resetZoom: vi.fn(), onZoomChange: { on: vi.fn((handler: (changed?: boolean) => void) => { zoomChange.handler = handler; }), off: vi.fn() }, setExampleHint: vi.fn(), setGraphicsMode: vi.fn(), setComparisonCanvases: vi.fn(), onGraphicsError: { on: vi.fn((handler: (message?: string) => void) => { graphicsError.handler = handler; }), off: vi.fn() } };
     const skills = { getSkill: vi.fn((_type: number) => 10), getSelectedSkill: vi.fn(() => 1) };
     const endEvent: { handler?: (result: { state: number; survivorPercentage: number }) => void } = {};
     const soundEvent: { handler?: (effect: number) => void } = {};
@@ -42,7 +43,7 @@ const mock = vi.hoisted(() => {
     const replace = vi.fn(async () => undefined);
     const verifyHints = vi.fn(async (): Promise<'verified' | 'different' | 'unavailable'> => 'verified');
     const exampleMove = vi.fn(async (): Promise<{ x: number; y: number; skill: number; gameSeconds: number } | null> => ({ x: 100, y: 60, skill: 8, gameSeconds: 5 }));
-    return { timer, level, stage, game, skills, resources, config, getGame, replace, endEvent, soundEvent, effects, assignmentEvent, nukeRequest, verifyHints, exampleMove, graphicsError };
+    return { timer, level, stage, game, skills, resources, config, getGame, replace, endEvent, soundEvent, effects, assignmentEvent, nukeRequest, verifyHints, exampleMove, graphicsError, zoomChange };
 });
 
 vi.mock('vue-router', () => ({
@@ -88,6 +89,25 @@ describe('game view lifecycle', () => {
         mock.verifyHints.mockResolvedValue('verified');
         mock.exampleMove.mockResolvedValue({ x: 100, y: 60, skill: 8, gameSeconds: 5 });
         mock.resources.getLevel.mockImplementation(async () => mock.level);
+    });
+
+    it('offers reset when stage zoom changes and keeps it available across levels', async () => {
+        const wrapper = mountView();
+        await flushPromises();
+        expect(button(wrapper.container, 'Reset zoom').disabled).toBe(true);
+        mock.zoomChange.handler?.(true);
+        await nextTick();
+        expect(button(wrapper.container, 'Reset zoom').disabled).toBe(false);
+        button(wrapper.container, 'Next level →').click();
+        await flushPromises();
+        expect(button(wrapper.container, 'Reset zoom').disabled).toBe(false);
+        button(wrapper.container, 'Reset zoom').click();
+        expect(mock.stage.resetZoom).toHaveBeenCalledOnce();
+        mock.zoomChange.handler?.(false);
+        await nextTick();
+        expect(button(wrapper.container, 'Reset zoom').disabled).toBe(true);
+        wrapper.unmount();
+        expect(mock.stage.onZoomChange.off).toHaveBeenCalledOnce();
     });
 
     it('persists the sound toggle and silences effects on pause and teardown', async () => {
