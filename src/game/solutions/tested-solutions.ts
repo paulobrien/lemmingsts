@@ -726,6 +726,16 @@ export const TESTED_SOLUTIONS: readonly TestedSolution[] = [
   },
   {
     groupIndex: 2,
+    levelIndex: 19,
+    replay: '69=s4&69=l0&145=s5&145=l1&337=s4&337=l1&350=s5&350=l2&455=s6&455=l2&477=l2&570=s5&570=l2&597=s6&597=l2&610=s4&610=l3&647=s5&647=l2&839=l2&919=l2&951=l2&1143=l2&2780=s6&2780=l2&2854=s8&2854=l2&2855=s5&2855=l2&3655=s6&3655=l31&3800=l31&3817=l31&3920=l31&3940=l31&3956=l31',
+    hints: [
+      'Hold the crowd while one lemming opens the long web rope.',
+      'Use overlapping stairs and a few short bashes to send a scout across the upper web.',
+      'Turn the scout back at the far wall, bash back through the staircase and dig beside the holding Blocker. Stop the dig immediately, then bash through the remaining webs as the crowd arrives.',
+    ],
+  },
+  {
+    groupIndex: 2,
     levelIndex: 20,
     replay: '54=l0&210=s5&210=l0&402=l0&594=l0&950=s1&950=l1&1120=s7&1120=l1&1245=l1&1480=s6&1480=l1&1533=s5&1533=l10',
     hints: [
