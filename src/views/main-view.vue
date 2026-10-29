@@ -7,7 +7,7 @@
           <p class="eyebrow"><span aria-hidden="true">✦</span> A LITTLE ADVENTURE AWAITS</p>
           <h1 id="welcome-title">Let's get them <em>home.</em></h1>
           <p class="intro">A little bit of chaos, a lot of tiny lemmings, and a whole world of puzzles to solve.</p>
-          <p class="preview-note">Early preview · Gameplay and level solutions are still being verified.</p>
+          <p class="preview-note">Early preview · Testing on different devices is still underway.</p>
           <div v-if="ready" class="actions">
             <div class="level-picker" v-if="groups.length">
               <label>Difficulty <select v-model.number="selectedGroup" @change="selectedLevel = 0"><option v-for="(group, index) in groups" :key="group.name" :value="index">{{ group.name }}</option></select></label>
