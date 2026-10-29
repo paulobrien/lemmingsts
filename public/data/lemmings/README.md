@@ -1,5 +1,6 @@
 # Lemmings Binary
-Add the original Lemmings files here
+
+Import your own original DOS Lemmings files through the app. Keep them out of this public directory and out of Git. The list below describes the expected files; filenames are case-insensitive.
 
 
 | Filename      | Size         |

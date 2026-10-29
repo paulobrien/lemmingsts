@@ -1,5 +1,6 @@
 # Lemmings Binary
-Add the original "Holiday Lemmings 1994" files here
+
+This is a historical filename list for an edition not currently supported by the import flow. Do not copy game files into this public directory or commit them.
 
 
 | Filename      | Size         |
