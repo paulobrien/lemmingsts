@@ -64,7 +64,7 @@
           <input ref="backupInput" class="visually-hidden" type="file" accept=".json,application/json" tabindex="-1" aria-hidden="true" @change="onBackupSelected" />
         </div>
       </section>
-      <footer>Made for a little more play <span aria-hidden="true">✳</span> · <a :href="`${baseUrl}third-party.html`">Source and licences</a></footer>
+      <footer>Made for Vanessa ❤️ · <a :href="`${baseUrl}third-party.html`">Source and licences</a></footer>
     </div>
   </main>
 </template>
