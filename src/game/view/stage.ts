@@ -14,6 +14,8 @@ export class Stage {
     private pressedImage: StageImageProperties | null = null;
     private pressPosition: Position2D | null = null;
     private dragging = false;
+    private keyboardTarget: (() => Position2D | null) | null = null;
+    private exampleHint: Position2D | null = null;
 
 
     constructor(canvasForOutput: HTMLCanvasElement, zoom = 2) {
@@ -175,6 +177,27 @@ export class Stage {
         this.updateViewPoint(this.gameImgProps, 0, 0, delta);
     }
 
+    /** Follow and outline a keyboard-selected lemming without changing terrain. */
+    public setKeyboardTarget(target: (() => Position2D | null) | null): void {
+        this.keyboardTarget = target;
+        this.redraw();
+    }
+
+    /** Mark a position from a tested example; it is not live advice. */
+    public setExampleHint(position: Position2D | null): void {
+        this.exampleHint = position;
+        if (position) this.revealGamePosition(position.x, position.y);
+        else this.redraw();
+    }
+
+    public revealGamePosition(x: number, y: number): void {
+        const image = this.gameImgProps;
+        const desiredX = x - image.width / image.viewPoint.scale / 2;
+        const desiredY = y - image.height / image.viewPoint.scale / 2;
+        this.updateViewPoint(image, (desiredX - image.viewPoint.x) * image.viewPoint.scale,
+            (desiredY - image.viewPoint.y) * image.viewPoint.scale, 0);
+    }
+
     /** Remove listeners belonging to the previous game before attaching a new one. */
     public clearInputBindings(): void {
         this.cancelPress();
@@ -189,6 +212,8 @@ export class Stage {
 
     public dispose(): void {
         this.cancelPress();
+        this.keyboardTarget = null;
+        this.exampleHint = null;
         this.controller.dispose();
         this.resetFade();
     }
@@ -406,6 +431,37 @@ export class Stage {
         ctx.drawImage(display.cav,
             display.viewPoint.x, display.viewPoint.y, dW, dH,
             display.x, display.y, Math.trunc(dW * display.viewPoint.scale), Math.trunc(dH * display.viewPoint.scale));
+
+        if (display === this.gameImgProps && this.exampleHint) {
+            const scale = display.viewPoint.scale;
+            const x = display.x + (this.exampleHint.x - display.viewPoint.x) * scale;
+            const y = display.y + (this.exampleHint.y - display.viewPoint.y) * scale;
+            ctx.save();
+            ctx.beginPath();
+            ctx.rect(display.x, display.y, display.width, display.height);
+            ctx.clip();
+            ctx.strokeStyle = '#68e4ff';
+            ctx.lineWidth = 3;
+            ctx.strokeRect(x - 9 * scale, y - 17 * scale, 18 * scale, 20 * scale);
+            ctx.restore();
+        }
+
+        if (display === this.gameImgProps && this.keyboardTarget) {
+            const target = this.keyboardTarget();
+            if (target) {
+                const scale = display.viewPoint.scale;
+                const x = display.x + (target.x - display.viewPoint.x) * scale;
+                const y = display.y + (target.y - display.viewPoint.y) * scale;
+                ctx.save();
+                ctx.beginPath();
+                ctx.rect(display.x, display.y, display.width, display.height);
+                ctx.clip();
+                ctx.strokeStyle = '#ffed76';
+                ctx.lineWidth = 2;
+                ctx.strokeRect(x - 7 * scale, y - 15 * scale, 14 * scale, 17 * scale);
+                ctx.restore();
+            }
+        }
 
         //- apply fading
         if (this.fadeAlpha != 0) {

@@ -320,6 +320,11 @@ import { TriggerManager } from './trigger-manager';
             return this.lemmings[id];
         }
 
+        /** Active lemmings available for keyboard targeting, ordered by release. */
+        public getSelectableLemmings(): Lemming[] {
+            return this.lemmings.filter(lem => !lem.removed && !lem.isDisabled());
+        }
+
         /** return a lemming at a given position */
         public getLemmingAt(x: number, y: number, hitSlop = 0): Lemming | null {
             let lems = this.lemmings;
