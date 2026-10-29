@@ -1,4 +1,5 @@
 import { unzipSync } from 'fflate';
+import { validateDosFiles } from './validate-dos-files';
 
 /** Original DOS Lemmings resources required by the current game configuration. */
 export const REQUIRED_LEMMINGS_FILES: readonly string[] = [
@@ -100,12 +101,16 @@ export async function importLemmingsFiles(files: FileList | readonly File[]): Pr
   if (validation.empty.length) problems.push(`Empty files: ${validation.empty.join(', ')}`);
   if (validation.duplicates.length) problems.push(`Duplicate files: ${validation.duplicates.join(', ')}`);
   if (problems.length) throw new Error(problems.join('. '));
+  const requiredFiles = selected.filter(file => requiredNames.has(file.name.toUpperCase()));
+  if (requiredFiles.reduce((total, file) => total + file.size, 0) > MAX_EXTRACTED_BYTES) {
+    throw new Error('The selected game files are too large. Your existing game files were not changed.');
+  }
 
   // Read everything before opening the transaction: IndexedDB transactions can
   // auto-close while awaiting file reads. A failed read leaves an existing import intact.
-  const buffers = await Promise.all(selected
-    .filter((file) => requiredNames.has(file.name.toUpperCase()))
+  const buffers = await Promise.all(requiredFiles
     .map(async (file) => ({ name: file.name.toUpperCase(), data: await file.arrayBuffer() })));
+  validateDosFiles(buffers);
   const database = await openDatabase();
   try {
     const transaction = database.transaction(STORE_NAME, 'readwrite');
