@@ -6,18 +6,38 @@ const appUrl = new URL('./', base).href;
 const indexPath = new URL('index.html', base).pathname;
 const gamePath = new URL('game/', base).pathname;
 
+// Never replace a working offline document until all of its hashed assets
+// have been cached. Keep old assets for tabs still running the previous build.
+async function cacheShell(cache, response) {
+  const html = await response.clone().text();
+  const resources = [...html.matchAll(/(?:src|href)="([^"]+)"/g)]
+    .map(match => new URL(match[1], appUrl))
+    .filter(url => url.origin === base.origin && url.pathname.startsWith(base.pathname) && /\.(?:js|css)$/.test(url.pathname))
+    .map(url => url.href);
+  if (!resources.some(url => /\.js(?:\?|$)/.test(url))) throw new Error('App shell has no script');
+  // SPA hosts may answer a missing hashed asset with their HTML fallback and
+  // status 200. Do not commit a shell until each asset is actually usable.
+  const staged = await Promise.all([...new Set(resources)].map(async url => {
+    const asset = await fetch(url);
+    const contentType = (asset.headers.get('content-type') || '').split(';')[0].trim().toLowerCase();
+    const javascript = new URL(url).pathname.endsWith('.js');
+    const validType = javascript
+      ? /^(?:text|application)\/(?:x-)?(?:java|ecma)script$/.test(contentType)
+      : contentType === 'text/css';
+    if (!asset.ok || !validType) throw new Error('App shell asset unavailable or invalid');
+    return { url, asset };
+  }));
+  for (const { url, asset } of staged) await cache.put(url, asset);
+  await cache.put(appUrl, response.clone());
+}
+
 self.addEventListener('install', event => {
   event.waitUntil((async () => {
     const cache = await caches.open(CACHE);
     const response = await fetch(appUrl, { cache: 'reload' });
     if (!response.ok) throw new Error('Could not cache the app');
-    const html = await response.clone().text();
-    await cache.put(appUrl, response);
-    const resources = [...html.matchAll(/(?:src|href)="([^"]+)"/g)]
-      .map(match => new URL(match[1], appUrl))
-      .filter(url => url.origin === base.origin && url.pathname.startsWith(base.pathname) && /\.(?:js|css)$/.test(url.pathname))
-      .map(url => url.href);
-    await cache.addAll([...new Set([...resources, new URL('data/config.json', base).href, new URL('manifest.webmanifest', base).href, new URL('icons/icon-192.png', base).href, new URL('icons/icon-512.png', base).href])]);
+    await cache.addAll([new URL('data/config.json', base).href, new URL('manifest.webmanifest', base).href, new URL('icons/icon-192.png', base).href, new URL('icons/icon-512.png', base).href]);
+    await cacheShell(cache, response);
   })());
 });
 
@@ -46,8 +66,10 @@ self.addEventListener('fetch', event => {
     try {
       const response = await fetch(request);
       if (response.ok) {
-        // Only an actual app document can refresh the canonical offline shell.
-        if (!navigation || appDocument) await cache.put(navigation ? appUrl : request, response.clone());
+        // Both app routes must stage a complete shell before it becomes the
+        // offline document. Non-app HTML never reaches this handler.
+        if (navigation) await cacheShell(cache, response);
+        else await cache.put(request, response.clone());
       } else {
         // A newly deployed build may no longer serve an older hashed asset.
         // Keep an already-open version working until its next reload.
