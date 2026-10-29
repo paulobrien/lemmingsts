@@ -1,6 +1,6 @@
 <template>
   <main class="game-page">
-    <header class="game-header">
+    <header class="game-header" :inert="fullscreenActive">
       <router-link class="back-link" to="/">← Levels</router-link>
       <div>
         <p class="eyebrow">{{ groupName }} · Level {{ levelIndex + 1 }}</p>
@@ -121,7 +121,7 @@
     </div>
     </section>
 
-    <nav class="level-navigation" aria-label="Level navigation">
+    <nav class="level-navigation" aria-label="Level navigation" :inert="fullscreenActive">
       <button type="button" :disabled="loading" @click="changeLevel(-1)">← Previous level</button>
       <button type="button" :disabled="loading" @click="changeLevel(1)">Next level →</button>
     </nav>

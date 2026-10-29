@@ -117,6 +117,12 @@ test('offers an escapable expanded view when native fullscreen is unavailable', 
   await page.getByRole('button', { name: 'Fullscreen', exact: true }).click()
   const game = page.locator('.game-screen')
   await expect(game).toHaveClass(/is-fullscreen/)
+  // Expanded fullscreen must also remove the obscured page controls from
+  // keyboard navigation and the accessibility tree.
+  await expect(page.locator('.game-header')).toHaveAttribute('inert', '')
+  await expect(page.locator('.level-navigation')).toHaveAttribute('inert', '')
+  await page.locator('.back-link').evaluate((link: HTMLAnchorElement) => link.focus())
+  await expect(page.locator('.back-link')).not.toBeFocused()
   await expect(page.getByRole('status').filter({ hasText: 'Expanded view (browser fullscreen unavailable)' })).toBeVisible()
   const rect = await game.boundingBox()
   const viewport = page.viewportSize()!
@@ -126,6 +132,8 @@ test('offers an escapable expanded view when native fullscreen is unavailable', 
   expect(rect!.height).toBe(viewport.height)
   await page.keyboard.press('Escape')
   await expect(game).not.toHaveClass(/is-fullscreen/)
+  await expect(page.locator('.game-header')).not.toHaveAttribute('inert', '')
+  await expect(page.getByRole('link', { name: '← Levels' })).toBeVisible()
   await expect(page.getByRole('button', { name: 'Fullscreen', exact: true })).toHaveAttribute('aria-pressed', 'false')
   expect(await page.evaluate(() => document.body.style.overflow)).not.toBe('hidden')
   await page.getByRole('button', { name: 'Fullscreen', exact: true }).click()
