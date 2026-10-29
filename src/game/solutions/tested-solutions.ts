@@ -910,6 +910,16 @@ export const TESTED_SOLUTIONS: readonly TestedSolution[] = [
   },
   {
     groupIndex: 3,
+    levelIndex: 13,
+    replay: '448=s5&448=l0&640=l0&832=l0&913=s4&913=l1&1024=s5&1024=l0&1216=l0&1408=l0&1600=l0&1792=l0&1984=l0&2040=s8&2040=l0&2090=s5&2090=l0&2298=l0&2490=l0&2653=s8&2653=l0&2693=s5&2693=l0&2885=l0&3077=l0&3270=s8&3270=l0&3300=s3&3300=l1&3312=s5&3312=l0&3459=l4&3504=l0&3584=s8&3584=l0&3622=s5&3622=l0&3651=l4&3814=l0&4006=l0&4182=s8&4182=l0',
+    hints: [
+      'The peas offer footholds across the bowl, but a missed landing is costly.',
+      'Hold the crowd on the first ramp while a scout builds across and digs carefully down onto the solid middle of each pea.',
+      'Release the Blocker once the route is almost ready, and rebuild the damaged section of the first ramp.',
+    ],
+  },
+  {
+    groupIndex: 3,
     levelIndex: 14,
     replay: '105=s6&105=l0&110=s4&110=l1&150=l3&178=s6&178=l2&204=s4&204=l4&232=l5&373=s5&373=l0&453=l2&573=l0&653=l2&773=l0&853=l2&973=l0&1053=l2&1173=l0&1253=l2&1800=s3&1800=l3&1800=l5',
     hints: [
