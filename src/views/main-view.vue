@@ -1,7 +1,7 @@
 <template>
   <main class="home">
     <div class="home-inner">
-      <header class="topbar"><span class="brand-mark" aria-hidden="true">L</span><span class="brand">LEMMINGS <span>TS</span></span></header>
+      <header class="topbar"><span class="brand">LEMMINGS <span>TS</span></span></header>
       <section class="hero" aria-labelledby="welcome-title">
         <div class="hero-copy">
           <p class="eyebrow"><span aria-hidden="true">▶</span> {{ ready ? 'SELECT YOUR LEVEL' : 'WELCOME, PLAYER' }}</p>
@@ -232,8 +232,7 @@ async function onBackupSelected(event: Event) {
   font-family: ui-monospace, 'SFMono-Regular', Consolas, 'Liberation Mono', monospace;
 }
 .home-inner { max-width: 1220px; margin: auto; padding: 0 36px; }
-.topbar { height: 76px; display: flex; align-items: center; gap: 10px; border-bottom: 1px solid #395348; }
-.brand-mark { display: grid; place-items: center; width: 34px; height: 34px; color: #14291c; background: #9bcc83; border-radius: 4px; box-shadow: 3px 3px 0 #547b51; font-size: 21px; font-weight: 900; }
+.topbar { height: 76px; display: flex; align-items: center; border-bottom: 1px solid #395348; }
 .brand { color: #edf3e4; font-size: 14px; font-weight: 900; letter-spacing: .08em; }
 .brand span { color: #b1c5b2; font: inherit; font-size: 12px; letter-spacing: 0; }
 .hero { display: grid; grid-template-columns: 1fr 1fr; gap: 5%; align-items: center; padding: 50px 0 62px; }
