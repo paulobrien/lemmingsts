@@ -27,15 +27,7 @@ export class DisplayImage {
         return this.imgData.height;
     }
 
-    constructor(private stage: Stage) {
-        this.onMouseDown.on((e) => {
-            if (!e) {
-                return;
-            }
-
-            this.setDebugPixel(e.x, e.y);
-        });
-    }
+    constructor(private stage: Stage) {}
 
     public onMouseUp = new EventHandler<Position2D>();
     public onMouseDown = new EventHandler<Position2D>();
@@ -64,11 +56,8 @@ export class DisplayImage {
             return;
         }
 
-        const img = new Uint32Array(this.imgData.data);
-
-        for (let i = 0; i < img.length; i++) {
-            img[i] = 0xFF00FF00;
-        }
+        const data = this.imgData.data;
+        new Uint32Array(data.buffer, data.byteOffset, data.byteLength / 4).fill(0xFF000000);
     }
 
 
@@ -376,15 +365,7 @@ export class DisplayImage {
     }
 
     public setDebugPixel(x: number, y: number) {
-        if (!this.imgData) {
-            return;
-        }
-
-        const pointIndex = (this.imgData.width * (y) + x) * 4;
-
-        this.imgData.data[pointIndex] = 255;
-        this.imgData.data[pointIndex + 1] = 0;
-        this.imgData.data[pointIndex + 2] = 0;
+        this.setPixel(x, y, 255, 0, 0);
     }
 
 
@@ -392,12 +373,14 @@ export class DisplayImage {
         if (!this.imgData) {
             return;
         }
+        if (x < 0 || x >= this.imgData.width || y < 0 || y >= this.imgData.height) return;
 
         const pointIndex = (this.imgData.width * (y) + x) * 4;
 
         this.imgData.data[pointIndex] = r;
         this.imgData.data[pointIndex + 1] = g;
         this.imgData.data[pointIndex + 2] = b;
+        this.imgData.data[pointIndex + 3] = 255;
     }
 
 
