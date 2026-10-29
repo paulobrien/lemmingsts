@@ -120,6 +120,7 @@ import { TriggerManager } from './trigger-manager';
                 if (lem.removed) continue;
 
                 const previousAction = lem.action;
+                const previousDirection = lem.lookRight ? 1 : -1;
                 const countdownFinishes = lem.countdownAction !== null && lem.countdown === 1;
                 let newAction = lem.process(this.level);
                 // DOS warns on frame 10 of each of the final three bricks.
@@ -127,6 +128,17 @@ import { TriggerManager } from './trigger-manager';
                 if (!countdownFinishes && newAction === LemmingStateType.NO_STATE_TYPE && previousAction instanceof ActionBuildSystem &&
                     lem.frameIndex === 10 && lem.state >= 9) {
                     this.onSoundEffect.trigger(SoundEffect.BuilderWarning);
+                }
+                // Bashers and miners sound the steel cue when a steel cell
+                // turns them around; one-way arrows do not play this cue.
+                if (!countdownFinishes && newAction === LemmingStateType.WALKING &&
+                    lem.lookRight !== (previousDirection === 1)) {
+                    const steelX = previousAction instanceof ActionBashSystem ? lem.x + 8 * previousDirection : lem.x;
+                    const steelY = previousAction instanceof ActionBashSystem ? lem.y - 8 : lem.y;
+                    if ((previousAction instanceof ActionBashSystem || previousAction instanceof ActionMineSystem) &&
+                        this.level.isProtectedAt(steelX, steelY)) {
+                        this.onSoundEffect.trigger(SoundEffect.Steel);
+                    }
                 }
                 // DOS/Lemmix checks interactive objects for a digger only on
                 // the frames where it digs a row (0 and 8), not during the
@@ -392,9 +404,15 @@ import { TriggerManager } from './trigger-manager';
                     (skillType === SkillTypes.DIGGER && current === 'digging')) return false;
                 const direction = lem.lookRight ? 1 : -1;
                 if ((skillType === SkillTypes.BASHER || skillType === SkillTypes.MINER) &&
-                    this.level.isProtectedAt(lem.x + 8 * direction, lem.y - 8, direction)) return false;
+                    this.level.isProtectedAt(lem.x + 8 * direction, lem.y - 8, direction)) {
+                    if (this.level.isProtectedAt(lem.x + 8 * direction, lem.y - 8)) this.onSoundEffect.trigger(SoundEffect.Steel);
+                    return false;
+                }
                 if ((skillType === SkillTypes.MINER || skillType === SkillTypes.DIGGER) &&
-                    this.level.isProtectedAt(lem.x, lem.y)) return false;
+                    this.level.isProtectedAt(lem.x, lem.y)) {
+                    this.onSoundEffect.trigger(SoundEffect.Steel);
+                    return false;
+                }
             }
 
             const needsGround = skillType === SkillTypes.BLOCKER || skillType === SkillTypes.BUILDER ||

@@ -5,6 +5,7 @@ export enum SoundEffect {
     Assign = 3,
     OhNo = 4,
     Splat = 7,
+    Steel = 9,
     Explosion = 11,
     Fire = 12,
     Exit = 15,

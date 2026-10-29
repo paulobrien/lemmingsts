@@ -8,6 +8,7 @@ import { Lemming } from '../../src/game/game-play/lemming';
 import { LemmingManager } from '../../src/game/game-play/lemming-manager';
 import { LemmingStateType } from '../../src/game/game-play/lemming-state-type';
 import { SkillTypes } from '../../src/game/game-play/skill-types';
+import { SoundEffect } from '../../src/game/game-play/sound-effects';
 import { TriggerManager } from '../../src/game/game-play/trigger-manager';
 import { DrawProperties } from '../../src/game/resources/draw-properties';
 import { Level } from '../../src/game/resources/level';
@@ -170,12 +171,46 @@ describe('DOS terrain object-map protection', () => {
         const level = filledLevel(); steel(level, 12, 0);
         const manager = Object.create(LemmingManager.prototype) as LemmingManager;
         const triggerLemAction = vi.fn(() => true);
-        Object.assign(manager, { level, skillActions: { [SkillTypes.BASHER]: { triggerLemAction } } });
+        const emit = vi.fn();
+        Object.assign(manager, { level, onSoundEffect: { trigger: emit }, skillActions: { [SkillTypes.BASHER]: { triggerLemAction } } });
         const lem = new Lemming(5, 8, 0);
         lem.action = { getActionName: () => 'walk' } as typeof lem.action;
         expect(manager.doLemmingAction(lem, SkillTypes.BASHER)).toBe(false);
+        expect(emit.mock.calls).toEqual([[SoundEffect.Steel]]);
         expect(triggerLemAction).not.toHaveBeenCalled();
         lem.action = { getActionName: () => 'falling' } as typeof lem.action;
         expect(manager.doLemmingAction(lem, SkillTypes.BASHER)).toBe(false);
+        expect(emit).toHaveBeenCalledTimes(1);
+    });
+
+    it.each(['basher', 'miner'])('sounds steel when a moving %s is turned by it', skill => {
+        const level = filledLevel();
+        const action = skill === 'basher' ? new ActionBashSystem(sprite, masks) : new ActionMineSystem(sprite, masks);
+        const lem = new Lemming(5, 10, 0);
+        lem.setAction(action);
+        lem.frameIndex = skill === 'basher' ? 10 : 2;
+        steel(level, skill === 'basher' ? 12 : 4, skill === 'basher' ? 0 : 8);
+        const emit = vi.fn();
+        const manager = Object.create(LemmingManager.prototype) as LemmingManager;
+        const actions = [];
+        actions[LemmingStateType.WALKING] = { getActionName: () => 'walk' };
+        Object.assign(manager, { level, actions, lemmings: [lem], onSoundEffect: { trigger: emit },
+            gameVictoryCondition: { getLeftCount: () => 0 }, nextNukingLemmingsIndex: -1,
+            triggerManager: { trigger: () => TriggerTypes.NO_TRIGGER }, logging: { debug: vi.fn() } });
+        manager.tick();
+        expect(emit.mock.calls).toEqual([[SoundEffect.Steel]]);
+        expect(lem.lookRight).toBe(false);
+    });
+
+    it('rejects a basher at a one-way wall without a steel sound', () => {
+        const level = filledLevel();
+        addObject(level, TriggerTypes.ONWAY_LEFT, 12, 0, 4, 4);
+        const emit = vi.fn();
+        const manager = Object.create(LemmingManager.prototype) as LemmingManager;
+        Object.assign(manager, { level, onSoundEffect: { trigger: emit } });
+        const lem = new Lemming(5, 8, 0);
+        lem.action = { getActionName: () => 'walk' } as typeof lem.action;
+        expect(manager.doLemmingAction(lem, SkillTypes.BASHER)).toBe(false);
+        expect(emit).not.toHaveBeenCalled();
     });
 });
