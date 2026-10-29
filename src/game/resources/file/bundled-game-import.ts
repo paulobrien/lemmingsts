@@ -30,7 +30,7 @@ async function readBounded(response: Response, limit: number): Promise<Uint8Arra
 }
 
 /**
- * Optionally import the deployment's private DOS files into an empty local store.
+ * Optionally import the deployment's supplied DOS files into an empty local store.
  * Fixed filenames and same-origin, redirect-free requests prevent a manifest from
  * causing cross-origin requests. Failure never replaces any stored files.
  */

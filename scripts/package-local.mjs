@@ -61,7 +61,7 @@ export function packageLocalGame(sourceDirectory, buildDirectory) {
 if (process.argv[1] && fileURLToPath(import.meta.url) === resolve(process.argv[1])) {
   try {
     const destination = packageLocalGame(resolve(process.env.LEMMINGS_DOS_DIR || 'dos/lemmings'), resolve('dist'));
-    console.warn(`Private game files were added to ${destination}. Only use this build on a private, access-controlled host; never publish it.`);
+    console.warn(`Game files were added to ${destination}. Anyone with access to this deployment can download them. Use an authenticated host if the files must remain private.`);
   } catch (error) {
     console.error(error instanceof Error ? error.message : error);
     process.exitCode = 1;

@@ -59,7 +59,7 @@ self.addEventListener('fetch', event => {
   const request = event.request;
   const url = new URL(request.url);
   if (request.method !== 'GET' || url.origin !== base.origin || !url.pathname.startsWith(base.pathname)) return;
-  // Optional privately hosted DOS files are imported into IndexedDB by the
+  // Optional deployment-supplied DOS files are imported into IndexedDB by the
   // application. Never copy those responses into the shared shell cache.
   if (url.pathname.startsWith(localGamePath)) return;
   const navigation = request.mode === 'navigate';
