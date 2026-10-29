@@ -244,12 +244,16 @@ export class Level {
 
     /** set a point in the map to solid ground  */
     public setGroundAt(x: number, y: number, palletIndex: number) {
+        if (x < 0 || x >= this.width || y < 0 || y >= this.height) return;
         this.groundMask.setGroundAt(x, y);
 
         const index = (y * this.width + x) * 4;
         this.groundImage[index + 0] = this.colorPalette.getR(palletIndex);
         this.groundImage[index + 1] = this.colorPalette.getG(palletIndex);
         this.groundImage[index + 2] = this.colorPalette.getB(palletIndex);
+        // Erased terrain and special-map backgrounds can be transparent.
+        // New builder bricks must still be visible on those pixels.
+        this.groundImage[index + 3] = 255;
     }
 
     /** checks if a point is solid ground  */

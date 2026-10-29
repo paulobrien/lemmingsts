@@ -29,6 +29,7 @@ export class SolidLayer {
 
     /** clear a point  */
     public clearGroundAt(x: number, y: number) {
+        if (x < 0 || x >= this.width || y < 0 || y >= this.height) return;
         if (!this.groundMask) {
             return false;
         }
@@ -40,6 +41,7 @@ export class SolidLayer {
 
     /** clear a point  */
     public setGroundAt(x: number, y: number) {
+        if (x < 0 || x >= this.width || y < 0 || y >= this.height) return;
         if (!this.groundMask) {
             return false;
         }
