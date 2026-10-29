@@ -6,7 +6,13 @@ Create a polished, faithful Lemmings experience for desktop browsers, Android ta
 
 Build an installable progressive web app (PWA) first: one web application can run in a desktop browser and be installed to an Android home screen. Expo is built around React Native; adopting it here would require a separate native layer or substantial UI and browser-API adaptation. Revisit it only if a concrete native feature or distribution requirement warrants that work.
 
-The app must not commit, bundle or publicly distribute the original game files. Prefer importing the owner's files into browser storage on each device. This requires an explicit first-run import and space on each device; it does not automatically sync assets or progress. Keep a private local development route for testing, and decide on any alternative hosting or distribution of game data separately.
+Original game files must never enter Git or the downloadable source archive. The standard build and original import-only preview contain no game files. The owner subsequently chose a second public play deployment with an explicit opt-in game-file bundle; preserve that distinction when deploying both sites. Each browser stores files and progress separately, with no automatic sync. See the [current deployment instructions](README.md#the-two-hosted-sites).
+
+## Current status
+
+The baseline, toolchain migration, 120 authored completion replays, progressive hints, local import and backups, installable/offline app shell, optional graphics enhancement, and both hosted deployments are implemented. Fullscreen play shows the original game and HUD; the original pause button opens the surrounding controls. The stages below retain their acceptance criteria and the rationale behind the work.
+
+Remaining release checks are physical Android phone/tablet installation, offline relaunch, audio output and interruptions, portrait HUD usability, and performance of the optional enhanced filter. Chromium emulation cannot establish those hardware results. DOS physics parity outside the tested routes and the inherited OPL licence questions also remain open; passing the replay gate is not proof of full DOS equivalence.
 
 ## 1. Establish a working baseline
 
@@ -50,7 +56,7 @@ The app must not commit, bundle or publicly distribute the original game files. 
 - Save completed levels, preferences and appropriate progress locally. Make the per-device nature of storage clear; do not promise cross-device sync without implementing it.
 - Provide a first-run game-data import and validation flow, with useful errors for missing or incompatible files. Store imported data locally and provide a way to remove it.
 - Add a web app manifest, icons, standalone presentation and HTTPS deployment. Add a service worker and an explicit offline strategy for the app shell and user-supplied data; installation alone does not make gameplay available offline.
-- Test installation, first-run setup, offline launch and gameplay, updates, storage failures and recovery on real Android Chrome devices. Verify that build output and hosted resources contain no original game data.
+- Test installation, first-run setup, offline launch and gameplay, updates, storage failures and recovery on real Android Chrome devices. Verify that the standard build and import-only preview contain no original game data, and that only the explicitly bundled play deployment contains the operator-supplied files.
 
 **Done when:** the app installs from a secure hosted site and plays a previously imported level offline on both Android form factors.
 
@@ -58,7 +64,7 @@ The app must not commit, bundle or publicly distribute the original game files. 
 
 - Improve presentation, level completion feedback, settings and onboarding; address real-device feedback and bugs. Optional AdLib effects cover opening cues, skill selection and assignments, builder warnings, steel, Oh No, exits, splats, explosions, water, fire and triggered traps. Digging, bashing, mining and nuke use synthesized PC-speaker-style approximations; check audio and balance on real devices.
 - Document setup, the private asset workflow, accessibility and known limitations. Production builds include an application source archive and licence notices. The bundled DOSBox-derived DBOPL files carry GPL-2.0-or-later notices that conflict with the root file's LGPL emulator notice; resolve the remaining distribution questions described in [licence review](docu/LICENCE_REVIEW.md), and review game-asset rights before any wider distribution.
-- Deploy the app to an appropriate HTTPS host and test the production build. Never publish original game files as part of the site.
+- Deploy the app to an appropriate HTTPS host and test the production build. Preserve the owner-authorized distinction between the bundled play site and the game-file-free preview; never include original files in source repositories or source downloads.
 - Consider cross-device progress sync only if desired; it requires a storage and privacy design. If a Play Store listing or Android package becomes a requirement, assess a Trusted Web Activity and Android signing first. Consider Expo or a native rewrite only for specific needs that the web app cannot meet.
 
 **Done when:** the production experience works on the intended devices and the remaining limitations are understood.
