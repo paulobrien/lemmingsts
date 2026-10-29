@@ -163,7 +163,7 @@ test('completes the first level with a canvas interaction and keeps progress', a
 
   await page.getByRole('link', { name: 'Level selection' }).click()
   await page.reload()
-  await expect(page.getByLabel('Level').locator('option').first()).toHaveText('1 · best 100%')
+  await expect(page.getByLabel('Level').locator('option').first()).toHaveText('1 (best 100%)')
 })
 
 test('imports a ZIP of the local DOS files', async ({ page }) => {

@@ -10,7 +10,7 @@
           <div v-if="ready" class="actions">
             <div class="level-picker" v-if="groups.length">
               <label>Difficulty <select v-model.number="selectedGroup" @change="selectedLevel = 0"><option v-for="(group, index) in groups" :key="group.name" :value="index">{{ group.name }}</option></select></label>
-              <label>Level <select v-model.number="selectedLevel"><option v-for="index in groups[selectedGroup].count" :key="index" :value="index - 1">{{ index }}{{ bestScore(selectedGroup, index - 1) === null ? '' : ` · best ${bestScore(selectedGroup, index - 1)}%` }}</option></select></label>
+              <label>Level <select v-model.number="selectedLevel"><option v-for="index in groups[selectedGroup].count" :key="index" :value="index - 1">{{ index }}{{ bestScore(selectedGroup, index - 1) === null ? '' : ` (best ${bestScore(selectedGroup, index - 1)}%)` }}</option></select></label>
             </div>
             <p v-if="bestScore(selectedGroup, selectedLevel) !== null" class="best-score">Best saved: {{ bestScore(selectedGroup, selectedLevel) }}%</p>
             <router-link class="primary-button" :to="{ name: 'game', params: { gameType: 1 }, query: { group: selectedGroup, level: selectedLevel } }">Play Lemmings</router-link>

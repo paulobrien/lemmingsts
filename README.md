@@ -11,6 +11,7 @@ This modernization retains the original engine and game data formats while impro
 - Replaced the old Vue CLI toolchain with Vite and current Vue and TypeScript tooling, a lockfile, type checking, automated tests and CI.
 - Redesigned level selection and gameplay screens for desktop and touch, including responsive canvas scaling, skill controls, panning, zoom, speed, an in-game pause menu and level navigation. Fullscreen uses the browser API when available and an expanded view otherwise.
 - Recreated the surrounding interface with a pixel-era look. After import, the home screen decodes the original title artwork from the player's own `MAIN.DAT` in memory; before import it uses original CSS artwork. The standard build contains no original game graphics.
+- Polished both screens with a shared forest-and-stone palette, consistent typography, beveled controls and clearer focus states. Desktop sizing keeps the game and its main controls together on typical laptop displays; phone layouts wrap controls into touch-sized rows.
 - Added a local game-file import, including ZIP support, and an optional deployment bundle that loads automatically on each device. The app shell has an installable PWA manifest and offline cache; progress and preferences are saved locally per browser.
 - Added structural validation before replacing imported game files, an offline-readiness indicator, and safer app-shell updates that retain a working offline version if an update is interrupted.
 - Made level objectives and rescued counts visible, added action feedback and a shared nuke confirmation, remembered the last level and best result, and added progress-only backup and restore.
@@ -44,6 +45,8 @@ On first visit, the app checks for the same-origin manifest, downloads and valid
 `npm run build` is the default, game-file-free build and clears the prior `dist/` output, including any deployment bundle. An alternative source directory can be supplied to the opt-in build with `LEMMINGS_DOS_DIR=/path/to/files npm run build:local`. The host must serve the generated JSON manifest and DAT files as static files on the same origin; authentication redirects or an HTML fallback for a missing file cannot act as a bundle.
 
 ## Play and install
+
+Use **Level selection** below the game before starting or after finishing. During play, open **Pause** to change levels, restart or leave fullscreen. Navigation stays out of the game header.
 
 Choose a difficulty and level, then start the level. The target and time are shown before play, and the rescued count is updated during play. Select a skill and click or tap a lemming to assign it; drag the game area to pan, and use the zoom controls or a mouse wheel over the level to change the view. **Reset zoom** restores the default scale. To play with a keyboard, focus the game canvas, use left/right arrows to select an active lemming, and press Enter to assign the selected skill; Space pauses or resumes.
 
