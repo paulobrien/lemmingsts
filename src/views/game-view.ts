@@ -37,8 +37,8 @@ export default defineComponent({
         const route = useRoute();
         const router = useRouter();
         const gameScreen = ref<HTMLElement | null>(null);
-        const fullscreenControlsButton = ref<HTMLButtonElement | null>(null);
         const fullscreenEnterButton = ref<HTMLButtonElement | null>(null);
+        const startControl = ref<HTMLButtonElement | null>(null);
         const pauseControl = ref<HTMLButtonElement | null>(null);
         const pauseHeading = ref<HTMLElement | null>(null);
         const gameCanvas = ref<HTMLCanvasElement | null>(null);
@@ -50,6 +50,58 @@ export default defineComponent({
         const zoomChanged = ref(false);
         const { fullscreenActive, fullscreenMode, toggleFullscreen } = useGameFullscreen(gameScreen);
         const fullscreenControlsOpen = ref(false);
+        // A HUD press changes pause/nuke state on pointerdown. Opening an
+        // overlay under the same finger before the browser's click can cause
+        // that click to activate a newly appeared control.
+        const deferFullscreenControls = ref(false);
+        let canvasGestureId: number | null = null;
+        let canvasGesturePointerDown = false;
+        let canvasGestureSequence = 0;
+        let canvasGestureTimer: ReturnType<typeof setTimeout> | null = null;
+        function clearCanvasGesture() {
+            canvasGestureSequence++;
+            if (canvasGestureTimer !== null) clearTimeout(canvasGestureTimer);
+            canvasGestureTimer = null;
+            canvasGestureId = null;
+            canvasGesturePointerDown = false;
+            deferFullscreenControls.value = false;
+        }
+        function scheduleCanvasGestureEnd(delay: number) {
+            if (canvasGestureTimer !== null) clearTimeout(canvasGestureTimer);
+            const sequence = canvasGestureSequence;
+            canvasGestureTimer = setTimeout(() => {
+                if (sequence === canvasGestureSequence) clearCanvasGesture();
+            }, delay);
+        }
+        function beginCanvasGesture(event: PointerEvent) {
+            if (!fullscreenActive.value || !playing.value || paused.value || fullscreenControlsOpen.value || canvasGesturePointerDown) return;
+            clearCanvasGesture();
+            canvasGestureId = event.pointerId;
+            canvasGesturePointerDown = true;
+            deferFullscreenControls.value = true;
+        }
+        function finishCanvasGesture(event: PointerEvent) {
+            if (!deferFullscreenControls.value || event.pointerId !== canvasGestureId) return;
+            canvasGesturePointerDown = false;
+            // Some browsers suppress click after a cancelled gesture. Never
+            // leave the menu inaccessible if no click arrives.
+            scheduleCanvasGestureEnd(400);
+        }
+        function cancelCanvasGesture(event: PointerEvent) {
+            if (!deferFullscreenControls.value || event.pointerId !== canvasGestureId) return;
+            canvasGesturePointerDown = false;
+            scheduleCanvasGestureEnd(0);
+        }
+        function loseCanvasCapture(event: PointerEvent) {
+            if (!deferFullscreenControls.value || event.pointerId !== canvasGestureId) return;
+            canvasGesturePointerDown = false;
+            if (canvasGestureTimer === null) scheduleCanvasGestureEnd(400);
+        }
+        function finishCanvasGestureFromClick(event: MouseEvent) {
+            if (!deferFullscreenControls.value || canvasGesturePointerDown) return;
+            const pointerId = 'pointerId' in event ? (event as PointerEvent).pointerId : null;
+            if (event.target === gameCanvas.value || (pointerId !== null && pointerId === canvasGestureId)) scheduleCanvasGestureEnd(0);
+        }
         const level = ref<Level | null>(null);
         const levelIndex = ref(Math.max(0, Number(route.query.level) || 0));
         const groupIndex = ref(Math.max(0, Number(route.query.group) || 0));
@@ -79,13 +131,20 @@ export default defineComponent({
         const gameTime = ref('');
         const settings = readSettings();
         const speed = ref(settings.speed);
-        watch([fullscreenActive, paused, finished, nukeArmed], ([active, isPaused, isFinished, nuke]) => {
-            if (!active) fullscreenControlsOpen.value = false;
-            else if (isPaused || isFinished || nuke) fullscreenControlsOpen.value = true;
+        watch([fullscreenActive, playing, paused, finished, nukeArmed, deferFullscreenControls], ([active, isPlaying, isPaused, isFinished, nuke, deferred]) => {
+            fullscreenControlsOpen.value = active && !deferred && (!isPlaying || isPaused || isFinished || nuke);
+        });
+        watch(fullscreenControlsOpen, (open, wasOpen) => {
+            if (open && fullscreenActive.value && paused.value) {
+                void nextTick(() => pauseHeading.value?.focus());
+            } else if (!open && wasOpen && fullscreenActive.value && playing.value && !paused.value) {
+                void nextTick(() => gameCanvas.value?.focus());
+            }
         });
         watch(fullscreenActive, active => {
+            if (!active) clearCanvasGesture();
             void nextTick(() => {
-                if (active) (paused.value ? pauseHeading.value : fullscreenControlsButton.value)?.focus();
+                if (active) (paused.value ? pauseHeading.value : playing.value ? gameCanvas.value : startControl.value)?.focus();
                 else (paused.value ? pauseHeading.value : fullscreenEnterButton.value)?.focus();
             });
         });
@@ -272,9 +331,14 @@ export default defineComponent({
                 game.setGuiDisplay(stage.getGuiDisplay());
                 stage.getGuiDisplay().onMouseDown.on(() => {
                     if (game && !finished.value) {
+                        const wasPaused = paused.value;
                         paused.value = !game.getGameTimer().isRunning();
-                        if (paused.value) { music?.suspend(); effects?.stop(); }
-                        else music?.play();
+                        if (paused.value !== wasPaused) {
+                            if (paused.value) {
+                                music?.suspend(); effects?.stop();
+                                void nextTick(() => { if (paused.value) pauseHeading.value?.focus(); });
+                            } else music?.play();
+                        }
                     }
                 });
                 game.getGameTimer().speedFactor = speed.value;
@@ -325,7 +389,7 @@ export default defineComponent({
         function resumeFromMenu() {
             if (!game || !paused.value || finished.value) return;
             togglePause();
-            void nextTick(() => { if (!paused.value) pauseControl.value?.focus(); });
+            void nextTick(() => { if (!paused.value) (fullscreenActive.value ? gameCanvas.value : pauseControl.value)?.focus(); });
         }
 
         async function restartFromMenu() {
@@ -333,7 +397,7 @@ export default defineComponent({
             await loadLevel();
             if (disposed || generation !== loadGeneration || !canPlay.value) return;
             await start();
-            if (!disposed && playing.value) await nextTick(() => pauseControl.value?.focus());
+            if (!disposed && playing.value) await nextTick(() => (fullscreenActive.value ? gameCanvas.value : pauseControl.value)?.focus());
         }
 
         function selectSkill(type: SkillTypes) {
@@ -492,6 +556,7 @@ export default defineComponent({
         });
         onBeforeUnmount(() => {
             disposed = true;
+            clearCanvasGesture();
             ++loadGeneration;
             clearExample();
             disposeGame();
@@ -505,7 +570,7 @@ export default defineComponent({
             window.removeEventListener('keydown', onKeyDown);
         });
 
-        return { gameScreen, fullscreenControlsButton, fullscreenEnterButton, gameCanvas, originalPreview, enhancedPreview, graphicsMode, comparingGraphics, graphicsError, setGraphicsMode, toggleGraphicsComparison, onDisplaySettingsToggle, pauseControl, pauseHeading, fullscreenActive, fullscreenControlsOpen, fullscreenMode, toggleFullscreen,
+        return { gameScreen, fullscreenEnterButton, startControl, gameCanvas, beginCanvasGesture, finishCanvasGesture, cancelCanvasGesture, loseCanvasCapture, finishCanvasGestureFromClick, originalPreview, enhancedPreview, graphicsMode, comparingGraphics, graphicsError, setGraphicsMode, toggleGraphicsComparison, onDisplaySettingsToggle, pauseControl, pauseHeading, fullscreenActive, fullscreenControlsOpen, fullscreenMode, toggleFullscreen,
             level, levelIndex, groupName, title, error, loading, playing, paused,
             finished, levelSucceeded, nextLevelAvailable, savedCount, saveWarning, assignmentMessage, keyboardMessage, resultMessage, hints, availableHints, hintCompatibility, visibleHintCount, exampleMove, exampleBusy, exampleError, exampleSkillName, exampleClock, hideHints, showExample, clearExample, nukeArmed, nukeExecuted, selectedSkill, skillCounts, releaseRate, gameTime, speed,
             musicEnabled, soundEnabled, skillButtons, canPlay, start, openPauseMenu, resumeFromMenu, restartFromMenu, selectSkill, changeReleaseRate,

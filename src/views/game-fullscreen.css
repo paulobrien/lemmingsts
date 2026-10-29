@@ -28,17 +28,7 @@
   margin: 0;
 }
 
-/* Keep the playfield unobstructed until the player opens the control drawer. */
-.game-screen.is-fullscreen .fullscreen-shortcuts {
-  position: absolute;
-  z-index: 3;
-  top: max(.4rem, env(safe-area-inset-top));
-  left: max(.4rem, env(safe-area-inset-left));
-  display: flex;
-  flex-wrap: wrap;
-  gap: .35rem;
-  max-width: calc(100% - 1rem);
-}
+/* Keep the playfield unobstructed until the game is paused. */
 .game-screen.is-fullscreen .game-controls { display: none; }
 .game-screen.is-fullscreen .game-controls.controls-open {
   position: absolute;
@@ -48,7 +38,7 @@
   bottom: 0;
   display: block;
   box-sizing: border-box;
-  width: min(360px, calc(100% - 120px));
+  width: min(420px, 100%);
   overflow-y: auto;
   overscroll-behavior: contain;
   padding: max(.5rem, env(safe-area-inset-top)) max(.5rem, env(safe-area-inset-right))

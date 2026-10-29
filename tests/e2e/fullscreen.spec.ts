@@ -1,6 +1,7 @@
 import { readdir } from 'node:fs/promises'
 import { resolve } from 'node:path'
 import { expect, test } from '@playwright/test'
+import { gamePanelPosition, pauseFromGamePanel, pressGamePanel } from './fullscreen-helpers'
 
 test('uses the browser fullscreen API and tracks exit', async ({ page }) => {
   await page.goto('/game/0')
@@ -9,13 +10,12 @@ test('uses the browser fullscreen API and tracks exit', async ({ page }) => {
   await expect.poll(() => page.evaluate(() => document.fullscreenElement?.classList.contains('game-screen'))).toBe(true)
   const exit = page.getByRole('button', { name: 'Exit fullscreen', exact: true })
   await expect(exit).toHaveAttribute('aria-pressed', 'true')
-  // A browser-controlled exit must update the control too.
   await page.evaluate(() => document.exitFullscreen())
   await expect(enter).toHaveAttribute('aria-pressed', 'false')
   await expect(page.locator('.game-screen')).not.toHaveClass(/is-fullscreen/)
 })
 
-test('fullscreen starts with an unobstructed game and retains play and audio controls', async ({ page }) => {
+test('fullscreen shows only the game while playing and opens controls on the panel pause button', async ({ page }, testInfo) => {
   test.skip(process.env.RUN_PRIVATE_GAME_TESTS !== '1', 'Requires local, untracked original game files')
   const directory = resolve('dos/lemmings')
   const files = (await readdir(directory)).filter(name => name.toLowerCase().endsWith('.dat'))
@@ -25,17 +25,86 @@ test('fullscreen starts with an unobstructed game and retains play and audio con
   await page.getByRole('link', { name: 'Play Lemmings' }).click()
   await page.getByRole('button', { name: 'Fullscreen', exact: true }).click()
   const screen = page.locator('.game-screen')
-  const controls = page.getByRole('button', { name: 'Controls', exact: true })
-  await expect(controls).toBeFocused()
-  await expect(controls).toHaveAttribute('aria-expanded', 'false')
-  await expect(page.getByRole('button', { name: 'Exit fullscreen', exact: true })).toBeVisible()
-  await expect(screen.getByRole('button', { name: 'Zoom in' })).toBeHidden()
+  const canvas = page.getByLabel('Lemmings level. Drag to move the view.')
+  await expect(screen.getByRole('button', { name: 'Start level' })).toBeVisible()
   await screen.getByRole('button', { name: 'Start level' }).click()
-  await screen.getByRole('button', { name: 'Pause', exact: true }).click()
+  // No floating pause/exit/controls buttons may obscure the active game.
+  await expect(screen.locator('button:visible:not(.fullscreen-a11y-pause)')).toHaveCount(0)
+  const touch = testInfo.project.name.startsWith('android-')
+  // Other original panel buttons must still work without opening the pause menu.
+  await pressGamePanel(canvas, touch, 9)
+  await expect(screen.locator('.skill-button').filter({ hasText: 'Dig' })).toHaveAttribute('aria-pressed', 'true')
+  await expect(screen.locator('button:visible:not(.fullscreen-a11y-pause)')).toHaveCount(0)
+  // The original nuke button must still show the shared safety confirmation.
+  await pressGamePanel(canvas, touch, 11)
+  await expect(screen.getByRole('button', { name: 'Confirm nuke' })).toBeVisible()
+  await screen.getByRole('button', { name: 'Cancel', exact: true }).click()
+  await expect(screen.locator('button:visible:not(.fullscreen-a11y-pause)')).toHaveCount(0)
+  await pauseFromGamePanel(canvas, touch)
   await expect(screen.getByRole('region', { name: 'Paused' })).toBeVisible()
   await expect(screen.getByRole('button', { name: 'Music off' })).toBeVisible()
   await expect(screen.getByRole('button', { name: 'Sound off' })).toBeVisible()
   await screen.getByRole('button', { name: 'Resume', exact: true }).click()
+  await expect(screen.locator('button:visible:not(.fullscreen-a11y-pause)')).toHaveCount(0)
+  // Keyboard pause and the original panel both reopen the same menu.
+  await canvas.focus()
+  await page.keyboard.press('Space')
+  await expect(screen.getByRole('region', { name: 'Paused' })).toBeVisible()
+  await screen.getByRole('button', { name: 'Restart level', exact: true }).click()
+  await expect(screen.locator('button:visible:not(.fullscreen-a11y-pause)')).toHaveCount(0)
+  await pauseFromGamePanel(canvas, touch)
+  await screen.getByRole('button', { name: 'Exit fullscreen', exact: true }).click()
+  await expect(screen).not.toHaveClass(/is-fullscreen/)
+})
+
+test('fullscreen waits for panel gestures to finish and recovers from cancellation', async ({ page }, testInfo) => {
+  test.skip(process.env.RUN_PRIVATE_GAME_TESTS !== '1', 'Requires local, untracked original game files')
+  test.setTimeout(60_000)
+  const files = (await readdir(resolve('dos/lemmings'))).filter(name => name.toLowerCase().endsWith('.dat'))
+    .map(name => resolve('dos/lemmings', name))
+  await page.goto('/')
+  await page.locator('input[type=file]').first().setInputFiles(files)
+  await page.getByRole('link', { name: 'Play Lemmings' }).click()
+  await page.getByRole('button', { name: 'Start level' }).click()
+  await page.getByRole('button', { name: 'Fullscreen', exact: true }).click()
+  const canvas = page.getByLabel('Lemmings level. Drag to move the view.')
+  const screen = page.locator('.game-screen')
+  const paused = screen.getByRole('region', { name: 'Paused' })
+
+  const pausePosition = await gamePanelPosition(canvas, 10)
+  await page.mouse.move(pausePosition.x, pausePosition.y)
+  await page.mouse.down()
+  await expect(paused).toBeHidden()
+  await page.mouse.up()
+  await expect(paused).toBeVisible()
+  await paused.getByRole('button', { name: 'Resume' }).click()
+
+  const nukePosition = await gamePanelPosition(canvas, 11)
+  await page.mouse.move(nukePosition.x, nukePosition.y)
+  await page.mouse.down()
+  await expect(screen.getByRole('button', { name: 'Confirm nuke' })).toBeHidden()
+  await page.mouse.up()
+  await expect(screen.getByRole('button', { name: 'Confirm nuke' })).toBeVisible()
+  await screen.getByRole('button', { name: 'Cancel', exact: true }).click()
+
+  if (testInfo.project.name.startsWith('android-')) {
+    const session = await page.context().newCDPSession(page)
+    const position = await gamePanelPosition(canvas, 10)
+    await session.send('Input.dispatchTouchEvent', { type: 'touchStart', touchPoints: [position] })
+    await expect(paused).toBeHidden()
+    await session.send('Input.dispatchTouchEvent', { type: 'touchCancel', touchPoints: [] })
+    // A cancelled pointer still leaves the paused game recoverable.
+    await expect(paused).toBeVisible()
+    await paused.getByRole('button', { name: 'Resume' }).tap()
+    await session.detach()
+  }
+
+  // Finishing a level must bring controls back without floating buttons during play.
+  await pressGamePanel(canvas, testInfo.project.name.startsWith('android-'), 11)
+  await screen.getByRole('button', { name: 'Confirm nuke' }).click()
+  await expect(screen.getByRole('button', { name: 'Try again' })).toBeVisible({ timeout: 20_000 })
+  await screen.getByRole('button', { name: 'Try again' }).click()
+  await expect(screen.getByRole('button', { name: 'Start level' })).toBeVisible()
   await screen.getByRole('button', { name: 'Exit fullscreen', exact: true }).click()
   await expect(screen).not.toHaveClass(/is-fullscreen/)
 })
@@ -48,7 +117,6 @@ test('offers an escapable expanded view when native fullscreen is unavailable', 
   await page.getByRole('button', { name: 'Fullscreen', exact: true }).click()
   const game = page.locator('.game-screen')
   await expect(game).toHaveClass(/is-fullscreen/)
-  await page.getByRole('button', { name: 'Controls', exact: true }).click()
   await expect(page.getByRole('status').filter({ hasText: 'Expanded view (browser fullscreen unavailable)' })).toBeVisible()
   const rect = await game.boundingBox()
   const viewport = page.viewportSize()!
@@ -67,7 +135,7 @@ test('offers an escapable expanded view when native fullscreen is unavailable', 
   expect(await page.evaluate(() => document.body.style.overflow)).not.toBe('hidden')
 })
 
-test('keeps pause and skill controls usable in expanded view in portrait and landscape', async ({ page }) => {
+test('keeps pause and skill controls usable in expanded view in portrait and landscape', async ({ page }, testInfo) => {
   test.skip(process.env.RUN_PRIVATE_GAME_TESTS !== '1', 'Requires local, untracked original game files')
   test.setTimeout(60_000)
   await page.addInitScript(() => {
@@ -81,25 +149,26 @@ test('keeps pause and skill controls usable in expanded view in portrait and lan
   await page.getByRole('link', { name: 'Play Lemmings' }).click()
   await page.getByRole('button', { name: 'Start level' }).click()
   await page.getByRole('button', { name: 'Fullscreen', exact: true }).click()
-  await page.getByRole('button', { name: 'Controls', exact: true }).click()
+  const canvas = page.getByLabel('Lemmings level. Drag to move the view.')
+  const screen = page.locator('.game-screen')
   for (const size of [{ width: 390, height: 844 }, { width: 844, height: 390 }]) {
     await page.setViewportSize(size)
-    await page.getByRole('button', { name: 'Pause', exact: true }).click()
+    await expect(screen.locator('button:visible:not(.fullscreen-a11y-pause)')).toHaveCount(0)
+    await pauseFromGamePanel(canvas, testInfo.project.name.startsWith('android-'))
     await expect(page.getByRole('region', { name: 'Paused' })).toBeVisible()
-    await page.getByRole('button', { name: 'Resume', exact: true }).click()
     await page.getByRole('button', { name: /^Dig\b/ }).click()
     await expect(page.locator('.skill-button').filter({ hasText: 'Dig' })).toHaveAttribute('aria-pressed', 'true')
-    await expect(page.getByRole('button', { name: 'Controls', exact: true })).toHaveAttribute('aria-expanded', 'false')
-    await expect(page.getByRole('button', { name: 'Exit fullscreen', exact: true })).toBeEnabled()
-    const canvas = await page.getByLabel('Lemmings level. Drag to move the view.').boundingBox()
-    expect(canvas!.y + canvas!.height).toBeLessThanOrEqual(size.height)
+    await expect(page.getByRole('region', { name: 'Paused' })).toBeVisible()
+    await page.getByRole('button', { name: 'Resume', exact: true }).click()
+    await expect(screen.locator('button:visible:not(.fullscreen-a11y-pause)')).toHaveCount(0)
+    const box = await canvas.boundingBox()
+    expect(box!.y + box!.height).toBeLessThanOrEqual(size.height)
   }
-  await page.getByRole('button', { name: 'Pause', exact: true }).click()
+  await pauseFromGamePanel(canvas, testInfo.project.name.startsWith('android-'))
   await page.getByRole('button', { name: 'Show a hint', exact: true }).click()
   await expect(page.locator('.hints li')).toHaveCount(1)
   await page.getByRole('button', { name: 'Another hint', exact: true }).click()
   await expect(page.locator('.hints li')).toHaveCount(2)
-  await page.getByRole('button', { name: 'Resume', exact: true }).click()
   await page.getByRole('button', { name: 'Exit fullscreen', exact: true }).click()
-  await expect(page.locator('.game-screen')).not.toHaveClass(/is-fullscreen/)
+  await expect(screen).not.toHaveClass(/is-fullscreen/)
 })

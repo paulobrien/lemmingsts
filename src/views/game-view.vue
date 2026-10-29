@@ -28,23 +28,27 @@
     <p v-if="graphicsError" class="notice error" role="status">{{ graphicsError }}</p>
 
     <div class="canvas-frame">
-      <canvas ref="gameCanvas" width="800" height="480" tabindex="0" aria-label="Lemmings level. Drag to move the view." aria-describedby="keyboard-instructions">
+      <canvas ref="gameCanvas" width="800" height="480" tabindex="0" aria-label="Lemmings level. Drag to move the view." aria-describedby="keyboard-instructions" @pointerdown.capture="beginCanvasGesture" @pointerup.capture="finishCanvasGesture" @pointercancel.capture="cancelCanvasGesture" @lostpointercapture="loseCanvasCapture" @click.capture="finishCanvasGestureFromClick">
         Your browser does not support the game canvas.
       </canvas>
     </div>
     <p id="keyboard-instructions" class="visually-hidden">Use left and right arrows to choose a lemming, Enter to assign the selected skill, and Space to pause.</p>
     <p class="visually-hidden" role="status" aria-live="polite">{{ keyboardMessage }}</p>
 
-    <div v-if="fullscreenActive" class="fullscreen-shortcuts">
-      <button ref="fullscreenControlsButton" type="button" :aria-expanded="fullscreenControlsOpen" aria-controls="game-controls" @click="fullscreenControlsOpen = !fullscreenControlsOpen">{{ fullscreenControlsOpen ? 'Close controls' : 'Controls' }}</button>
-      <button v-if="!fullscreenControlsOpen" type="button" :aria-pressed="fullscreenActive" @click="toggleFullscreen">Exit fullscreen</button>
-      <button v-if="!fullscreenControlsOpen && !playing && !finished" class="primary" type="button" :disabled="!canPlay" @click="start">Start level</button>
-      <button v-if="!fullscreenControlsOpen && playing && !paused" class="primary" type="button" @click="fullscreenControlsOpen = true; openPauseMenu()">Pause</button>
-      <button v-if="!fullscreenControlsOpen && playing && paused" class="primary" type="button" @click="resumeFromMenu">Resume</button>
-    </div>
+    <button v-if="fullscreenActive && playing && !paused" class="visually-hidden fullscreen-a11y-pause" type="button" aria-controls="pause-menu" @click="openPauseMenu">Pause game</button>
     <div id="game-controls" class="game-controls" :class="{ 'controls-open': fullscreenControlsOpen }">
+    <section v-if="playing && paused" id="pause-menu" class="pause-menu" role="region" aria-labelledby="pause-menu-heading">
+      <h2 id="pause-menu-heading" ref="pauseHeading" tabindex="-1">Paused</h2>
+      <p>The game is paused. You can still select skills and inspect the level.</p>
+      <div class="pause-actions">
+        <button class="primary" type="button" @click="resumeFromMenu">Resume</button>
+        <button type="button" @click="restartFromMenu">Restart level</button>
+        <router-link class="pause-link" to="/">Level selection</router-link>
+        <button type="button" :aria-pressed="fullscreenActive" @click="toggleFullscreen">{{ fullscreenActive ? 'Exit fullscreen' : 'Fullscreen' }}</button>
+      </div>
+    </section>
     <div class="game-toolbar" aria-label="Level controls">
-      <button v-if="!playing && !finished" class="primary" type="button" :disabled="!canPlay" @click="start">Start level</button>
+      <button v-if="!playing && !finished" ref="startControl" class="primary" type="button" :disabled="!canPlay" @click="start">Start level</button>
       <button v-else-if="playing && !paused" ref="pauseControl" class="primary" type="button" aria-controls="pause-menu" :aria-expanded="paused" @click="openPauseMenu">Pause</button>
       <button v-if="finished && levelSucceeded && nextLevelAvailable" class="primary" type="button" @click="changeLevel(1)">Next level</button>
       <button v-if="finished" :class="{ primary: !levelSucceeded }" type="button" @click="loadLevel">Try again</button>
@@ -84,22 +88,11 @@
       </section>
     </details>
 
-    <section v-if="playing && paused" id="pause-menu" class="pause-menu" role="region" aria-labelledby="pause-menu-heading">
-      <h2 id="pause-menu-heading" ref="pauseHeading" tabindex="-1">Paused</h2>
-      <p>The game is paused. You can still select skills and inspect the level.</p>
-      <div class="pause-actions">
-        <button class="primary" type="button" @click="resumeFromMenu">Resume</button>
-        <button type="button" @click="restartFromMenu">Restart level</button>
-        <router-link class="pause-link" to="/">Level selection</router-link>
-        <button type="button" :aria-pressed="fullscreenActive" @click="toggleFullscreen">{{ fullscreenActive ? 'Exit fullscreen' : 'Fullscreen' }}</button>
-      </div>
-    </section>
-
     <section v-if="playing || finished" class="skill-section" aria-label="Lemming skills">
       <div class="skill-grid">
         <button v-for="skill in skillButtons" :key="skill.type" type="button" class="skill-button"
           :class="{ selected: selectedSkill === skill.type }" :aria-pressed="selectedSkill === skill.type"
-          :disabled="finished || !skillCounts[skill.type]" @click="selectSkill(skill.type); if (fullscreenActive) fullscreenControlsOpen = false">
+          :disabled="finished || !skillCounts[skill.type]" @click="selectSkill(skill.type)">
           <span>{{ skill.name }}</span><strong>{{ skillCounts[skill.type] ?? 0 }}</strong>
         </button>
       </div>
@@ -156,6 +149,7 @@ button:hover:not(:disabled) { background: #5c6050; }
 button:focus-visible, select:focus-visible { outline: 2px solid #c4f79e; outline-offset: 2px; }
 canvas:focus-visible { outline: 2px solid #c4f79e; outline-offset: -3px; }
 .visually-hidden { position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px; overflow: hidden; clip: rect(0, 0, 0, 0); white-space: nowrap; border: 0; }
+.fullscreen-a11y-pause:focus-visible { position: absolute; top: .5rem; left: .5rem; z-index: 3; width: auto; height: auto; margin: 0; padding: .55rem .8rem; clip: auto; overflow: visible; border: 2px solid; }
 button:disabled { cursor: default; opacity: .45; }
 button.zoom-button { min-width: 44px; box-sizing: border-box; }
 button.primary { background: #b0df8e; color: #172417; border-color: #d9f4bd #527a43 #527a43 #d9f4bd; font-weight: bold; }
