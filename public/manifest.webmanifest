@@ -1,6 +1,6 @@
 {
-  "name": "Lemmings at Home",
-  "short_name": "Lemmings",
+  "name": "Lemmings TS",
+  "short_name": "Lemmings TS",
   "description": "A little adventure with your original Lemmings game files.",
   "start_url": "./",
   "scope": "./",

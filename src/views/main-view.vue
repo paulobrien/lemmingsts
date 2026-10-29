@@ -1,7 +1,7 @@
 <template>
   <main class="home">
     <div class="home-inner">
-      <header class="topbar"><span class="brand-mark" aria-hidden="true">L</span><span class="brand">LEMMINGS <span>at home</span></span></header>
+      <header class="topbar"><span class="brand-mark" aria-hidden="true">L</span><span class="brand">LEMMINGS <span>TS</span></span></header>
       <section class="hero" aria-labelledby="welcome-title">
         <div class="hero-copy">
           <p class="eyebrow"><span aria-hidden="true">▶</span> {{ ready ? 'SELECT YOUR LEVEL' : 'WELCOME, PLAYER' }}</p>
@@ -23,13 +23,14 @@
             <p class="hint">A one-time setup using your original DOS Lemmings files or a ZIP archive.</p>
           </div>
           <p class="offline-note" role="status">{{ offlineReadiness === 'checking' ? 'Preparing offline play…' : offlineReadiness === 'ready' ? (ready ? 'The app shell is ready offline; your game files are stored on this device.' : 'The app shell is ready offline. Add your game files to play.') : 'Offline play may be unavailable. Reconnect and reopen the app.' }}</p>
+          <p v-if="checkingAutomaticFiles && !ready" class="offline-note" role="status">Checking for game files supplied by this installation. You can also add your own files now.</p>
           <input ref="fileInput" class="visually-hidden" type="file" multiple tabindex="-1" aria-hidden="true" @change="onFilesSelected" />
           <input ref="folderInput" class="visually-hidden" type="file" webkitdirectory multiple tabindex="-1" aria-hidden="true" @change="onFilesSelected" />
           <p v-if="message" class="status-message" role="status">{{ message }}</p>
         </div>
         <div class="hero-art" aria-hidden="true">
           <div class="art-frame">
-            <div class="art-topline"><span>LEMMINGS AT HOME</span><span>120 LEVELS</span></div>
+            <div class="art-topline"><span>LEMMINGS TS</span><span>120 LEVELS</span></div>
             <div class="art-screen">
               <div class="fallback-landscape" :class="{ 'is-hidden': artworkReady }">
                 <span class="pixel-sun"></span><span class="pixel-mountain mountain-back"></span><span class="pixel-mountain mountain-front"></span>
@@ -71,6 +72,7 @@
 <script setup lang="ts">
 import { onBeforeUnmount, onMounted, ref, watch } from 'vue';
 import { clearLemmingsFiles, hasLemmingsFiles, importLemmingsFiles } from '@/game/resources/file/game-file-store';
+import { importBundledLemmingsFiles } from '@/game/resources/file/bundled-game-import';
 import { GameFactory } from '@/game/game-factory';
 import { GameTypes } from '@/game/game-types';
 import { exportProgressBackup, readLastLevel, readProgress, restoreProgressBackup } from '@/game/progress';
@@ -80,7 +82,8 @@ import { offlineReadiness } from '@/offline-readiness';
 const baseUrl = import.meta.env.BASE_URL;
 
 const ready = ref(false);
-const busy = ref(true);
+const busy = ref(false);
+const checkingAutomaticFiles = ref(true);
 const message = ref('');
 const backupMessage = ref('');
 const fileInput = ref<HTMLInputElement | null>(null);
@@ -90,6 +93,9 @@ const logoCanvas = ref<HTMLCanvasElement | null>(null);
 const backgroundCanvas = ref<HTMLCanvasElement | null>(null);
 const artworkReady = ref(false);
 let artworkRequest = 0;
+let disposed = false;
+let manualGeneration = 0;
+let readinessGeneration = 0;
 
 watch(ready, async (hasFiles) => {
   const request = ++artworkRequest;
@@ -111,7 +117,7 @@ watch(ready, async (hasFiles) => {
     // is incomplete, incompatible, or local storage becomes unavailable.
   }
 });
-onBeforeUnmount(() => { artworkRequest++; });
+onBeforeUnmount(() => { artworkRequest++; disposed = true; readinessGeneration++; });
 const groups = ref<{ name: string; count: number }[]>([]);
 const selectedGroup = ref(0);
 const selectedLevel = ref(0);
@@ -129,31 +135,63 @@ function selectLastLevel() {
     selectedLevel.value = 0;
   }
 }
+async function refreshReadiness() {
+  const generation = ++readinessGeneration;
+  try {
+    const hasFiles = await hasLemmingsFiles();
+    if (!disposed && generation === readinessGeneration && !busy.value) ready.value = hasFiles;
+    return hasFiles;
+  } catch {
+    if (!disposed && generation === readinessGeneration && !busy.value) message.value = 'This browser could not access local storage. Check your browser settings and try again.';
+    return false;
+  }
+}
+
+async function checkAutomaticFiles() {
+  const manualAtStart = manualGeneration;
+  let automaticSetupError = '';
+  let automaticallyImported = false;
+  try {
+    const result = await importBundledLemmingsFiles();
+    automaticallyImported = result === 'imported';
+  } catch (error) {
+    automaticSetupError = error instanceof Error ? error.message : 'Automatic setup could not be completed. Please add your game files manually.';
+  }
+  if (disposed) return;
+  checkingAutomaticFiles.value = false;
+  if (busy.value) return;
+  const hasFiles = await refreshReadiness();
+  if (disposed || manualAtStart !== manualGeneration || busy.value) return;
+  if (hasFiles && automaticallyImported) message.value = 'Game files added to this device. You’re ready to play!';
+  else if (!hasFiles && automaticSetupError) message.value = automaticSetupError;
+}
+
 onMounted(async () => {
-  try { ready.value = await hasLemmingsFiles(); }
-  catch { message.value = 'This browser could not access local storage. Check your browser settings and try again.'; }
+  void refreshReadiness();
+  void checkAutomaticFiles();
   try {
     const config = await new GameFactory(`${import.meta.env.BASE_URL}data`).getConfig(GameTypes.LEMMINGS);
     if (config) {
       groups.value = config.level.groups.map((name, index) => ({ name, count: config.level.getGroupLength(index) }));
       selectLastLevel();
     }
-  } catch { message.value = 'The level list could not be loaded. Check your connection and try again.'; }
-  finally { busy.value = false; }
+  } catch { if (!disposed && !message.value) message.value = 'The level list could not be loaded. Check your connection and try again.'; }
 });
 async function onFilesSelected(event: Event) {
   const input = event.target as HTMLInputElement;
   if (!input.files?.length) return;
+  manualGeneration++; readinessGeneration++;
   busy.value = true; message.value = '';
   try { await importLemmingsFiles(input.files); ready.value = true; message.value = 'Game files added. You’re ready to play!'; }
   catch (error) { message.value = error instanceof Error ? error.message : 'Could not read those files. Please try again.'; }
-  finally { input.value = ''; busy.value = false; }
+  finally { input.value = ''; busy.value = false; void refreshReadiness(); }
 }
 async function removeFiles() {
+  manualGeneration++; readinessGeneration++;
   busy.value = true; message.value = '';
   try { await clearLemmingsFiles(); ready.value = false; message.value = 'Game files removed from this browser.'; }
   catch { message.value = 'Could not remove the game files. Please try again.'; }
-  finally { busy.value = false; }
+  finally { busy.value = false; void refreshReadiness(); }
 }
 function downloadBackup() {
   backupMessage.value = '';
@@ -182,7 +220,7 @@ async function onBackupSelected(event: Event) {
     backupMessage.value = 'Progress and settings restored. Your game files were not changed.';
   } catch (error) {
     backupMessage.value = error instanceof Error ? error.message : 'Could not read this progress backup.';
-  } finally { input.value = ''; busy.value = false; }
+  } finally { input.value = ''; busy.value = false; void refreshReadiness(); }
 }
 </script>
 
