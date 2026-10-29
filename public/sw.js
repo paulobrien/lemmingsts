@@ -5,6 +5,7 @@ const base = new URL('./', self.location.href);
 const appUrl = new URL('./', base).href;
 const indexPath = new URL('index.html', base).pathname;
 const gamePath = new URL('game/', base).pathname;
+const localGamePath = new URL('data/local-game/', base).pathname;
 
 // Never replace a working offline document until all of its hashed assets
 // have been cached. Keep old assets for tabs still running the previous build.
@@ -53,6 +54,9 @@ self.addEventListener('fetch', event => {
   const request = event.request;
   const url = new URL(request.url);
   if (request.method !== 'GET' || url.origin !== base.origin || !url.pathname.startsWith(base.pathname)) return;
+  // Optional privately hosted DOS files are imported into IndexedDB by the
+  // application. Never copy those responses into the shared shell cache.
+  if (url.pathname.startsWith(localGamePath)) return;
   const navigation = request.mode === 'navigate';
   const appDocument = url.pathname === base.pathname || url.pathname === indexPath;
   // Vue owns only the home and game routes. Other HTML pages, such as the

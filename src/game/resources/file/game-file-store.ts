@@ -1,17 +1,12 @@
 import { unzipSync } from 'fflate';
+import { REQUIRED_LEMMINGS_FILES } from './dos-file-names';
 import { validateDosFiles } from './validate-dos-files';
-
-/** Original DOS Lemmings resources required by the current game configuration. */
-export const REQUIRED_LEMMINGS_FILES: readonly string[] = [
-  'ADLIB.DAT', 'MAIN.DAT', 'ODDTABLE.DAT',
-  ...Array.from({ length: 10 }, (_, index) => `LEVEL${String(index).padStart(3, '0')}.DAT`),
-  ...Array.from({ length: 5 }, (_, index) => `GROUND${index}O.DAT`),
-  ...Array.from({ length: 5 }, (_, index) => `VGAGR${index}.DAT`),
-  ...Array.from({ length: 4 }, (_, index) => `VGASPEC${index}.DAT`),
-];
+export { REQUIRED_LEMMINGS_FILES } from './dos-file-names';
 
 const DATABASE_NAME = 'lemmings-game-files';
 const STORE_NAME = 'original-lemmings';
+// A deliberate removal must not be undone by automatic deployment imports.
+const AUTO_IMPORT_DISABLED = '__automatic_import_disabled__';
 const requiredNames = new Set(REQUIRED_LEMMINGS_FILES);
 const MAX_ARCHIVE_BYTES = 16 * 1024 * 1024;
 const MAX_EXTRACTED_BYTES = 8 * 1024 * 1024;
@@ -71,6 +66,15 @@ function transactionDone(transaction: IDBTransaction): Promise<void> {
 
 /** Validate and atomically replace the imported files with the selected original DOS files. */
 export async function importLemmingsFiles(files: FileList | readonly File[]): Promise<void> {
+  await importFiles(files, false);
+}
+
+/** Import only if no data or explicit-removal marker exists, atomically across tabs. */
+export async function importLemmingsFilesIfEmpty(files: FileList | readonly File[]): Promise<boolean> {
+  return importFiles(files, true);
+}
+
+async function importFiles(files: FileList | readonly File[], onlyIfEmpty: boolean): Promise<boolean> {
   let selected = Array.from(files);
   const archives = selected.filter(file => file.name.toLowerCase().endsWith('.zip'));
   if (archives.length) {
@@ -116,12 +120,36 @@ export async function importLemmingsFiles(files: FileList | readonly File[]): Pr
     const transaction = database.transaction(STORE_NAME, 'readwrite');
     const done = transactionDone(transaction);
     const store = transaction.objectStore(STORE_NAME);
-    store.clear();
-    for (const file of buffers) store.put(file.data, file.name);
+    let imported = !onlyIfEmpty;
+    const write = () => {
+      store.clear();
+      for (const file of buffers) store.put(file.data, file.name);
+      imported = true;
+    };
+    if (onlyIfEmpty) {
+      // The count and writes run in one readwrite transaction, preventing a
+      // delayed network fetch from overwriting a concurrent manual import.
+      const count = store.count();
+      count.onsuccess = () => { if (count.result === 0) write(); };
+    } else write();
     await done;
+    return imported;
   } finally {
     database.close();
   }
+}
+
+/** Whether an automatic import may begin; the final write checks again atomically. */
+export async function canAutoImportLemmingsFiles(): Promise<boolean> {
+  const database = await openDatabase();
+  try {
+    const transaction = database.transaction(STORE_NAME, 'readonly');
+    const request = transaction.objectStore(STORE_NAME).count();
+    return await new Promise<boolean>((resolve, reject) => {
+      request.onsuccess = () => resolve(request.result === 0);
+      request.onerror = () => reject(new Error('Could not check local game files.'));
+    });
+  } finally { database.close(); }
 }
 
 /** Whether a complete set of game files is stored on this device. */
@@ -148,7 +176,9 @@ export async function clearLemmingsFiles(): Promise<void> {
   try {
     const transaction = database.transaction(STORE_NAME, 'readwrite');
     const done = transactionDone(transaction);
-    transaction.objectStore(STORE_NAME).clear();
+    const store = transaction.objectStore(STORE_NAME);
+    store.clear();
+    store.put(true, AUTO_IMPORT_DISABLED);
     await done;
   } finally {
     database.close();

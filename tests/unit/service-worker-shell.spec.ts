@@ -44,6 +44,11 @@ function worker() {
 }
 
 describe('offline shell updates', () => {
+    it('does not intercept any privately bundled game-data request', async () => {
+        const app = worker();
+        expect(await app.request(`${origin}data/local-game/manifest.json`, 'cors')).toBeUndefined();
+        expect(await app.request(`${origin}data/local-game/main.dat`, 'cors')).toBeUndefined();
+    });
     it('keeps the previous complete shell when an update asset fails, then works offline', async () => {
         const app = worker();
         app.network.set(origin, new Response(newHtml));
