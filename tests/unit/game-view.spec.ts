@@ -37,13 +37,14 @@ const mock = vi.hoisted(() => {
         onSoundEffect: { on: vi.fn((handler: (effect: number) => void) => { soundEvent.handler = handler; }) },
         onPlayerAssignment: { on: vi.fn((handler: (result: string) => void) => { assignmentEvent.handler = handler; }) },
     };
-    const resources = { getLevel: vi.fn(async () => level), getSoundTrack: vi.fn() };
+    const music = { play: vi.fn(), suspend: vi.fn(), stop: vi.fn() };
+    const resources = { getLevel: vi.fn(async () => level), getSoundTrack: vi.fn(), getMusicPlayer: vi.fn(async () => music) };
     const config = { level: { groups: ['Fun'], order: [[0, 1]], getGroupLength: () => 2 } };
     const getGame = vi.fn(async () => game);
     const replace = vi.fn(async () => undefined);
     const verifyHints = vi.fn(async (): Promise<'verified' | 'different' | 'unavailable'> => 'verified');
     const exampleMove = vi.fn(async (): Promise<{ x: number; y: number; skill: number; gameSeconds: number } | null> => ({ x: 100, y: 60, skill: 8, gameSeconds: 5 }));
-    return { timer, level, stage, game, skills, resources, config, getGame, replace, endEvent, soundEvent, effects, assignmentEvent, nukeRequest, verifyHints, exampleMove, graphicsError, zoomChange };
+    return { timer, level, stage, game, skills, resources, music, config, getGame, replace, endEvent, soundEvent, effects, assignmentEvent, nukeRequest, verifyHints, exampleMove, graphicsError, zoomChange };
 });
 
 vi.mock('vue-router', () => ({
@@ -89,6 +90,7 @@ describe('game view lifecycle', () => {
         mock.verifyHints.mockResolvedValue('verified');
         mock.exampleMove.mockResolvedValue({ x: 100, y: 60, skill: 8, gameSeconds: 5 });
         mock.resources.getLevel.mockImplementation(async () => mock.level);
+        mock.resources.getMusicPlayer.mockImplementation(async () => mock.music);
     });
 
     it('offers reset when stage zoom changes and keeps it available across levels', async () => {
@@ -231,6 +233,57 @@ describe('game view lifecycle', () => {
             expect(mock.timer.isRunning()).toBe(false);
             button(wrapper.container, 'Resume').click();
             expect(mock.timer.isRunning()).toBe(true);
+        } finally {
+            if (original) Object.defineProperty(document, 'hidden', original);
+            else delete (document as { hidden?: boolean }).hidden;
+            wrapper.unmount();
+        }
+    });
+
+    it('keeps a game paused when startup finishes in a hidden tab', async () => {
+        let finish!: (game: typeof mock.game) => void;
+        mock.getGame.mockImplementationOnce(() => new Promise(resolve => { finish = resolve; }));
+        const wrapper = mountView();
+        const original = Object.getOwnPropertyDescriptor(document, 'hidden');
+        try {
+            await flushPromises();
+            button(wrapper.container, 'Start level').click();
+            Object.defineProperty(document, 'hidden', { configurable: true, value: true });
+            document.dispatchEvent(new Event('visibilitychange'));
+            finish(mock.game);
+            await flushPromises();
+            expect(mock.timer.isRunning()).toBe(false);
+            expect(button(wrapper.container, 'Resume')).toBeDefined();
+            Object.defineProperty(document, 'hidden', { configurable: true, value: false });
+            document.dispatchEvent(new Event('visibilitychange'));
+            expect(mock.timer.isRunning()).toBe(false);
+            button(wrapper.container, 'Resume').click();
+            expect(mock.timer.isRunning()).toBe(true);
+        } finally {
+            if (original) Object.defineProperty(document, 'hidden', original);
+            else delete (document as { hidden?: boolean }).hidden;
+            wrapper.unmount();
+        }
+    });
+
+    it.each([false, true])('suspends soundtrack previews in a hidden tab, including delayed loading (%s)', async delayed => {
+        let finish!: (player: typeof mock.music) => void;
+        if (delayed) mock.resources.getMusicPlayer.mockImplementationOnce(() => new Promise(resolve => { finish = resolve; }));
+        const wrapper = mountView();
+        const original = Object.getOwnPropertyDescriptor(document, 'hidden');
+        try {
+            await flushPromises();
+            button(wrapper.container, 'Music off').click();
+            await flushPromises();
+            Object.defineProperty(document, 'hidden', { configurable: true, value: true });
+            document.dispatchEvent(new Event('visibilitychange'));
+            if (delayed) { finish(mock.music); await flushPromises(); }
+            expect(mock.music.suspend).toHaveBeenCalled();
+            mock.music.play.mockClear();
+            Object.defineProperty(document, 'hidden', { configurable: true, value: false });
+            document.dispatchEvent(new Event('visibilitychange'));
+            expect(mock.music.play).toHaveBeenCalledOnce();
+            expect(mock.game.start).not.toHaveBeenCalled();
         } finally {
             if (original) Object.defineProperty(document, 'hidden', original);
             else delete (document as { hidden?: boolean }).hidden;

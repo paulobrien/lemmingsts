@@ -363,6 +363,9 @@ export default defineComponent({
                 game.start();
                 playing.value = true;
                 paused.value = false;
+                // Loading can finish after the player switches tabs or locks
+                // the phone. Apply the same pause policy as a running game.
+                onVisibilityChange();
                 updateStats();
                 if (musicEnabled.value) void playMusic();
             } catch (reason) {
@@ -470,7 +473,7 @@ export default defineComponent({
                 const player = await resources.getMusicPlayer(levelIndex.value % 20);
                 if (disposed || !musicEnabled.value || generation !== musicGeneration) { player.stop(); return; }
                 music = player;
-                if (paused.value) music.suspend();
+                if (paused.value || document.hidden) music.suspend();
                 else music.play();
             } catch {
                 if (generation === musicGeneration) {
@@ -498,11 +501,17 @@ export default defineComponent({
         function onZoomChange(changed?: boolean) { zoomChanged.value = !!changed; }
 
         function onVisibilityChange() {
-            if (document.hidden && game && game.getGameTimer().isRunning()) {
-                game.getGameTimer().suspend();
+            if (document.hidden) {
                 music?.suspend();
                 effects?.stop();
-                paused.value = true;
+                if (game && game.getGameTimer().isRunning()) {
+                    game.getGameTimer().suspend();
+                    paused.value = true;
+                }
+            } else if (!playing.value && musicEnabled.value) {
+                // The music toggle also previews the soundtrack before play.
+                // Resume that preview, but leave a backgrounded game paused.
+                music?.play();
             }
         }
 
