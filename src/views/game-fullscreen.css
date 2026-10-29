@@ -1,52 +1,71 @@
-/* The fallback occupies the visible viewport even when browser fullscreen is unavailable. */
-.game-page.is-fullscreen.is-fullscreen {
+/* Fullscreen targets the game screen itself, leaving the surrounding page out. */
+.game-screen.is-fullscreen.is-fullscreen {
   position: fixed;
   inset: 0;
   z-index: 1000;
   box-sizing: border-box;
-  width: 100%;
-  max-width: none;
+  width: 100vw;
   height: 100vh;
   height: 100dvh;
-  min-height: 0;
-  overflow: auto;
-  padding: max(.6rem, env(safe-area-inset-top)) max(.6rem, env(safe-area-inset-right))
-    max(.6rem, env(safe-area-inset-bottom)) max(.6rem, env(safe-area-inset-left));
+  overflow: hidden;
+  background: #000;
 }
 
-.game-page.is-fullscreen .canvas-frame canvas {
-  width: min(100%, calc(65dvh * 5 / 3));
-  margin-inline: auto;
+/* Fit the complete, uncropped game view to the available screen. */
+.game-screen.is-fullscreen .canvas-frame {
+  position: absolute;
+  inset: 0;
+  display: grid;
+  place-items: center;
+  margin: 0;
+  border: 0;
+  background: #000;
+}
+.game-screen.is-fullscreen .canvas-frame canvas {
+  width: min(100vw, calc(100dvh * 5 / 3));
+  max-height: 100%;
+  height: auto;
+  margin: 0;
 }
 
-.game-page.is-fullscreen > .hint,
-.game-page.is-fullscreen > .level-navigation { display: none; }
-
-@media (max-width: 600px) {
-  .game-page.is-fullscreen .game-header .quiet { padding: .4rem; font-size: .8rem; }
+/* Keep the playfield unobstructed until the player opens the control drawer. */
+.game-screen.is-fullscreen .fullscreen-shortcuts {
+  position: absolute;
+  z-index: 3;
+  top: max(.4rem, env(safe-area-inset-top));
+  left: max(.4rem, env(safe-area-inset-left));
+  display: flex;
+  flex-wrap: wrap;
+  gap: .35rem;
+  max-width: calc(100% - 1rem);
 }
-
-/* Keep the level and skill controls together on a short landscape screen. */
-@media (orientation: landscape) and (max-height: 600px) {
-  .game-page.is-fullscreen.is-fullscreen {
-    display: grid;
-    grid-template-columns: minmax(0, 1fr) minmax(250px, 34%);
-    align-content: start;
-    gap: .4rem .6rem;
-  }
-  .game-page.is-fullscreen .game-header { grid-column: 1 / -1; margin-bottom: 0; }
-  .game-page.is-fullscreen > .notice { grid-column: 1 / -1; }
-  .game-page.is-fullscreen .canvas-frame { grid-column: 1; grid-row: span 4; align-self: start; }
-  .game-page.is-fullscreen .canvas-frame canvas { width: min(100%, calc(75dvh * 5 / 3)); }
-  .game-page.is-fullscreen .game-toolbar,
-  .game-page.is-fullscreen .skill-section,
-  .game-page.is-fullscreen .pause-menu,
-  .game-page.is-fullscreen .hints,
-  .game-page.is-fullscreen .fullscreen-status { grid-column: 2; margin-top: 0; }
-  .game-page.is-fullscreen .game-toolbar { gap: .3rem; }
-  .game-page.is-fullscreen .game-toolbar button { padding: .4rem .45rem; }
-  .game-page.is-fullscreen .fullscreen-status { margin-bottom: 0; }
-  .game-page.is-fullscreen .skill-grid { grid-template-columns: repeat(4, minmax(0, 1fr)); }
-  .game-page.is-fullscreen .release-controls { gap: .3rem; margin-top: .35rem; }
-  .game-page.is-fullscreen .release-controls span { font-size: .85rem; }
+.game-screen.is-fullscreen .game-controls { display: none; }
+.game-screen.is-fullscreen .game-controls.controls-open {
+  position: absolute;
+  z-index: 2;
+  top: 0;
+  right: 0;
+  bottom: 0;
+  display: block;
+  box-sizing: border-box;
+  width: min(360px, calc(100% - 120px));
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  padding: max(.5rem, env(safe-area-inset-top)) max(.5rem, env(safe-area-inset-right))
+    max(.5rem, env(safe-area-inset-bottom)) .5rem;
+  color: #f3f3e3;
+  background: rgba(24, 37, 28, .96);
+  border-left: 2px solid #858878;
+}
+.game-screen.is-fullscreen .game-controls .game-toolbar { margin-top: 0; }
+.game-screen.is-fullscreen .skill-grid { grid-template-columns: repeat(4, minmax(0, 1fr)); }
+.game-screen.is-fullscreen > .hint { display: none; }
+.game-screen.is-fullscreen > .notice {
+  position: absolute;
+  z-index: 1;
+  top: 3.5rem;
+  left: .5rem;
+  max-width: min(24rem, 85%);
+  padding: .4rem;
+  background: #18251c;
 }

@@ -20,10 +20,15 @@ for (const mode of ['native', 'expanded'] as const) {
     await page.getByRole('link', { name: 'Play Lemmings' }).tap()
     await page.getByRole('button', { name: 'Start level' }).tap()
     await page.getByRole('button', { name: 'Fullscreen', exact: true }).tap()
-    const game = page.locator('.game-page')
+    const game = page.locator('.game-screen')
     await expect(game).toHaveClass(/is-fullscreen/)
     if (mode === 'native') await expect.poll(() => page.evaluate(() => !!document.fullscreenElement)).toBe(true)
-    else await expect(page.getByRole('status').filter({ hasText: 'Expanded view (browser fullscreen unavailable)' })).toBeVisible()
+
+    // The canvas, rather than the surrounding page, occupies fullscreen.
+    await expect(page.getByRole('button', { name: 'Controls', exact: true })).toBeVisible()
+    await expect(page.getByRole('button', { name: 'Pause', exact: true })).toBeVisible()
+    await page.getByRole('button', { name: 'Controls', exact: true }).tap()
+    if (mode === 'expanded') await expect(page.getByRole('status').filter({ hasText: 'Expanded view (browser fullscreen unavailable)' })).toBeVisible()
 
     const viewport = page.viewportSize()!
     const portrait = { width: Math.min(viewport.width, viewport.height), height: Math.max(viewport.width, viewport.height) }
@@ -35,6 +40,12 @@ for (const mode of ['native', 'expanded'] as const) {
 
     for (const size of [portrait, landscape]) {
       await page.setViewportSize(size)
+      const box = await canvas.boundingBox()
+      expect(box).not.toBeNull()
+      expect(box!.width).toBeCloseTo(Math.min(size.width, size.height * 5 / 3), 0)
+      expect(box!.height).toBeCloseTo(Math.min(size.height, size.width * 3 / 5), 0)
+      expect(box!.x).toBeGreaterThanOrEqual(0)
+      expect(box!.y).toBeGreaterThanOrEqual(0)
       for (const control of [zoomIn, zoomOut, reset]) {
         const rect = await control.boundingBox()
         expect(rect).not.toBeNull()
@@ -52,7 +63,9 @@ for (const mode of ['native', 'expanded'] as const) {
       await expect(reset).toBeDisabled()
 
       // Freeze the scene to compare actual canvas output at the two scales.
+      await page.getByRole('button', { name: 'Close controls', exact: true }).tap()
       await page.getByRole('button', { name: 'Pause', exact: true }).tap()
+      await expect(page.getByRole('region', { name: 'Paused' })).toBeVisible()
       const original = await canvas.evaluate((element: HTMLCanvasElement) => element.toDataURL())
       await zoomIn.tap()
       const enlarged = await canvas.evaluate((element: HTMLCanvasElement) => element.toDataURL())

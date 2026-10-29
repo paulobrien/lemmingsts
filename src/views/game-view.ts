@@ -1,4 +1,4 @@
-import { computed, defineComponent, nextTick, onBeforeUnmount, onMounted, ref } from 'vue';
+import { computed, defineComponent, nextTick, onBeforeUnmount, onMounted, ref, watch } from 'vue';
 import { useRoute, useRouter } from 'vue-router';
 import { Game } from '@/game/game';
 import { GameFactory } from '@/game/game-factory';
@@ -36,7 +36,9 @@ export default defineComponent({
     setup() {
         const route = useRoute();
         const router = useRouter();
-        const gamePage = ref<HTMLElement | null>(null);
+        const gameScreen = ref<HTMLElement | null>(null);
+        const fullscreenControlsButton = ref<HTMLButtonElement | null>(null);
+        const fullscreenEnterButton = ref<HTMLButtonElement | null>(null);
         const pauseControl = ref<HTMLButtonElement | null>(null);
         const pauseHeading = ref<HTMLElement | null>(null);
         const gameCanvas = ref<HTMLCanvasElement | null>(null);
@@ -46,7 +48,8 @@ export default defineComponent({
         const comparingGraphics = ref(false);
         const graphicsError = ref('');
         const zoomChanged = ref(false);
-        const { fullscreenActive, fullscreenMode, toggleFullscreen } = useGameFullscreen(gamePage);
+        const { fullscreenActive, fullscreenMode, toggleFullscreen } = useGameFullscreen(gameScreen);
+        const fullscreenControlsOpen = ref(false);
         const level = ref<Level | null>(null);
         const levelIndex = ref(Math.max(0, Number(route.query.level) || 0));
         const groupIndex = ref(Math.max(0, Number(route.query.group) || 0));
@@ -76,6 +79,16 @@ export default defineComponent({
         const gameTime = ref('');
         const settings = readSettings();
         const speed = ref(settings.speed);
+        watch([fullscreenActive, paused, finished, nukeArmed], ([active, isPaused, isFinished, nuke]) => {
+            if (!active) fullscreenControlsOpen.value = false;
+            else if (isPaused || isFinished || nuke) fullscreenControlsOpen.value = true;
+        });
+        watch(fullscreenActive, active => {
+            void nextTick(() => {
+                if (active) (paused.value ? pauseHeading.value : fullscreenControlsButton.value)?.focus();
+                else (paused.value ? pauseHeading.value : fullscreenEnterButton.value)?.focus();
+            });
+        });
         const musicEnabled = ref(settings.musicEnabled);
         const soundEnabled = ref(settings.soundEnabled);
         const gameType = (Number(route.params.gameType) || GameTypes.LEMMINGS) as GameTypes;
@@ -492,7 +505,7 @@ export default defineComponent({
             window.removeEventListener('keydown', onKeyDown);
         });
 
-        return { gamePage, gameCanvas, originalPreview, enhancedPreview, graphicsMode, comparingGraphics, graphicsError, setGraphicsMode, toggleGraphicsComparison, onDisplaySettingsToggle, pauseControl, pauseHeading, fullscreenActive, fullscreenMode, toggleFullscreen,
+        return { gameScreen, fullscreenControlsButton, fullscreenEnterButton, gameCanvas, originalPreview, enhancedPreview, graphicsMode, comparingGraphics, graphicsError, setGraphicsMode, toggleGraphicsComparison, onDisplaySettingsToggle, pauseControl, pauseHeading, fullscreenActive, fullscreenControlsOpen, fullscreenMode, toggleFullscreen,
             level, levelIndex, groupName, title, error, loading, playing, paused,
             finished, levelSucceeded, nextLevelAvailable, savedCount, saveWarning, assignmentMessage, keyboardMessage, resultMessage, hints, availableHints, hintCompatibility, visibleHintCount, exampleMove, exampleBusy, exampleError, exampleSkillName, exampleClock, hideHints, showExample, clearExample, nukeArmed, nukeExecuted, selectedSkill, skillCounts, releaseRate, gameTime, speed,
             musicEnabled, soundEnabled, skillButtons, canPlay, start, openPauseMenu, resumeFromMenu, restartFromMenu, selectSkill, changeReleaseRate,

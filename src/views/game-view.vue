@@ -1,5 +1,5 @@
 <template>
-  <main ref="gamePage" class="game-page" :class="{ 'is-fullscreen': fullscreenActive }">
+  <main class="game-page">
     <header class="game-header">
       <router-link class="back-link" to="/">← Levels</router-link>
       <div>
@@ -19,6 +19,7 @@
       </button>
     </header>
 
+    <section ref="gameScreen" class="game-screen" :class="{ 'is-fullscreen': fullscreenActive }" aria-label="Game screen">
     <div v-if="error" class="notice error" role="alert">{{ error }}</div>
     <p v-else-if="loading" class="notice" role="status">Getting the level ready…</p>
     <p v-else-if="resultMessage" class="notice" role="status">{{ resultMessage }}</p>
@@ -34,6 +35,14 @@
     <p id="keyboard-instructions" class="visually-hidden">Use left and right arrows to choose a lemming, Enter to assign the selected skill, and Space to pause.</p>
     <p class="visually-hidden" role="status" aria-live="polite">{{ keyboardMessage }}</p>
 
+    <div v-if="fullscreenActive" class="fullscreen-shortcuts">
+      <button ref="fullscreenControlsButton" type="button" :aria-expanded="fullscreenControlsOpen" aria-controls="game-controls" @click="fullscreenControlsOpen = !fullscreenControlsOpen">{{ fullscreenControlsOpen ? 'Close controls' : 'Controls' }}</button>
+      <button v-if="!fullscreenControlsOpen" type="button" :aria-pressed="fullscreenActive" @click="toggleFullscreen">Exit fullscreen</button>
+      <button v-if="!fullscreenControlsOpen && !playing && !finished" class="primary" type="button" :disabled="!canPlay" @click="start">Start level</button>
+      <button v-if="!fullscreenControlsOpen && playing && !paused" class="primary" type="button" @click="fullscreenControlsOpen = true; openPauseMenu()">Pause</button>
+      <button v-if="!fullscreenControlsOpen && playing && paused" class="primary" type="button" @click="resumeFromMenu">Resume</button>
+    </div>
+    <div id="game-controls" class="game-controls" :class="{ 'controls-open': fullscreenControlsOpen }">
     <div class="game-toolbar" aria-label="Level controls">
       <button v-if="!playing && !finished" class="primary" type="button" :disabled="!canPlay" @click="start">Start level</button>
       <button v-else-if="playing && !paused" ref="pauseControl" class="primary" type="button" aria-controls="pause-menu" :aria-expanded="paused" @click="openPauseMenu">Pause</button>
@@ -43,7 +52,9 @@
       <button class="zoom-button" type="button" aria-label="Zoom out" @click="zoom(-1)">−</button>
       <button class="zoom-button" type="button" aria-label="Zoom in" @click="zoom(1)">+</button>
       <button type="button" :disabled="!zoomChanged" @click="resetZoom">Reset zoom</button>
-      <button v-if="!paused" type="button" :aria-pressed="fullscreenActive" @click="toggleFullscreen">{{ fullscreenActive ? 'Exit fullscreen' : 'Fullscreen' }}</button>
+      <button v-if="!paused" ref="fullscreenEnterButton" type="button" :aria-pressed="fullscreenActive" @click="toggleFullscreen">{{ fullscreenActive ? 'Exit fullscreen' : 'Fullscreen' }}</button>
+      <button v-if="fullscreenActive" type="button" :aria-pressed="musicEnabled" @click="toggleMusic">Music {{ musicEnabled ? 'on' : 'off' }}</button>
+      <button v-if="fullscreenActive" type="button" :aria-pressed="soundEnabled" @click="toggleSound">Sound {{ soundEnabled ? 'on' : 'off' }}</button>
       <label class="speed">Speed
         <select :value="speed" @change="onSpeedChange">
           <option :value="1">1×</option><option :value="2">2×</option><option :value="4">4×</option>
@@ -88,7 +99,7 @@
       <div class="skill-grid">
         <button v-for="skill in skillButtons" :key="skill.type" type="button" class="skill-button"
           :class="{ selected: selectedSkill === skill.type }" :aria-pressed="selectedSkill === skill.type"
-          :disabled="finished || !skillCounts[skill.type]" @click="selectSkill(skill.type)">
+          :disabled="finished || !skillCounts[skill.type]" @click="selectSkill(skill.type); if (fullscreenActive) fullscreenControlsOpen = false">
           <span>{{ skill.name }}</span><strong>{{ skillCounts[skill.type] ?? 0 }}</strong>
         </button>
       </div>
@@ -114,6 +125,8 @@
     </section>
     <p v-else-if="availableHints.length && !loading && !error && hintCompatibility === 'different'" class="hint">Hints were verified for a different DOS data set. You can still play this level.</p>
     <p v-else-if="availableHints.length && !loading && !error && hintCompatibility === 'unavailable'" class="hint">Hint compatibility could not be checked. You can still play this level.</p>
+    </div>
+    </section>
 
     <nav class="level-navigation" aria-label="Level navigation">
       <button type="button" :disabled="loading" @click="changeLevel(-1)">← Previous level</button>
@@ -180,6 +193,4 @@ button.skill-button.selected:hover:not(:disabled) { background: #c4eca7; }
 .hints { margin-top: 1rem; color: #d9dfd0; }.hints button + button { margin-left: .5rem; }.hints ol { padding-left: 1.5rem; line-height: 1.6; }
 .level-navigation { justify-content: space-between; margin-bottom: 1rem; }
 @media (max-width: 600px) { .game-page { padding: .6rem; } .game-header { gap: .5rem; } .skill-grid { grid-template-columns: repeat(4, minmax(0, 1fr)); } .skill-button { min-height: 48px; } .comparison-grid { grid-template-columns: repeat(2, minmax(260px, 1fr)); } }
-@media (orientation: landscape) and (max-height: 600px) { .game-page.is-fullscreen .eyebrow { display: none; } .game-page.is-fullscreen .objective { font-size: .8rem; margin: 0; } }
-@media (orientation: landscape) and (max-height: 600px) { .game-page.is-fullscreen .display-settings { grid-column: 2; margin-top: 0; order: 1; } }
 </style>
