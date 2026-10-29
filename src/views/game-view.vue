@@ -40,8 +40,8 @@
       <button v-if="finished && levelSucceeded && nextLevelAvailable" class="primary" type="button" @click="changeLevel(1)">Next level</button>
       <button v-if="finished" :class="{ primary: !levelSucceeded }" type="button" @click="loadLevel">Try again</button>
       <button type="button" :disabled="loading || !level" @click="loadLevel">Restart</button>
-      <button type="button" aria-label="Zoom out" @click="zoom(-1)">−</button>
-      <button type="button" aria-label="Zoom in" @click="zoom(1)">+</button>
+      <button class="zoom-button" type="button" aria-label="Zoom out" @click="zoom(-1)">−</button>
+      <button class="zoom-button" type="button" aria-label="Zoom in" @click="zoom(1)">+</button>
       <button type="button" :disabled="!zoomChanged" @click="resetZoom">Reset zoom</button>
       <button v-if="!paused" type="button" :aria-pressed="fullscreenActive" @click="toggleFullscreen">{{ fullscreenActive ? 'Exit fullscreen' : 'Fullscreen' }}</button>
       <label class="speed">Speed
@@ -144,6 +144,7 @@ button:focus-visible, select:focus-visible { outline: 2px solid #c4f79e; outline
 canvas:focus-visible { outline: 2px solid #c4f79e; outline-offset: -3px; }
 .visually-hidden { position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px; overflow: hidden; clip: rect(0, 0, 0, 0); white-space: nowrap; border: 0; }
 button:disabled { cursor: default; opacity: .45; }
+button.zoom-button { min-width: 44px; box-sizing: border-box; }
 button.primary { background: #b0df8e; color: #172417; border-color: #d9f4bd #527a43 #527a43 #d9f4bd; font-weight: bold; }
 button.primary:hover:not(:disabled) { background: #c4eca7; }
 button.quiet { background: transparent; }
