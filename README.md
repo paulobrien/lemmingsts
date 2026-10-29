@@ -1,4 +1,4 @@
-# Lemmings at Home
+# Lemmings TS
 
 A modern browser player built on [Lemmings.ts](https://github.com/tomsoftware/Lemmings.ts), Thomas Zeugner's TypeScript Lemmings clone. The original project supplied the game engine, DOS data readers, rendering and AdLib music playback that this version builds on. Thanks to Thomas for making that work available.
 
@@ -10,8 +10,8 @@ This modernization retains the original engine and game data formats while impro
 
 - Replaced the old Vue CLI toolchain with Vite and current Vue and TypeScript tooling, a lockfile, type checking, automated tests and CI.
 - Redesigned level selection and gameplay screens for desktop and touch, including responsive canvas scaling, skill controls, panning, zoom, speed, an in-game pause menu and level navigation. Fullscreen uses the browser API when available and an expanded view otherwise.
-- Recreated the surrounding interface with a pixel-era look. After import, the home screen decodes the original title artwork from the player's own `MAIN.DAT` in memory; before import it uses original CSS artwork. No original game graphics are bundled with the app.
-- Added a local game-file import, including ZIP support, so the original data stays on each player's device. The app shell has an installable PWA manifest and offline cache; progress and preferences are saved locally per browser.
+- Recreated the surrounding interface with a pixel-era look. After import, the home screen decodes the original title artwork from the player's own `MAIN.DAT` in memory; before import it uses original CSS artwork. The standard build contains no original game graphics.
+- Added a local game-file import, including ZIP support, and an optional private-deployment bundle that loads automatically on each device. The app shell has an installable PWA manifest and offline cache; progress and preferences are saved locally per browser.
 - Added structural validation before replacing imported game files, an offline-readiness indicator, and safer app-shell updates that retain a working offline version if an update is interrupted.
 - Made level objectives and rescued counts visible, added action feedback and a shared nuke confirmation, remembered the last level and best result, and added progress-only backup and restore.
 - Added keyboard lemming targeting and an optional visual first-move example, reconstructed from a separate tested replay without changing the player's current game.
@@ -27,6 +27,21 @@ The original Lemmings.ts project also described support for other Lemmings editi
 The original DOS files are not included. Use your own compatible copy; the expected names are listed in [the original-DOS file list](public/data/lemmings/README.md). The local `dos/` directory is ignored by Git, including `dos/lemmings/` and any ZIP kept there. Never commit original game files or put them in `public/data`: the build rejects unexpected files in that directory.
 
 Open the app, choose **Add your game files** or **Or choose a folder**, and select the original files together or an unencrypted ZIP containing them. Names are accepted in upper or lower case. The app checks file structure before storing the files in the browser's local IndexedDB; it does not upload them. An invalid replacement leaves any existing files intact. Structural validation cannot prove that a set is the exact edition used for the tested hints. Import separately on each device. Use **Remove game files** on the home screen to remove them; clearing site storage may also remove files and progress.
+
+### Optional bundle for a private deployment
+
+If you operate a private site, you can add your own files to its build so that a new device loads them automatically. Put the required original DOS files in the ignored `dos/lemmings/` directory, then run:
+
+```sh
+npm ci
+npm run build:local
+```
+
+This validates the required files and copies them into `dist/data/local-game/`, with a small manifest. Deploy that `dist/` directory only to a host that requires authentication for the site **and its asset paths**. The files are not encrypted: anyone who can access those paths can download them. A public URL, an obscure path, or leaving the files out of Git does not protect a deployed copy. The generated `dist/` directory and the original `dos/` directory are ignored by Git; the source archive excludes game files.
+
+On first visit, the app checks for the same-origin manifest, downloads and validates the files, and stores them in that browser's IndexedDB. Existing files are never overwritten by the automatic import; if the bundle is absent or cannot be validated, manual import remains available. Removing game files deliberately prevents them being automatically re-imported on that browser; adding files manually works as usual. The service worker does not cache the bundle. Each device needs to load it while online before it can play offline.
+
+`npm run build` is the default, game-file-free build and clears the prior `dist/` output, including any private bundle. An alternative source directory can be supplied to the opt-in build with `LEMMINGS_DOS_DIR=/path/to/files npm run build:local`. The host must serve the generated JSON manifest and DAT files as static files on the same origin; authentication redirects or an HTML fallback for a missing file cannot act as a bundle.
 
 ## Play and install
 
@@ -58,7 +73,7 @@ npm run build
 npm run preview
 ```
 
-The production build is in `dist/`. A static host must serve `index.html` as a fallback for app routes such as `/game/1`. The build checks the public data directory and creates `source-code.zip` with application source and build inputs, excluding the player's DOS files.
+The production build is in `dist/`. A static host must serve `index.html` as a fallback for app routes such as `/game/1`. The standard build checks the public data directory and creates `source-code.zip` with application source and build inputs, excluding the player's DOS files. See the private-deployment instructions above for the separate opt-in build.
 
 ## Tests and level verification
 
@@ -79,6 +94,6 @@ The authored coverage gate requires a solution for every original level and play
 
 The repository's [LICENSE](LICENSE) includes an MIT notice and a separate LGPL notice for an OPL emulator. However, the bundled DOSBox-derived [DBOPL source](src/game/resources/sound/DBOPL/db-opl3.ts) explicitly carries a GPL-2.0-or-later notice. Those inherited notices do not establish that the combined application is solely MIT or that DBOPL is LGPL. The site provides source and notices, but the distribution terms still need review; see [licence review](docu/LICENCE_REVIEW.md).
 
-Lemmings and the original game assets belong to their respective rights holders. This project does not claim rights to the original game or supply its assets. Importing a player's own files locally avoids bundling them with the app; it is not a guarantee about trademark or other rights.
+Lemmings and the original game assets belong to their respective rights holders. This project does not claim rights to the original game or supply its assets. The optional private bundle uses your own files; neither it nor local import is a guarantee about trademark or other rights.
 
 Thomas's original acknowledgements thank DMA for the original game; Volker Oth, ccexplore and Mindless for reverse engineering the level and graphics formats; and the DOSBox project for its OPL emulator. Those contributions remain central to this project.

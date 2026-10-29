@@ -12,3 +12,5 @@ The browser tests emulate phone and tablet viewports; they do not establish how 
 7. After an update is published, reopen online and check the app still starts, retains its local data and can subsequently launch offline. If anything fails, record the exact action and visible error before clearing site data or reinstalling.
 
 The public site must never contain the original game files. Clearing browser storage or uninstalling can remove the local files and progress; import them again if needed. Progress does not sync between devices.
+
+For a separately hosted private deployment, also sign in on each device and confirm the files load automatically on a fresh browser profile. Verify that reopening offline works after the import, that removing the files does not immediately restore them, and that manual import still works. Confirm the host requires authentication for both the site and its bundled file URLs before uploading any game files.
