@@ -901,6 +901,16 @@ export const TESTED_SOLUTIONS: readonly TestedSolution[] = [
   },
   {
     groupIndex: 3,
+    levelIndex: 9,
+    replay: '54=s2&54=l0&107=l1&110=s5&110=l0&160=s2&160=l2&161=s5&161=l0&337=l0&548=l0&692=l0&897=l0&1000=s1&1000=l0&1148=s8&1148=l0&1206=s5&1206=l0&1398=l0&1590=l0&1911=l0&2129=l0&2321=l0&2513=l0&2705=l0&2897=l0&3089=l0&3350=s6&3350=l21',
+    hints: [
+      'First make a safe landing in the central shaft; Floaters can start the work.',
+      'Send a Climber over the left wall, then use the small ledges as stepping stones across the acid.',
+      'Build from the last small ledge all the way to above the left exit; once it is complete, bash through the left shaft wall from close range to release the crowd.',
+    ],
+  },
+  {
+    groupIndex: 3,
     levelIndex: 10,
     replay: '0=i60&0=s8&585=l0&602=l1&619=l2&636=l3&653=l4&670=l5&687=l6&704=l7&721=l8&738=l9&755=l10&772=l11&789=l12&806=l13&823=l14&840=l15&857=l16&874=l17&891=l18&908=l19&925=l20&942=l21&959=l22&976=l23&993=l24&1010=l25&1027=l26&1044=l27&1061=l28&1078=l29&1095=l30&1112=l31&1129=l32&1146=l33&1163=l34&1180=l35&1197=l36&1214=l37&1231=l38&1248=l39&1265=l40&1282=l41&1299=l42&1316=l43&1333=l44&1350=l45&1367=l46&1384=l47&1401=l48&1418=l49&1435=l50&1452=l51&1469=l52&1486=l53&1503=l54&1520=l55&1537=l56&1554=l57&1571=l58&1588=l59&1605=l60&1622=l61&1639=l62&1656=l63&1673=l64&1690=l65&1707=l66&1724=l67&1741=l68&1758=l69&1775=l70&1792=l71&1809=l72&1826=l73&1843=l74&1860=l75&1877=l76&1894=l77&1911=l78&1928=l79',
     hints: [
