@@ -96,7 +96,7 @@ The authored coverage gate requires a solution for every original level and play
 
 ## Licence and acknowledgements
 
-The repository's [LICENSE](LICENSE) includes an MIT notice and a separate LGPL notice for an OPL emulator. However, the bundled DOSBox-derived [DBOPL source](src/game/resources/sound/DBOPL/db-opl3.ts) explicitly carries a GPL-2.0-or-later notice. Those inherited notices do not establish that the combined application is solely MIT or that DBOPL is LGPL. The site provides source and notices, but the distribution terms still need review; see [licence review](docu/LICENCE_REVIEW.md).
+The repository's [LICENSE](LICENSE) retains Thomas Zeugner's MIT notice and an LGPL notice for Robson Cozendey's historical OPL emulator. That emulator was removed; the active DOSBox-derived [DBOPL source](src/game/resources/sound/DBOPL/db-opl3.ts) instead carries GPL-2.0-or-later notices. Treat a build containing DBOPL on that basis and preserve the individual notices; do not describe the combined application as solely MIT. The site supplies source and licence texts, but complete distribution compliance still needs review. The history and remaining questions are documented in the [licence review](docu/LICENCE_REVIEW.md).
 
 Lemmings and the original game assets belong to their respective rights holders. This project does not claim rights to the original game; its repository and standard build supply no original assets. The optional deployment bundle uses operator-supplied files; neither it nor local import is a guarantee about trademark or other rights.
 
