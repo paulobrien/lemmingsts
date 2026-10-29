@@ -1,14 +1,37 @@
 # Lemmings at Home
 
-A browser-based Lemmings player, modernised from [tomsoftware/Lemmings.ts](https://github.com/tomsoftware/Lemmings.ts). Play on desktop, Android phone or Android tablet, with mouse or touch. The application can be installed as a progressive web app and, once set up, played offline.
+A modern browser player built on [Lemmings.ts](https://github.com/tomsoftware/Lemmings.ts), Thomas Zeugner's TypeScript Lemmings clone. The original project supplied the game engine, DOS data readers, rendering and AdLib music playback that this version builds on. Thanks to Thomas for making that work available.
 
-## Game files
+Play with a mouse on a computer or with touch on an Android phone or tablet. The app can be installed from the browser and, once the app and your own game files are stored on the device, played offline. This is an early preview: actual Android hardware and some DOS physics details still need further verification.
 
-The original DOS Lemmings data files are not included. Use your own compatible copy: the expected filenames are listed in [public/data/lemmings/README.md](public/data/lemmings/README.md). The `dos/` directory, including the supplied local copy in `dos/lemmings/`, is ignored by Git. Keep ZIP archives of your game files there or outside the repository. Never commit game files or put them in `public/data`; a build-time check rejects unexpected files there.
+## What changed
 
-Open the app and choose **Add your game files** or **Or choose a folder**. Select the original DOS files together, or choose one unencrypted ZIP archive containing them; uppercase and lowercase names are accepted. The app validates the required files and stores them in this browser's local IndexedDB; it does not upload them. Import the files separately on each device. You can remove the imported files from the home screen. Clearing browser storage may remove game files and progress.
+This modernization retains the original engine and game data formats while improving the experience around them:
 
-Only the original DOS Lemmings edition is supported by the current import flow. Other editions in the historical configuration have not yet been adapted.
+- Replaced the old Vue CLI toolchain with Vite and current Vue and TypeScript tooling, a lockfile, type checking, automated tests and CI.
+- Redesigned level selection and gameplay screens for desktop and touch, including responsive canvas scaling, skill controls, panning, zoom, speed, an in-game pause menu and level navigation. Fullscreen uses the browser API when available and an expanded view otherwise.
+- Recreated the surrounding interface with a pixel-era look. After import, the home screen decodes the original title artwork from the player's own `MAIN.DAT` in memory; before import it uses original CSS artwork. No original game graphics are bundled with the app.
+- Added a local game-file import, including ZIP support, so the original data stays on each player's device. The app shell has an installable PWA manifest and offline cache; progress and preferences are saved locally per browser.
+- Improved game-data decoding, DOS simulation behaviour and audio handling, with focused regression tests and optional tests using locally supplied original files.
+- Added independently authored completion replays and progressive, optional hints for all 120 levels of the original DOS game. Each replay has been tested against the supplied local files; loading a level alone is not treated as proof that it can be completed.
+- Added optional original AdLib music and effects, plus synthesized PC-speaker-style digging, bashing, mining and nuke cues. The synthesized sounds are approximations, not original samples.
+- Added an application source archive and licence notices to production builds. The original game files are not included.
+
+The original Lemmings.ts project also described support for other Lemmings editions. Their historical configuration and parsers remain in the repository, but this version's import and verification work currently supports **original DOS Lemmings only**; the other editions should not be assumed to work.
+
+## Bring your own game files
+
+The original DOS files are not included. Use your own compatible copy; the expected names are listed in [the original-DOS file list](public/data/lemmings/README.md). The local `dos/` directory is ignored by Git, including `dos/lemmings/` and any ZIP kept there. Never commit original game files or put them in `public/data`: the build rejects unexpected files in that directory.
+
+Open the app, choose **Add your game files** or **Or choose a folder**, and select the original files together or an unencrypted ZIP containing them. Names are accepted in upper or lower case. The app validates and stores the files in the browser's local IndexedDB; it does not upload them. Import separately on each device. Use **Remove game files** on the home screen to remove them; clearing site storage may also remove files and progress.
+
+## Play and install
+
+Choose a difficulty and level, then start the level. Select a skill and click or tap a lemming to assign it; drag the game area to pan, and use the zoom controls or a mouse wheel to change the view. Choose **Fullscreen** for a larger game view; if the browser doesn't allow native fullscreen, the app expands within the available browser window instead. The pause menu offers resume, restart, level selection and fullscreen controls while keeping skill selection available. Speed and release-rate controls are available during a level. The nuke control requires confirmation. Hints are optional and reveal one step at a time.
+
+On Android Chrome, open the HTTPS site and use **Install app** or **Add to Home screen**. Load the app while online and import your files on that device before trying it offline. Browser-managed storage can be cleared or evicted. Progress, settings and imported files do not sync between devices. For checks on the actual phone and tablet, see [Android device check](docu/ANDROID_DEVICE_CHECK.md).
+
+Music and sound effects have separate switches and start off by default. The AdLib effects include opening cues, skill selection and assignments, builder warnings, steel, Oh No, exits, splats, explosions, drowning, fire and triggered traps. Each effects channel is monophonic; the short nuke alert takes priority over other speaker cues. The AdLib interpreter uses a legacy Web Audio processor, and browsers may require user interaction before audio can play.
 
 ## Develop
 
@@ -19,7 +42,7 @@ npm ci
 npm run dev
 ```
 
-Open the local URL printed by Vite. Import your original game files through the app; they should not be copied into the public directory.
+Open the local URL printed by Vite and import the game files through the app. Common checks are:
 
 ```sh
 npm run typecheck
@@ -28,28 +51,26 @@ npm run build
 npm run preview
 ```
 
-The default tests and CI use synthetic fixtures and need no original game files. Browser smoke tests use Playwright; install Chromium once with `npx playwright install chromium`, then run `npm run test:e2e`. To run the optional integration and browser tests against the ignored local copy:
+The production build is in `dist/`. A static host must serve `index.html` as a fallback for app routes such as `/game/1`. The build checks the public data directory and creates `source-code.zip` with application source and build inputs, excluding the player's DOS files.
+
+## Tests and level verification
+
+The default unit tests and CI use synthetic fixtures and need no original game files. Browser tests use Playwright; install Chromium with `npx playwright install chromium`, then run `npm run test:e2e`. CI runs installation, type checking, unit tests, the production build and browser tests.
+
+With the original files privately present in `dos/lemmings/`, run the stricter optional checks:
 
 ```sh
-RUN_PRIVATE_GAME_TESTS=1 npx vitest run tests/integration/local-game-files.spec.ts
+RUN_PRIVATE_GAME_TESTS=1 REQUIRE_ALL_LEVEL_SOLUTIONS=1 npx vitest run tests/integration/local-game-files.spec.ts
 RUN_PRIVATE_GAME_TESTS=1 npx vitest run tests/integration/sound-effects-private.spec.ts
 RUN_PRIVATE_GAME_TESTS=1 npm run test:e2e
 ```
 
-## Install and play offline
-
-Serve the production build over HTTPS (localhost also works for development). In Android Chrome, use the browser's install or add-to-home-screen option. After the app has loaded, the service worker has prepared the app shell, and the original files have been imported on that device, it can run without a connection. Offline storage is managed by the browser and can be cleared or evicted. Install and offline behaviour should be checked on the target devices and browser.
-
-For the remaining physical phone and tablet checks, see [Android device check](docu/ANDROID_DEVICE_CHECK.md).
-
-Progress and settings are stored locally per browser. They do not sync between devices. A static host must serve `index.html` as a fallback for application routes such as `/game/1`. The production build is in `dist/` and contains the app but no original game files.
-
-Hints are revealed one at a time on request. All 120 original levels have a project-authored solution and hints, and each recorded solution has passed the local completion test using the original game files. Separately obtained community recordings can provide additional compatibility checks. Some original DOS physics details still need further verification.
-
-Music and sound effects have separate switches and start off by default. The optional effects use the locally imported DOS AdLib data and cover the opening cues, skill selection and assignments, builder warnings, steel, Oh No, exits, splats, explosions, drowning, fire and triggered traps. Digging, bashing, mining and the nuke alert use short synthesized square-wave approximations of the separate DOS PC-speaker effects; they are not original sound samples. Each effects channel is monophonic, and the short nuke alert takes priority over other speaker cues. The existing AdLib interpreter uses a legacy Web Audio processor, and browsers may require a user interaction before audio can play.
+The authored coverage gate requires a solution for every original level and plays each replay through to victory. [Integration test notes](tests/integration/README.md) describe optional additional checks using separately obtained community recordings. Those recordings and the original DOS files are not in Git or in the public build. Passing these replays verifies the tested routes in this engine, not complete equivalence with every DOS release.
 
 ## Licence and acknowledgements
 
-The repository's [LICENSE](LICENSE) includes an MIT licence and a separate LGPL notice for an OPL emulator. However, the bundled DOSBox-derived [DBOPL source](src/game/resources/sound/DBOPL/db-opl3.ts) explicitly carries a GPL-2.0-or-later notice. These inherited notices do not establish that the complete application is solely MIT or that DBOPL is LGPL. See [licence review](docu/LICENCE_REVIEW.md) before distributing the application. The original Lemmings game files have their own rights and are not covered by the project licence; this project does not claim rights to them.
+The repository's [LICENSE](LICENSE) includes an MIT notice and a separate LGPL notice for an OPL emulator. However, the bundled DOSBox-derived [DBOPL source](src/game/resources/sound/DBOPL/db-opl3.ts) explicitly carries a GPL-2.0-or-later notice. Those inherited notices do not establish that the combined application is solely MIT or that DBOPL is LGPL. The site provides source and notices, but the distribution terms still need review; see [licence review](docu/LICENCE_REVIEW.md).
 
-Thanks to DMA for the original game; Volker Oth, ccexplore and Mindless for reverse-engineering the level and graphics formats; and the DOSBox project for its OPL emulator.
+Lemmings and the original game assets belong to their respective rights holders. This project does not claim rights to the original game or supply its assets. Importing a player's own files locally avoids bundling them with the app; it is not a guarantee about trademark or other rights.
+
+Thomas's original acknowledgements thank DMA for the original game; Volker Oth, ccexplore and Mindless for reverse engineering the level and graphics formats; and the DOSBox project for its OPL emulator. Those contributions remain central to this project.
