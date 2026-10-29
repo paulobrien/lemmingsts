@@ -842,6 +842,16 @@ export const TESTED_SOLUTIONS: readonly TestedSolution[] = [
   },
   {
     groupIndex: 3,
+    levelIndex: 0,
+    replay: '54=s2&54=l0&100=l1&146=l2&149=s4&149=l1&176=s5&176=l2&249=s4&249=l3&277=s5&277=l0&469=l0&670=l0&862=l0&1054=l0&1246=l0&1438=l0&1630=l0&1909=l0&1993=l0&2185=l0&2377=l0&2569=s8&2569=l0&2620=s5&2620=l0&2812=l0&3004=l0&3150=s8&3150=l0&3242=s5&3242=l0&3434=l0&3638=l0&3830=l0&3990=l0&4182=l0&4230=l0&4422=l0&4470=l0&4662=l0&4758=l0&4950=l0&5046=l0&5238=l0&5601=s3&5601=l1',
+    hints: [
+      'Keep the crowd safely near the entrance while a Floater prepares the long route across the water.',
+      'Use the steel walls to turn a Builder back and forth, creating an ascent the crowd can follow; dig through the bridge where needed to drop onto the next section.',
+      'Start the final rightward ascent early enough to make a walkable zigzag, and let the scout turn at the first wall before building back. Once the exit is connected, bomb the holding Blocker.',
+    ],
+  },
+  {
+    groupIndex: 3,
     levelIndex: 1,
     replay: '180=s4&180=l1&184=s5&184=l0&376=l0&568=l0&761=s2&761=l0&1090=s5&1090=l0&1282=l0&1430=s3&1430=l1&1500=s4&1500=l0&1850=s5&1850=l2&2042=l2&2186=l2&2287=s4&2287=l3&2378=s5&2378=l2&2554=l2&2746=l2&2762=l2&2824=s4&2824=l2&2825=s3&2825=l2&2900=s5&2900=l4&3092=l4&3188=l4&3251=l4&3315=l4&3409=s4&3409=l4&3410=s3&3410=l4&3550=s4&3550=l17&3551=s5&3551=l19&3645=s4&3645=l19&3646=s3&3646=l19&3750=s5&3750=l29&3942=l29&4134=l29&4300=s1&4300=l52',
     hints: [
