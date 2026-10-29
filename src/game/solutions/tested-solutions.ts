@@ -927,6 +927,16 @@ export const TESTED_SOLUTIONS: readonly TestedSolution[] = [
   },
   {
     groupIndex: 3,
+    levelIndex: 22,
+    replay: '154=s4&154=l1&183=l6&186=s6&186=l0&219=s5&219=l0&411=l0&571=l0&763=l0&955=l0&1400=l0&1592=l0&1784=l0&1976=l0&2168=l0&2360=l0&2565=s6&2565=l0&3960=s2&3960=l0&4050=s5&4050=l0&4242=l0&4400=s3&4400=l6&4434=s4&4434=l0&4600=s3&4600=l1&5056=s6&5056=l7&5067=s4&5067=l8&5068=s5&5068=l7&5260=l7&5341=l9&6400=s3&6400=l8&6517=s6&6517=l10',
+    hints: [
+      'Hold the group while one worker finds a way up and across the level.',
+      'Make a safe landing below the long upper tunnel, then build a barrier at its far edge.',
+      'Reopen the lower route and guide the group over the waiting Blocker; at the far side, bash through the wall below the trap.',
+    ],
+  },
+  {
+    groupIndex: 3,
     levelIndex: 23,
     replay: '65=s6&65=l0&109=l0&197=l0',
     hints: [
