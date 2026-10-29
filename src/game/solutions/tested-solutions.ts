@@ -813,6 +813,16 @@ export const TESTED_SOLUTIONS: readonly TestedSolution[] = [
   },
   {
     groupIndex: 2,
+    levelIndex: 26,
+    replay: '161=s4&161=l0&228=s3&228=l1&356=s5&356=l2&385=s4&385=l3&450=i89&558=s5&558=l2&760=l2&962=l2&1164=l2&1366=l2&1568=l2&1751=l2&1943=l2&2050=s3&2050=l3&2061=s4&2061=l2',
+    hints: [
+      'Hold the crowd safely while a scout makes a route beneath the ceiling.',
+      'Time a Bomber near the left edge to create a lower place to start building. Extend a leftward staircase under the ceiling, then build back from the far wall onto the upper shelf.',
+      'Use a Blocker where the stairs meet to guide the crowd, then bomb the left holding Blocker once the route is ready.',
+    ],
+  },
+  {
+    groupIndex: 2,
     levelIndex: 27,
     replay: '54=s2&54=l0&54=s1&54=l0&372=s7&372=l0&423=s5&423=l0&487=l0&788=l0&862=l0&1054=l0&1150=l20&1342=s4&1342=l20&1800=s5&1800=l21&2215=s6&2215=l21&2564=s5&2564=l24&2566=s4&2566=l22&2800=s3&2800=l22&2800=i98',
     hints: [
