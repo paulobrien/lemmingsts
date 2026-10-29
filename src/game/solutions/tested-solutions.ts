@@ -1106,6 +1106,16 @@ export const TESTED_SOLUTIONS: readonly TestedSolution[] = [
   },
   {
     groupIndex: 3,
+    levelIndex: 28,
+    replay: '110=s4&110=l0&159=s5&159=l1&210=s4&210=l1&222=s5&222=l2&254=s8&254=l2&375=s5&375=l2&576=l2&778=l2&980=l2&1182=l2&1384=l2&1586=l2&1778=l2&1826=s8&1826=l2&2075=s5&2075=l2&2206=s6&2206=l12&2212=s4&2212=l12&2239=s5&2239=l1&3046=l2&3106=s4&3106=l2&3480=s5&3480=l1&3528=s4&3528=l1&3530=s6&3530=l13',
+    hints: [
+      'Hold the group while a worker prepares a lower route towards the exit.',
+      'Dig near the entrance and build left across the long gap. Dig into the tall wall, then build out of the shaft to reach the exit area.',
+      'Place Blockers to guide the group around the two turns near the exit. Bash away the entrance Blockers in stages and bridge the first shaft so the crowd can follow.',
+    ],
+  },
+  {
+    groupIndex: 3,
     levelIndex: 29,
     replay: '120=s4&120=l1&130=s5&130=l0&230=s4&230=l3&308=s5&308=l2&500=l2&562=s6&562=l0&580=l2&791=s5&791=l0&983=l0&1175=l0&1367=l0&1588=s6&1588=l0&1639=s5&1639=l0&1831=l0&1900=s6&1900=l0&2007=s5&2007=l0&2199=l0&2391=s6&2391=l0&2507=s5&2507=l0&2800=s3&2800=l3&3100=s1&3100=l2&3100=s2&3100=l2&3168=s5&3168=l2&3360=l2&3552=l2&3728=l2&3898=s4&3898=l74&3921=s5&3921=l2&4039=s6&4039=l2&4240=s5&4240=l2&4432=l2&4624=l2&4903=l2&5095=l2&5287=l2&5479=l2&5671=l2&5863=l2&6055=l2&6247=l2&6439=l2&7000=l5&7260=s6&7260=l5',
     hints: [
