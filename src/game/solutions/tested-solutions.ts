@@ -831,6 +831,16 @@ export const TESTED_SOLUTIONS: readonly TestedSolution[] = [
   },
   {
     groupIndex: 3,
+    levelIndex: 6,
+    replay: '75=s5&75=l0&250=s1&250=l5&344=s8&344=l0&408=s5&408=l0&548=s8&548=l5&870=s5&870=l5&982=s6&982=l5&1105=s8&1105=l5&1427=s5&1427=l5&1555=s6&1555=l5&1679=s8&1679=l5&2001=s5&2001=l5&2129=s6&2129=l5&2148=s5&2148=l5&2350=s6&2350=l10',
+    hints: [
+      'Get across the first gap, then keep the crowd safe while one Climber prepares the route.',
+      'Dig a shallow holding pit on the slope and stop the Digger with a Builder. Send a Climber ahead over the first pole.',
+      'Dig into alternate poles, build towards the next and bash through it. Bridge the final gap, then bash through the first pole to release the crowd.',
+    ],
+  },
+  {
+    groupIndex: 3,
     levelIndex: 7,
     replay: '105=s4&105=l1&144=s5&144=l0&145=s1&145=l0&166=s4&166=l2&336=s5&336=l0&528=l0&720=l0&1208=s8&1208=l0&1524=s5&1524=l0&1556=s7&1556=l0&1835=s5&1835=l0&2340=s8&2340=l0&2660=s5&2660=l0&2692=l0&2762=s8&2762=l0&3300=s3&3300=l1',
     hints: [
