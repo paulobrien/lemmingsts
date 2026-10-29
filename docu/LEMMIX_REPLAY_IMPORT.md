@@ -18,7 +18,7 @@ RUN_PRIVATE_GAME_TESTS=1 npx vitest run tests/integration/lemmix-import-private.
 
 A public [DOS Tricky 7 replay](https://www.lemmingsforums.net/index.php?topic=1490.45) was separately examined: it is an older version 1 replay with pause and rate actions. With the locally supplied game data, its recorded positions and actions verify and it wins with 75 lemmings rescued. This is one replay, not a general proof of equivalent physics. The positive version 3 cases have only been tested with synthetic LRB data; no real version 3 replay has yet been verified.
 
-A separate [Tricky 22 replay](https://www.lemmingsforums.net/index.php?topic=1490.30), `Tricky22-100%.lrb`, also verifies with all 80 lemmings rescued. These examples are third-party recordings; the project neither bundles nor redistributes them.
+A separate [Tricky 22 replay](https://www.lemmingsforums.net/index.php?action=dlattach;attach=654), `Tricky22-100%.lrb`, and its [nine-builder alternate](https://www.lemmingsforums.net/index.php?action=dlattach;attach=655), `Tricky22_9builders_100.lrb`, each verify with all 80 lemmings rescued. They are distinct recordings. These examples are third-party recordings; the project neither bundles nor redistributes them.
 
 The public [Taxing 9 replay](https://www.lemmingsforums.net/index.php?topic=1490.0), `Taxing9-undamaged.lrb`, verifies with 20 rescued.
 

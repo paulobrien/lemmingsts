@@ -18,6 +18,8 @@ RUN_PRIVATE_GAME_TESTS=1 REQUIRE_ALL_LEVEL_COMPLETIONS=1 npx vitest run tests/in
 
 This strict combined gate runs a completion replay for every level, and reports a missing replay if a level has neither an authored solution nor a configured community replay. The community files are not included in Git, and their recorded positions and actions are checked before a win is accepted. If this checkout has the ignored `dos/replay-research-env.sh` and its corresponding local recordings, source that file from the repository root to run those additional checks.
 
+On 29 October 2026, the complete configured suite passed with 74 distinct community recordings covering 72 different levels, plus the version 1 parsing check and the authored 120-level completion gate (76 test cases in total). Both Tricky 22 variables used the separate recordings linked in the replay guide. All 74 recordings were version 1; this result does not independently establish real-world version 3 compatibility or complete DOS physics equivalence. A run without those local recordings skips the corresponding tests.
+
 To require all 120 levels to have **project-authored** replay solutions and hints, run:
 
 ```sh
