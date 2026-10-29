@@ -10,6 +10,7 @@ function setup(entrances: number, initialRate: number, count = 10) {
   let left = count, rate = initialRate;
   const addLemming = vi.fn();
   const manager = Object.assign(Object.create(LemmingManager.prototype), {
+    onSoundEffect: { trigger: vi.fn() },
     level: {
       gameType: GameTypes.LEMMINGS,
       entrances: Array.from({ length: entrances }, (_, index) => ({ x: index * 40 + 10, y: 20 })),

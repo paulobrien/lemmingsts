@@ -41,7 +41,7 @@ describe('DOS vaporizing', () => {
     const actions = []; actions[LemmingStateType.FRYING] = vapor;
     const athlete = { triggerLemAction: vi.fn(() => true) };
     const removeOne = vi.fn();
-    Object.assign(manager, { level: { width: 32, height: 32 }, lemmings: [lem], actions, skillActions: { [SkillTypes.CLIMBER]: athlete },
+    Object.assign(manager, { onSoundEffect: { trigger: vi.fn() }, level: { width: 32, height: 32 }, lemmings: [lem], actions, skillActions: { [SkillTypes.CLIMBER]: athlete },
       logging: { debug: vi.fn() }, triggerManager: triggers,
       gameVictoryCondition: { getLeftCount: () => 0, removeOne }, nextNukingLemmingsIndex: -1 });
     manager.tick();

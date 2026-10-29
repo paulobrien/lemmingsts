@@ -40,7 +40,7 @@ describe('DOS drowning', () => {
     const drowning = new ActionDrowningSystem(sprites);
     const actions = []; actions[LemmingStateType.DROWNING] = drowning;
     const bomber = { triggerLemAction: vi.fn(() => true) };
-    Object.assign(manager, { level: { width: 32, height: 32, hasGroundAt: () => true },
+    Object.assign(manager, { onSoundEffect: { trigger: vi.fn() }, level: { width: 32, height: 32, hasGroundAt: () => true },
       lemmings: [lem], actions, skillActions: { [SkillTypes.BOMBER]: bomber },
       logging: { debug: vi.fn() }, triggerManager: triggers,
       gameVictoryCondition: { getLeftCount: () => 0, removeOne: vi.fn() }, nextNukingLemmingsIndex: -1 });
