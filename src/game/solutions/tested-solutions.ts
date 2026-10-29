@@ -763,6 +763,16 @@ export const TESTED_SOLUTIONS: readonly TestedSolution[] = [
   },
   {
     groupIndex: 2,
+    levelIndex: 25,
+    replay: '54=l0&92=s8&92=l2&115=s5&115=l0&120=s1&120=l1&166=s5&166=l1&318=l0&358=l1&550=l1&870=s6&870=l1&1421=s5&1421=l1&1801=l1&2001=l71&2010=l24',
+    hints: [
+      'Bring each group to the central exit; the side groups need paths up from their pits.',
+      'Dig beneath the upper entrance, then use climbing scouts and stairs to approach the circle from both sides.',
+      'Bash through the circle from the right, repair the left bridge and raise the path to the exit; finally build ramps out of both lower pits.',
+    ],
+  },
+  {
+    groupIndex: 2,
     levelIndex: 27,
     replay: '54=s2&54=l0&54=s1&54=l0&372=s7&372=l0&423=s5&423=l0&487=l0&788=l0&862=l0&1054=l0&1150=l20&1342=s4&1342=l20&1800=s5&1800=l21&2215=s6&2215=l21&2564=s5&2564=l24&2566=s4&2566=l22&2800=s3&2800=l22&2800=i98',
     hints: [
