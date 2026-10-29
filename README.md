@@ -40,6 +40,8 @@ RUN_PRIVATE_GAME_TESTS=1 npm run test:e2e
 
 Serve the production build over HTTPS (localhost also works for development). In Android Chrome, use the browser's install or add-to-home-screen option. After the app has loaded, the service worker has prepared the app shell, and the original files have been imported on that device, it can run without a connection. Offline storage is managed by the browser and can be cleared or evicted. Install and offline behaviour should be checked on the target devices and browser.
 
+For the remaining physical phone and tablet checks, see [Android device check](docu/ANDROID_DEVICE_CHECK.md).
+
 Progress and settings are stored locally per browser. They do not sync between devices. A static host must serve `index.html` as a fallback for application routes such as `/game/1`. The production build is in `dist/` and contains the app but no original game files.
 
 Hints are available only for levels with a verified solution and are revealed one at a time on request. Loading a level successfully does not prove it is completable; the optional local integration tests exercise the recorded solutions as they are added. All 120 original levels have passed a local completion replay; some of those checks require separately obtained community recordings. The project-authored solution and hint collection is still incomplete, and some original DOS physics details need further verification.
