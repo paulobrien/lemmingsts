@@ -248,6 +248,7 @@ export default defineComponent({
             const requestedLevel = levelIndex.value;
             disposeGame();
             stopMusic();
+            resources = null;
             loading.value = true;
             error.value = '';
             finished.value = false;

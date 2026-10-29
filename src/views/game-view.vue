@@ -11,7 +11,7 @@
           <template v-if="!playing && !finished"> · {{ level.timeLimit }} {{ level.timeLimit === 1 ? 'minute' : 'minutes' }}</template>
         </p>
       </div>
-      <button class="quiet" type="button" :aria-pressed="musicEnabled" @click="toggleMusic">
+      <button class="quiet" type="button" :disabled="loading" :aria-pressed="musicEnabled" @click="toggleMusic">
         Music {{ musicEnabled ? 'on' : 'off' }}
       </button>
       <button class="quiet" type="button" :aria-pressed="soundEnabled" @click="toggleSound">
@@ -57,7 +57,7 @@
       <button class="zoom-button" type="button" aria-label="Zoom in" @click="zoom(1)">+</button>
       <button type="button" :disabled="!zoomChanged" @click="resetZoom">Reset zoom</button>
       <button v-if="!paused" ref="fullscreenEnterButton" type="button" :aria-pressed="fullscreenActive" @click="toggleFullscreen">{{ fullscreenActive ? 'Exit fullscreen' : 'Fullscreen' }}</button>
-      <button v-if="fullscreenActive" type="button" :aria-pressed="musicEnabled" @click="toggleMusic">Music {{ musicEnabled ? 'on' : 'off' }}</button>
+      <button v-if="fullscreenActive" type="button" :disabled="loading" :aria-pressed="musicEnabled" @click="toggleMusic">Music {{ musicEnabled ? 'on' : 'off' }}</button>
       <button v-if="fullscreenActive" type="button" :aria-pressed="soundEnabled" @click="toggleSound">Sound {{ soundEnabled ? 'on' : 'off' }}</button>
       <label class="speed">Speed
         <select :value="speed" @change="onSpeedChange">

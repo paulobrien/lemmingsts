@@ -246,6 +246,26 @@ describe('game view lifecycle', () => {
         wrapper.unmount();
     });
 
+    it('does not preview the old soundtrack while a different level is loading', async () => {
+        const wrapper = mountView();
+        expect(button(wrapper.container, 'Music off').disabled).toBe(true);
+        await flushPromises();
+        let finish!: (level: typeof mock.level) => void;
+        mock.resources.getLevel.mockImplementationOnce(() => new Promise(resolve => { finish = resolve; }));
+        button(wrapper.container, 'Next level →').click();
+        await flushPromises();
+        expect(button(wrapper.container, 'Music off').disabled).toBe(true);
+        button(wrapper.container, 'Music off').click();
+        expect(mock.resources.getMusicPlayer).not.toHaveBeenCalled();
+        finish(mock.level);
+        await flushPromises();
+        expect(button(wrapper.container, 'Music off').disabled).toBe(false);
+        button(wrapper.container, 'Music off').click();
+        await flushPromises();
+        expect(mock.resources.getMusicPlayer).toHaveBeenCalledWith(1);
+        wrapper.unmount();
+    });
+
     it.each(['0.5', 'Infinity', 'NaN', '-1'])('normalizes invalid level indices in links (%s)', async index => {
         mock.route.query = { group: index, level: index };
         const wrapper = mountView();
