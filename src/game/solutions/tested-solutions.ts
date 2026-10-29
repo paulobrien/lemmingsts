@@ -1008,6 +1008,16 @@ export const TESTED_SOLUTIONS: readonly TestedSolution[] = [
   },
   {
     groupIndex: 3,
+    levelIndex: 20,
+    replay: '0=i98&0=s2&54=l0&55=s1&55=l0&56=s2&58=l1&62=l2&66=l3&70=l4&74=l5&78=l6&82=l7&86=l8&90=l9&94=l10&98=l11&102=l12&106=l13&110=l14&114=l15&118=l16&122=l17&126=l18&130=l19&134=l20&138=l21&142=l22&146=l23&150=l24&154=l25&158=l26&162=l27&166=l28&170=l29&174=l30&178=l31&182=l32&186=l33&190=l34&194=l35&198=l36&202=l37&206=l38&210=l39&214=l40&218=l41&222=l42&226=l43&230=l44&234=l45&238=l46&242=l47&246=l48&250=l49&303=s8&303=l0&847=s5&847=l0&1049=l0&1349=l0&1590=s6&1590=l1',
+    hints: [
+      'Every lemming must survive the long fall, and the crowd needs a route out.',
+      'Raise the release rate and give every lemming a Floater. Send a Climber over the right wall and dig onto the first isolated pillar.',
+      'Build right to turn the scout, then build left to the pit wall; cross the final gap and bash right out of the pit once the route is ready.',
+    ],
+  },
+  {
+    groupIndex: 3,
     levelIndex: 21,
     replay: '234=s5&234=l0&271=s4&271=l12&308=l13&434=s5&434=l10&636=l10&838=l10&940=s6&940=l10&948=s5&948=l10&1192=s6&1192=l10&1442=s5&1442=l10&1644=l10&1846=l10&2048=l10&2265=s6&2265=l10&2398=l10&2523=l10&2559=s7&2559=l14&2591=s5&2591=l14&4500=s3&4500=l13',
     hints: [
