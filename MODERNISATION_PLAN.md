@@ -56,7 +56,7 @@ The app must not commit, bundle or publicly distribute the original game files. 
 
 ## 6. Polish and release
 
-- Improve presentation, level completion feedback, settings and onboarding; address real-device feedback and bugs. Optional AdLib effects cover opening cues, skill selection and assignments, builder warnings, steel, Oh No, exits, splats, explosions, water, fire and triggered traps; connect and verify the remaining gameplay effects.
+- Improve presentation, level completion feedback, settings and onboarding; address real-device feedback and bugs. Optional AdLib effects cover opening cues, skill selection and assignments, builder warnings, steel, Oh No, exits, splats, explosions, water, fire and triggered traps. Digging, bashing, mining and nuke use synthesized PC-speaker-style approximations; check audio and balance on real devices.
 - Document setup, the private asset workflow, accessibility and known limitations. Production builds include an application source archive and licence notices. The bundled DOSBox-derived DBOPL files carry GPL-2.0-or-later notices that conflict with the root file's LGPL emulator notice; resolve the remaining distribution questions described in [licence review](docu/LICENCE_REVIEW.md), and review game-asset rights before any wider distribution.
 - Deploy the app to an appropriate HTTPS host and test the production build. Never publish original game files as part of the site.
 - Consider cross-device progress sync only if desired; it requires a storage and privacy design. If a Play Store listing or Android package becomes a requirement, assess a Trusted Web Activity and Android signing first. Consider Expo or a native rewrite only for specific needs that the web app cannot meet.

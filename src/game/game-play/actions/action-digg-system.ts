@@ -13,7 +13,7 @@ export class ActionDiggSystem implements IActionSystem {
     public soundSystem = new SoundSystem();
     private sprite: Animation[] = [];
 
-    constructor(sprites: LemmingsSprite) {
+    constructor(sprites: LemmingsSprite, private readonly onDig: () => void = () => {}) {
         this.sprite.push(sprites.getAnimation(SpriteTypes.DIGGING, false));
         this.sprite.push(sprites.getAnimation(SpriteTypes.DIGGING, true));
     }
@@ -77,6 +77,7 @@ export class ActionDiggSystem implements IActionSystem {
             }
         }
 
+        if (removeCount > 0) this.onDig();
         return removeCount > 0;
     }
 }

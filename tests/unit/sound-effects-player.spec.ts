@@ -2,10 +2,28 @@ import { describe, expect, it, vi } from 'vitest';
 import { SoundEffectsPlayer } from '../../src/game/resources/sound/sound-effects-player';
 import type { AudioPlayer } from '../../src/game/resources/sound/audio-player';
 import type { SoundImagePlayer } from '../../src/game/resources/sound/sound-image-player';
+import type { SpeakerEffectsPlayer } from '../../src/game/resources/sound/speaker-effects-player';
+import { SoundEffect } from '../../src/game/game-play/sound-effects';
 
 const track = (id: number) => ({ id } as unknown as SoundImagePlayer);
 
 describe('sound effects lifecycle', () => {
+  it('routes speaker cues separately without cancelling a pending AdLib effect, and stops both', async () => {
+    let resolve!: (value: SoundImagePlayer) => void;
+    const player = { stop: vi.fn() };
+    const speaker = { play: vi.fn(), stop: vi.fn() };
+    const load = vi.fn(() => new Promise<SoundImagePlayer>(done => { resolve = done; }));
+    const effects = new SoundEffectsPlayer(load, () => player as unknown as AudioPlayer, speaker as unknown as SpeakerEffectsPlayer);
+    const pending = effects.play(SoundEffect.Exit);
+    await effects.play(SoundEffect.Nuke);
+    expect(speaker.play).toHaveBeenCalledWith(SoundEffect.Nuke);
+    expect(load).toHaveBeenCalledTimes(1);
+    resolve(track(SoundEffect.Exit));
+    await pending;
+    effects.stop();
+    expect(player.stop).toHaveBeenCalledOnce();
+    expect(speaker.stop).toHaveBeenCalledOnce();
+  });
   it('reuses one player and closes it when stopped', async () => {
     const player = { setTrack: vi.fn(), play: vi.fn(), stop: vi.fn() };
     const create = vi.fn(() => player as unknown as AudioPlayer);

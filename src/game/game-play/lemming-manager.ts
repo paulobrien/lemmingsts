@@ -65,7 +65,7 @@ import { TriggerManager } from './trigger-manager';
             this.actions[LemmingStateType.WALKING] = new ActionWalkSystem(lemmingsSprite);
             this.actions[LemmingStateType.FALLING] = new ActionFallSystem(lemmingsSprite);
             this.actions[LemmingStateType.JUMPING] = new ActionJumpSystem(lemmingsSprite);
-            this.actions[LemmingStateType.DIGGING] = new ActionDiggSystem(lemmingsSprite);
+            this.actions[LemmingStateType.DIGGING] = new ActionDiggSystem(lemmingsSprite, () => this.onSoundEffect.trigger(SoundEffect.Digger));
             this.actions[LemmingStateType.EXITING] = new ActionExitingSystem(lemmingsSprite, gameVictoryCondition);
             this.actions[LemmingStateType.FLOATING] = new ActionFloatingSystem(lemmingsSprite);
             this.actions[LemmingStateType.BLOCKING] = new ActionBlockerSystem(lemmingsSprite, triggerManager);
@@ -123,6 +123,14 @@ import { TriggerManager } from './trigger-manager';
                 const previousDirection = lem.lookRight ? 1 : -1;
                 const countdownFinishes = lem.countdownAction !== null && lem.countdown === 1;
                 let newAction = lem.process(this.level);
+                // Lemmix cues the PC-speaker effects after the fourth basher
+                // mask (frames 5 and 21) and the second miner mask (frame 2).
+                // https://github.com/ericlangedijk/Lemmix/blob/master/src/Game.pas#L3103
+                if (!countdownFinishes && newAction !== LemmingStateType.OUT_OFF_LEVEL && previousAction instanceof ActionBashSystem && lem.frameIndex % 16 === 5) {
+                    this.onSoundEffect.trigger(SoundEffect.Basher);
+                } else if (!countdownFinishes && newAction !== LemmingStateType.OUT_OFF_LEVEL && previousAction instanceof ActionMineSystem && lem.frameIndex === 2) {
+                    this.onSoundEffect.trigger(SoundEffect.Miner);
+                }
                 // DOS warns on frame 10 of each of the final three bricks.
                 // A finishing bomber countdown skips the builder action entirely.
                 if (!countdownFinishes && newAction === LemmingStateType.NO_STATE_TYPE && previousAction instanceof ActionBuildSystem &&

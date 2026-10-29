@@ -1,5 +1,9 @@
-/** Zero-based indices into the DOS ADLIB.DAT sound-effect table. */
+/** Zero-based ADLIB.DAT indices, with negative IDs for synthesized speaker cues. */
 export enum SoundEffect {
+    Digger = -1,
+    Basher = -2,
+    Miner = -3,
+    Nuke = -4,
     SelectSkill = 0,
     Entrance = 1,
     LetsGo = 2,

@@ -46,7 +46,7 @@ Progress and settings are stored locally per browser. They do not sync between d
 
 Hints are revealed one at a time on request. All 120 original levels have a project-authored solution and hints, and each recorded solution has passed the local completion test using the original game files. Separately obtained community recordings can provide additional compatibility checks. Some original DOS physics details still need further verification.
 
-Music and sound effects have separate switches and start off by default. The optional effects use the locally imported DOS AdLib data and cover the opening cues, skill selection and assignments, builder warnings, steel, Oh No, exits, splats, explosions, drowning, fire and triggered traps. Other gameplay effects are not yet connected. Effects are monophonic: a newer effect replaces the previous one. The existing AdLib interpreter uses a legacy Web Audio processor, and browsers may require a user interaction before audio can play.
+Music and sound effects have separate switches and start off by default. The optional effects use the locally imported DOS AdLib data and cover the opening cues, skill selection and assignments, builder warnings, steel, Oh No, exits, splats, explosions, drowning, fire and triggered traps. Digging, bashing, mining and the nuke alert use short synthesized square-wave approximations of the separate DOS PC-speaker effects; they are not original sound samples. Each effects channel is monophonic, and the short nuke alert takes priority over other speaker cues. The existing AdLib interpreter uses a legacy Web Audio processor, and browsers may require a user interaction before audio can play.
 
 ## Licence and acknowledgements
 

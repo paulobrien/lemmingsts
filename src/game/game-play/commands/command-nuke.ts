@@ -1,4 +1,5 @@
 import { Game } from '@/game/game';
+import { SoundEffect } from '../sound-effects';
 import { ICommand } from './command';
 
 /** Commands a all lemmings nuke */
@@ -28,6 +29,7 @@ export class CommandNuke implements ICommand {
 
         lemManager.doNukeAllLemmings();
         game.getVictoryCondition().doNuke();
+        game.onSoundEffect.trigger(SoundEffect.Nuke);
 
         return true;
     }

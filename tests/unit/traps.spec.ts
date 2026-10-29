@@ -158,7 +158,7 @@ describe('triggered traps', () => {
         const level = { width: 32, height: 32, hasGroundAt: () => true,
             clearGroundWithMask: () => undefined, isMinerProtectedAt: () => false } as unknown as Level;
         const removeOne = vi.fn();
-        Object.assign(manager, { level, lemmings: [first], triggerManager: triggers,
+        Object.assign(manager, { level, lemmings: [first], triggerManager: triggers, onSoundEffect: { trigger: vi.fn() },
             gameVictoryCondition: { getLeftCount: () => 0, removeOne }, nextNukingLemmingsIndex: -1 });
         for (let i = 0; i < waitFrames; i++) {
             manager.tick();
@@ -184,7 +184,7 @@ describe('triggered traps', () => {
         const level = { getGroundMaskLayer: () => ({ hasGroundAt: () => true }),
             clearGroundWithMask: () => undefined, isProtectedAt: () => false } as unknown as Level;
         const removeOne = vi.fn();
-        Object.assign(manager, { level, lemmings: [first], triggerManager: triggers,
+        Object.assign(manager, { level, lemmings: [first], triggerManager: triggers, onSoundEffect: { trigger: vi.fn() },
             gameVictoryCondition: { getLeftCount: () => 0, removeOne }, nextNukingLemmingsIndex: -1 });
         for (let i = 1; i <= 10; i++) {
             manager.tick();
@@ -212,7 +212,7 @@ describe('triggered traps', () => {
         const level = { getGroundMaskLayer: () => ({ hasGroundAt: () => false }),
             clearGroundWithMask: () => undefined } as unknown as Level;
         const removeOne = vi.fn();
-        Object.assign(manager, { level, actions, logging: { debug: vi.fn() }, lemmings: [first], triggerManager: triggers,
+        Object.assign(manager, { level, actions, logging: { debug: vi.fn() }, lemmings: [first], triggerManager: triggers, onSoundEffect: { trigger: vi.fn() },
             gameVictoryCondition: { getLeftCount: () => 0, removeOne }, nextNukingLemmingsIndex: -1 });
         manager.tick();
         expect(first.action).toBe(walker);
