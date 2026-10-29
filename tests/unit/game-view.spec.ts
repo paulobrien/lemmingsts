@@ -1,5 +1,5 @@
 // @vitest-environment jsdom
-import { beforeEach, describe, expect, it, vi } from 'vitest';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { createApp, defineComponent, h, nextTick, reactive } from 'vue';
 import GameView from '../../src/views/game-view.vue';
 import { GameStateTypes } from '../../src/game/game-state-types';
@@ -66,13 +66,21 @@ async function flushPromises() {
     await nextTick();
 }
 
+const mountedViews = new Set<() => void>();
+
 function mountView() {
     const container = document.createElement('div');
     document.body.appendChild(container);
     const app = createApp(GameView);
     app.component('RouterLink', defineComponent({ setup: (_props, { slots }) => () => h('a', slots.default?.()) }));
     app.mount(container);
-    return { container, unmount: () => { app.unmount(); container.remove(); } };
+    const unmount = () => {
+        if (!mountedViews.delete(unmount)) return;
+        app.unmount();
+        container.remove();
+    };
+    mountedViews.add(unmount);
+    return { container, unmount };
 }
 
 function button(container: HTMLElement, label: string): HTMLButtonElement {
@@ -82,6 +90,10 @@ function button(container: HTMLElement, label: string): HTMLButtonElement {
 }
 
 describe('game view lifecycle', () => {
+    afterEach(() => {
+        for (const unmount of mountedViews) unmount();
+    });
+
     beforeEach(() => {
         vi.clearAllMocks();
         localStorage.clear();
@@ -103,7 +115,7 @@ describe('game view lifecycle', () => {
         mock.zoomChange.handler?.(true);
         await nextTick();
         expect(button(wrapper.container, 'Reset zoom').disabled).toBe(false);
-        button(wrapper.container, 'Next level →').click();
+        button(wrapper.container, 'Next level').click();
         await flushPromises();
         expect(button(wrapper.container, 'Reset zoom').disabled).toBe(false);
         button(wrapper.container, 'Reset zoom').click();
@@ -141,7 +153,7 @@ describe('game view lifecycle', () => {
         expect(mock.effects.stop).toHaveBeenCalled();
     });
 
-    it('pauses, resumes, and stops the old game before changing level', async () => {
+    it('pauses, resumes, and stops the old game and music when the route changes', async () => {
         const wrapper = mountView();
         await flushPromises();
         button(wrapper.container, 'Start level').click();
@@ -153,11 +165,15 @@ describe('game view lifecycle', () => {
         button(wrapper.container, 'Resume').click();
         await nextTick();
         expect(mock.timer.isRunning()).toBe(true);
-        button(wrapper.container, 'Next level →').click();
+        expect(wrapper.container.querySelector('nav[aria-label="Level navigation"]')).toBeNull();
+        button(wrapper.container, 'Music off').click();
+        await flushPromises();
+        reactive(mock.route).query = { group: 0, level: 1 };
         await flushPromises();
         expect(mock.game.stop).toHaveBeenCalledOnce();
+        expect(mock.music.stop).toHaveBeenCalledOnce();
         expect(wrapper.container.textContent).toContain('Level 2');
-        expect(mock.replace).toHaveBeenCalledWith({ query: { group: 0, level: 1 } });
+        expect(mock.resources.getLevel).toHaveBeenLastCalledWith(0, 1);
         expect(button(wrapper.container, 'Start level').disabled).toBe(false);
         wrapper.unmount();
         expect(mock.stage.dispose).toHaveBeenCalledOnce();
@@ -219,7 +235,7 @@ describe('game view lifecycle', () => {
     it('does not reload again for its own level-navigation URL update', async () => {
         const wrapper = mountView();
         await flushPromises();
-        button(wrapper.container, 'Next level →').click();
+        button(wrapper.container, 'Next level').click();
         await flushPromises();
         expect(mock.resources.getLevel).toHaveBeenCalledTimes(2);
         reactive(mock.route).query = { group: 0, level: 1 };
@@ -252,7 +268,7 @@ describe('game view lifecycle', () => {
         await flushPromises();
         let finish!: (level: typeof mock.level) => void;
         mock.resources.getLevel.mockImplementationOnce(() => new Promise(resolve => { finish = resolve; }));
-        button(wrapper.container, 'Next level →').click();
+        button(wrapper.container, 'Next level').click();
         await flushPromises();
         expect(button(wrapper.container, 'Music off').disabled).toBe(true);
         button(wrapper.container, 'Music off').click();
@@ -523,7 +539,7 @@ describe('game view lifecycle', () => {
         button(wrapper.container, 'Another hint').click();
         await nextTick();
         expect(wrapper.container.textContent).toContain('Make the first lemming');
-        button(wrapper.container, 'Next level →').click();
+        button(wrapper.container, 'Next level').click();
         await flushPromises();
         expect(wrapper.container.textContent).not.toContain('Look for a place to dig');
         expect(wrapper.container.textContent).not.toContain('What could protect a lemming');
@@ -538,7 +554,7 @@ describe('game view lifecycle', () => {
         const wrapper = mountView();
         await flushPromises();
         expect(wrapper.container.textContent).not.toContain('Show a hint');
-        button(wrapper.container, 'Next level →').click();
+        button(wrapper.container, 'Next level').click();
         await flushPromises();
         expect(wrapper.container.textContent).toContain('Hints were verified for a different DOS data set. You can still play this level.');
         resolveFirst('verified');
