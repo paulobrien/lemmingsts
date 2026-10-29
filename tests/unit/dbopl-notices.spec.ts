@@ -8,6 +8,7 @@ describe('modified DOSBox OPL source notices', () => {
       const header = readFileSync(`src/game/resources/sound/DBOPL/${file}`, 'utf8').slice(0, 1200);
       expect(header).toContain('The DOSBox Team');
       expect(header).toContain('GNU General Public License');
+      expect(header).toContain('Modified 2021-01-13: updated import paths');
       expect(header).toContain('Modified 2026-10-28: corrected import-path case');
     },
   );

@@ -16,6 +16,7 @@
  *  Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA 02111-1307, USA.
  */
 
+/* Modified 2021-01-13: updated import paths. */
 /* Modified 2026-10-28: corrected import-path case for the modern build. */
 
 
