@@ -1,7 +1,10 @@
 // Cache only the application shell. The owner's imported game files remain in IndexedDB.
-const CACHE = 'lemmings-shell-v1';
+// A new cache also replaces any shell corrupted by older navigation handling.
+const CACHE = 'lemmings-shell-v2';
 const base = new URL('./', self.location.href);
 const appUrl = new URL('./', base).href;
+const indexPath = new URL('index.html', base).pathname;
+const gamePath = new URL('game/', base).pathname;
 
 self.addEventListener('install', event => {
   event.waitUntil((async () => {
@@ -31,6 +34,11 @@ self.addEventListener('fetch', event => {
   const url = new URL(request.url);
   if (request.method !== 'GET' || url.origin !== base.origin || !url.pathname.startsWith(base.pathname)) return;
   const navigation = request.mode === 'navigate';
+  const appDocument = url.pathname === base.pathname || url.pathname === indexPath;
+  // Vue owns only the home and game routes. Other HTML pages, such as the
+  // licence notices, must not replace or masquerade as the offline shell.
+  const gameRoute = url.pathname.startsWith(gamePath) && /^[^/]+\/?$/.test(url.pathname.slice(gamePath.length));
+  if (navigation && !appDocument && !gameRoute) return;
   const shellResource = /\.(?:js|css|webmanifest|png)$/.test(url.pathname) || url.pathname === new URL('data/config.json', base).pathname;
   if (!navigation && !shellResource) return;
   event.respondWith((async () => {
@@ -38,7 +46,8 @@ self.addEventListener('fetch', event => {
     try {
       const response = await fetch(request);
       if (response.ok) {
-        await cache.put(navigation ? appUrl : request, response.clone());
+        // Only an actual app document can refresh the canonical offline shell.
+        if (!navigation || appDocument) await cache.put(navigation ? appUrl : request, response.clone());
       } else {
         // A newly deployed build may no longer serve an older hashed asset.
         // Keep an already-open version working until its next reload.

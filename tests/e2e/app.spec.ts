@@ -19,6 +19,35 @@ test('explains local setup and rejects an incomplete import', async ({ page }) =
   expect(outgoingWrites).toEqual([])
 })
 
+test('keeps the offline app shell after visiting the licence notices', async ({ page, context }) => {
+  // Simulate an older installation whose cached shell was already replaced.
+  await page.goto('/third-party.html')
+  await page.evaluate(async () => {
+    const oldCache = await caches.open('lemmings-shell-v1')
+    await oldCache.put('/', new Response('<h1>Old cached notices</h1>', {
+      headers: { 'Content-Type': 'text/html' },
+    }))
+  })
+  await page.goto('/')
+  await page.evaluate(() => navigator.serviceWorker.ready)
+  await page.waitForFunction(() => !!navigator.serviceWorker.controller)
+  await expect.poll(() => page.evaluate(() => caches.has('lemmings-shell-v1'))).toBe(false)
+
+  // This is a real, separately served HTML document within the worker's
+  // scope. It must never be cached as the Vue app's canonical document.
+  await page.goto('/third-party.html')
+  await expect(page.getByRole('heading', { name: 'Source and licences' })).toBeVisible()
+
+  await context.setOffline(true)
+  await page.goto('/')
+  await expect(page.getByRole('heading', { name: "Let's get them home." })).toBeVisible()
+  await expect(page.getByRole('button', { name: 'Add your game files' })).toBeVisible()
+
+  // A direct navigation to a Vue route still needs the shell when offline.
+  await page.goto('/game/0')
+  await expect(page.getByRole('link', { name: '← Levels' })).toBeVisible()
+})
+
 test('imports the local DOS files, plays, and reloads offline', async ({ page, context }) => {
   test.skip(process.env.RUN_PRIVATE_GAME_TESTS !== '1', 'Requires local, untracked original game files')
   const directory = resolve('dos/lemmings')
