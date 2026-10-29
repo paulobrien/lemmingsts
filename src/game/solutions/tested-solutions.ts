@@ -926,6 +926,16 @@ export const TESTED_SOLUTIONS: readonly TestedSolution[] = [
   },
   {
     groupIndex: 3,
+    levelIndex: 26,
+    replay: '91=s6&91=l0&166=s8&166=l1&170=i89&230=s6&230=l1&660=l21&663=l22&666=l23',
+    hints: [
+      'The whole group must reach the exit in a minute, so release timing matters.',
+      'Bash through the obstacle with the first lemming, then have the second dig a short holding pit and continue bashing below.',
+      'Raise the release rate after starting the pit; near the far end, use extra Bashers on the lemmings who would otherwise turn back.',
+    ],
+  },
+  {
+    groupIndex: 3,
     levelIndex: 27,
     replay: '192=s6&192=l0&432=s5&432=l0&632=l0&760=s8&760=l0&813=l0&845=s5&845=l0&926=l0&1132=l0&1338=l0&1544=l0&1750=l0&1957=l0&2159=l0&2356=s6&2356=l0&2376=s8&2376=l0&2536=s6&2536=l0&2570=s5&2570=l0&2766=s6&2766=l0&2796=s8&2796=l0&2904=s6&2904=l0&2934=s5&2934=l0&3180=s6&3180=l0&3211=s8&3211=l0&3403=s6&3403=l0&3437=s5&3437=l0&3628=l0&3709=l0&3789=l0&3870=l0&3952=l0&4034=s6&4034=l0&4263=s5&4263=l0&4463=l0&4663=l0&5089=l0&5471=l0&5472=s6&5472=l0&5554=s5&5554=l0&6071=l0&6351=s6&6351=l0',
     hints: [
