@@ -12,7 +12,7 @@ it('packages application source and notices without private game files', () => {
   const root = mkdtempSync(join(tmpdir(), 'lemmings-source-'));
   const files = [
     '.gitignore', 'LICENSE', 'README.md', 'index.html', 'package.json', 'package-lock.json', 'tsconfig.json', 'vite.config.ts', 'playwright.config.ts',
-    'scripts/verify-public-data.ts', 'scripts/package-source.mjs', 'docu/LICENCE_REVIEW.md', 'docu/ANDROID_DEVICE_CHECK.md', 'docu/LEMMIX_REPLAY_IMPORT.md',
+    'scripts/verify-public-data.ts', 'scripts/package-source.mjs', 'scripts/package-local.mjs', 'docu/LICENCE_REVIEW.md', 'docu/ANDROID_DEVICE_CHECK.md', 'docu/LEMMIX_REPLAY_IMPORT.md',
     'public/sw.js', 'public/manifest.webmanifest', 'public/favicon.ico', 'public/data/config.json',
     'public/data/README.md', 'public/data/lemmings/README.md', 'public/data/lemmings_ohNo/README.md',
     'public/data/lemmings_Holiday93/README.md', 'public/data/lemmings_Holiday94/README.md',
@@ -20,7 +20,7 @@ it('packages application source and notices without private game files', () => {
     'public/icons/icon-192.png', 'public/icons/icon-512.png', 'public/third-party.html',
     'public/licenses/GPL-2.0.txt', 'public/licenses/LGPL-2.1.txt', 'src/main.ts', 'src/private.dat',
     'tests/unit/example.spec.ts', 'tests/integration/private.tmp.spec.ts',
-    'public/data/private.dat', 'dos/lemmings/LEVEL000.DAT',
+    'public/data/private.dat', 'dos/lemmings/LEVEL000.DAT', 'dist/data/local-game/main.dat',
     ...['vue', 'vue-router', 'fflate', '@vue/shared', '@vue/reactivity', '@vue/runtime-core', '@vue/runtime-dom']
       .map(name => `node_modules/${name}/LICENSE`),
   ];
@@ -37,6 +37,7 @@ it('packages application source and notices without private game files', () => {
     expect(archive['tests/unit/example.spec.ts']).toBeDefined();
     expect(archive['public/data/lemmings/README.md']).toBeDefined();
     expect(archive['docu/LEMMIX_REPLAY_IMPORT.md']).toBeDefined();
+    expect(archive['scripts/package-local.mjs']).toBeDefined();
     expect(archive['tests/integration/private.tmp.spec.ts']).toBeUndefined();
     expect(archive['public/licenses/GPL-2.0.txt']).toBeDefined();
     expect(Object.keys(archive).some(name => /\.dat$/i.test(name) || name.startsWith('dos/'))).toBe(false);

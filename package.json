@@ -10,6 +10,7 @@
     "dev": "vite",
     "serve": "vite",
     "build": "vite build && node scripts/package-source.mjs",
+    "build:local": "npm run build && node --experimental-strip-types scripts/package-local.mjs",
     "preview": "vite preview",
     "typecheck": "vue-tsc --noEmit",
     "test": "vitest run",

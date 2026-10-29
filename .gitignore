@@ -30,3 +30,4 @@ pnpm-debug.log*
 /public/data/**/*.[eE][xX][eE]
 /public/data/**/*.[bB][aA][tT]
 /public/data/**/*.[cC][oO][mM]
+/public/data/local-game/
