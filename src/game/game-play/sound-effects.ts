@@ -1,5 +1,6 @@
 /** Zero-based indices into the DOS ADLIB.DAT sound-effect table. */
 export enum SoundEffect {
+    SelectSkill = 0,
     Entrance = 1,
     LetsGo = 2,
     Assign = 3,

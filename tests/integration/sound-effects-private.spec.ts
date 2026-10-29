@@ -33,7 +33,7 @@ it.skipIf(process.env.RUN_PRIVATE_GAME_TESTS !== '1')('renders and finishes the 
       new File([Uint8Array.from(await readFile(`dos/lemmings/${name}`))], name))));
     const factory = new GameFactory('/data');
     const resources = (await factory.getGameResources(GameTypes.LEMMINGS))!;
-    for (const effect of [SoundEffect.Entrance, SoundEffect.LetsGo, SoundEffect.Assign, SoundEffect.OhNo,
+    for (const effect of [SoundEffect.SelectSkill, SoundEffect.Entrance, SoundEffect.LetsGo, SoundEffect.Assign, SoundEffect.OhNo,
       SoundEffect.Splat, SoundEffect.Steel, SoundEffect.Explosion, SoundEffect.Fire, SoundEffect.Exit, SoundEffect.Drowning, SoundEffect.BuilderWarning,
       5, 6, 8, 13, 14]) {
       const track = await resources.getSoundTrack(effect);

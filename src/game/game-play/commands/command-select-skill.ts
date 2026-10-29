@@ -1,6 +1,7 @@
 import { Game } from '@/game/game';
 import { LogHandler } from '@/game/utilities/log-handler';
 import { SkillTypes } from '../skill-types';
+import { SoundEffect } from '../sound-effects';
 import { ICommand } from './command';
 
 /** Commands actions on lemmings the user has given */
@@ -39,7 +40,9 @@ export class CommandSelectSkill implements ICommand {
             return false;
         }
 
-        return gameSkill.setSelectedSkill(this.skill);
+        if (!gameSkill.setSelectedSkill(this.skill)) return false;
+        game.onSoundEffect.trigger(SoundEffect.SelectSkill);
+        return true;
     }
 }
 

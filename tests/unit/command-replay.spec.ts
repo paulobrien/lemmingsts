@@ -34,6 +34,7 @@ describe('replay commands', () => {
         original.commands.queueCommand(new CommandSelectSkill(SkillTypes.BUILDER));
         original.commands.queueCommand(new CommandLemmingsAction(7));
         expect(original.actions).toEqual(['select:5', 'assign:7:5']);
+        expect(original.sound.trigger).toHaveBeenCalledWith(0);
         expect(original.sound.trigger).toHaveBeenCalledWith(3);
         expect(original.commands.serialize()).toBe('0=s5&0=l7');
 
