@@ -880,6 +880,16 @@ export const TESTED_SOLUTIONS: readonly TestedSolution[] = [
   },
   {
     groupIndex: 3,
+    levelIndex: 11,
+    replay: '54=l0&148=s5&148=l1&405=s8&405=l0&665=s6&665=l0&816=s8&816=l0&1125=s5&1125=l0&1158=s7&1158=l0&1291=s5&1291=l0&1483=l0&1675=l0&1867=l0&2111=s8&2111=l0&2231=s6&2231=l0&2447=s5&2447=l1&2748=l0&2940=l0&3132=l0&3148=l0&3340=l0&3388=l0&3580=l0&3612=l0&3804=l0',
+    hints: [
+      'Send a Climber ahead while preparing a staircase for the group above.',
+      'The scout must dig and build down to the lower route, then open a passage beneath the steel.',
+      'Release the upper group once the lower passage is underway; at the far side, zigzag the scout’s stairs high enough to reach the exit.',
+    ],
+  },
+  {
+    groupIndex: 3,
     levelIndex: 12,
     replay: '85=s5&85=l0&98=s8&98=l1&414=s5&414=l0&606=s6&606=l0&620=s8&620=l0&636=s6&636=l0&650=s1&650=l1&799=s6&799=l1',
     hints: [
