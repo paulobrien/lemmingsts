@@ -445,7 +445,7 @@ export class DisplayImage {
                     const outX = left + x, pixel = nativeSprite.pixels[sourceY * nativeSprite.width + x];
                     if (outX < 0 || outX >= width || !(pixel >>> 24)) continue;
                     const solid = mask?.hasGroundAt(Math.floor(outX / 2), Math.floor(outY / 2)) ?? false;
-                    if ((noOverwrite && solid) || (onlyOverwrite && !solid)) continue;
+                    if (mask && ((noOverwrite && solid) || (onlyOverwrite && !solid))) continue;
                     output[outY * width + outX] = pixel;
                 }
             }

@@ -71,8 +71,12 @@ test('composites native terrain and sprites without affecting the DOS comparison
     game.drawFrameFlags(object, 0, 0, new DrawProperties(true, false, true, false))
     stage.redraw()
     const onlyOverwrite = { solid: pixel(canvas, 0, 0), empty: pixel(canvas, 2, 0) }
+    game.setBackground(dos)
+    game.drawFrameFlags(object, 0, 0, new DrawProperties(true, false, true, false))
+    stage.redraw()
+    const onlyOverwriteWithoutMask = { first: pixel(canvas, 0, 0), second: pixel(canvas, 2, 0) }
     stage.dispose()
-    return { values, moved, ordered, fallback, noOverwrite, onlyOverwrite }
+    return { values, moved, ordered, fallback, noOverwrite, onlyOverwrite, onlyOverwriteWithoutMask }
   })
   expect(resultPixels.values.nativeTerrain).toEqual([0, 0, 80, 255])
   expect(resultPixels.values.nativeSprite).toEqual([0, 255, 0, 255])
@@ -87,4 +91,5 @@ test('composites native terrain and sprites without affecting the DOS comparison
   expect(resultPixels.fallback).toEqual({ errors: 1, noNative: true, terrain: [0, 0, 0, 255] })
   expect(resultPixels.noOverwrite).toEqual({ solid: [0, 0, 80, 255], empty: [255, 255, 0, 255] })
   expect(resultPixels.onlyOverwrite).toEqual({ solid: [0, 0, 255, 255], empty: [0, 0, 80, 255] })
+  expect(resultPixels.onlyOverwriteWithoutMask).toEqual({ first: [0, 0, 255, 255], second: [255, 255, 0, 255] })
 })
