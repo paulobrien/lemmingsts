@@ -26,7 +26,7 @@ function wav(sample = 128): Uint8Array<ArrayBuffer> {
 const voices = (sample = 128) => WINDOWS_VOICE_FILES.map(name => new File([wav(sample)], name.toLowerCase()));
 const game = () => REQUIRED_LEMMINGS_FILES.map((name, i) => new File([Uint8Array.from(syntheticDosData(name, i + 1))], name));
 const midi = () => Uint8Array.from([77, 84, 104, 100, 0, 0, 0, 6, 0, 0, 0, 1, 0, 96,
-  77, 84, 114, 107, 0, 0, 0, 4, 0, 255, 47, 0]);
+  77, 84, 114, 107, 0, 0, 0, 12, 0, 144, 60, 100, 48, 128, 60, 0, 0, 255, 47, 0]);
 
 describe('optional Windows voice files', () => {
   beforeEach(async () => { await clearLemmingsFiles(); });
@@ -117,4 +117,17 @@ describe('optional Windows voice files', () => {
     expect(await getWindowsAudioFile('splat.wav')).toBeUndefined();
     expect(await getWindowsAudioFile('TIM1P.MID')).toBeUndefined();
   });
+
+  it.each(['missing terminator', 'zero duration', 'unsupported timing'] as const)(
+    'rejects a structurally valid MIDI replacement with %s before replacing existing audio', async problem => {
+      await importWindowsVoiceFiles([...voices(77), new File([midi()], 'TIM1P.MID')]);
+      const malformed = midi();
+      if (problem === 'missing terminator') malformed[32] = 1;
+      else if (problem === 'zero duration') malformed[26] = 0;
+      else malformed[12] = 0x80;
+      await expect(importWindowsVoiceFiles([...voices(99), new File([malformed], 'TIM1P.MID')]))
+        .rejects.toThrow('TIM1P.MID is not a supported MIDI file');
+      expect(await getWindowsAudioFile('TIM1P.MID')).toEqual(midi().buffer);
+      expect(await getWindowsVoiceFile('OHNO.WAV')).toEqual(wav(77).buffer);
+    });
 });

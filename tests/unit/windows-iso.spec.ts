@@ -31,7 +31,7 @@ function testIso(): Uint8Array<ArrayBuffer> {
   next = record(22 * BLOCK, 'LETSGO.WAV;1', 24, 48, false);
   next = record(next, 'OHNO.WAV;1', 25, 48, false);
   record(next, 'YIPPEE.WAV;1', 26, 48, false);
-  record(23 * BLOCK, 'TIM1P.MID;1', 27, 26, false);
+  record(23 * BLOCK, 'TIM1P.MID;1', 27, 34, false);
   for (let i = 24; i <= 26; i++) {
     const start = i * BLOCK;
     text(start, 'RIFF'); view.setUint32(start + 4, 40, true); text(start + 8, 'WAVE');
@@ -41,7 +41,7 @@ function testIso(): Uint8Array<ArrayBuffer> {
     view.setUint32(start + 40, 4, true); bytes.fill(i, start + 44, start + 48);
   }
   bytes.set([77, 84, 104, 100, 0, 0, 0, 6, 0, 0, 0, 1, 0, 96,
-    77, 84, 114, 107, 0, 0, 0, 4, 0, 255, 47, 0], 27 * BLOCK);
+    77, 84, 114, 107, 0, 0, 0, 12, 0, 144, 60, 100, 48, 128, 60, 0, 0, 255, 47, 0], 27 * BLOCK);
   return bytes;
 }
 
