@@ -12,10 +12,12 @@ test('plays a complete level using Windows artwork from an ISO', async ({ page }
     .filter(name => name.toLowerCase().endsWith('.dat'))
     .map(name => resolve('dos/lemmings', name))
   await page.goto('/')
-  await page.locator('input[type=file]').first().setInputFiles(files)
-  await expect(page.getByRole('link', { name: 'Play Lemmings' })).toBeVisible()
+  // Import the Windows disc first: it must be stored without claiming the DOS-based engine is ready.
   await page.locator('input[accept*=".iso"]').setInputFiles(process.env.LEMMINGS_WINDOWS_ISO!)
   await expect(page.getByText('Windows audio and graphics added to this device.')).toBeVisible({ timeout: 30_000 })
+  await expect(page.getByRole('link', { name: 'Play Lemmings' })).toHaveCount(0)
+  await page.locator('input[type=file]').first().setInputFiles(files)
+  await expect(page.getByRole('link', { name: 'Play Lemmings' })).toBeVisible()
   await page.getByRole('link', { name: 'Play Lemmings' }).click()
   await expect(page.getByRole('button', { name: 'Start level' })).toBeEnabled()
 
