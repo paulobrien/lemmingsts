@@ -134,6 +134,8 @@ test('keeps full-resolution Windows toolbar artwork behind the HUD', async ({ pa
   })
   expect(actual.values).toEqual([[255, 0, 0, 255], [192, 192, 192, 255], [255, 255, 255, 255], [128, 128, 128, 255]])
   expect(actual.beforeEmpty).toEqual([255, 255, 255, 255])
-  expect(actual.afterEmpty).toEqual([0, 0, 0, 255])
+  // Once a skill count reaches zero, its former digit is cleared to the
+  // Windows toolbar's grey background rather than the DOS black strip.
+  expect(actual.afterEmpty).toEqual([192, 192, 192, 255])
   expect(actual.dosAfterWindows).toEqual({ pixel: [0, 0, 0, 255], native: false })
 })
