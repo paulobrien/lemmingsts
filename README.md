@@ -44,6 +44,8 @@ On first visit, the app checks for the same-origin manifest, downloads and valid
 
 `npm run build` is the default, game-file-free build and clears the prior `dist/` output, including any deployment bundle. An alternative source directory can be supplied to the opt-in build with `LEMMINGS_DOS_DIR=/path/to/files npm run build:local`. The host must serve the generated JSON manifest and DAT files as static files on the same origin; authentication redirects or an HTML fallback for a missing file cannot act as a bundle.
 
+To bundle Windows audio as well, place the Windows `SOUND` and `MUSIC` folders in the ignored `dos/windows-audio/` directory before running `npm run build:local`, or set `LEMMINGS_WINDOWS_AUDIO_DIR` to a directory containing those folders. The bundle is separate from the DOS bundle and is imported without overwriting audio already saved or deliberately removed on a device. Anyone who can access the deployment can download the bundled audio. The standard build and source archive contain no game audio.
+
 ## Play and install
 
 Use **Level selection** below the game before starting or after finishing. During play, open **Pause** to change levels, restart or leave fullscreen. Navigation stays out of the game header.
@@ -60,7 +62,9 @@ In a level, open **Display settings** to choose **Original** or the experimental
 
 Music and sound effects have separate switches and start off by default. Music can be previewed before starting a level; that preview suspends while the tab is hidden. The AdLib effects include opening cues, skill selection and assignments, builder warnings, steel, Oh No, exits, splats, explosions, drowning, fire and triggered traps. Each effects channel is monophonic; the short nuke alert takes priority over other speaker cues. The AdLib interpreter uses a legacy Web Audio processor, and browsers may require user interaction before audio can play.
 
-The original DOS AdLib effects are synthesized cues, not the recorded lemming voices heard in some other editions. This player does not currently import those sampled voices.
+The original DOS AdLib effects are synthesized cues, not the recorded lemming voices heard in some other editions. To use Windows audio, first import the DOS game, then choose **Add Windows audio** and select your Windows Lemmings ISO, a ZIP, or the WAV and MIDI files from the Windows game; alternatively choose its extracted game folder. The three speech files `LETSGO.WAV`, `OHNO.WAV` and `YIPPEE.WAV` are required; other recognized effects and MIDI tracks are optional. Choose **Windows audio** under **Audio style** and turn on Sound or Music in a level. Missing effects fall back to DOS audio. Files remain on the device and are not included in progress backups.
+
+Windows MIDI music is experimental: an offline General MIDI synthesizer plays the files with approximate instrument sounds, and the track sequence is not guaranteed to match the Windows game. The audio-style preference is stored per device, independently of progress backups.
 
 After an update, reopen the home page online to refresh the cached app; close and reopen any older tabs if they still show the previous version. Avoid clearing site data as an update fix: it removes imported files and progress.
 

@@ -30,7 +30,7 @@ export function packageSource(root, output) {
   ]) add(path);
   mkdirSync(join(root, 'dist/licenses'), { recursive: true });
   writeFileSync(join(root, output), zipSync(entries, { level: 9 }));
-  const notices = ['vue', 'vue-router', 'fflate', '@vue/shared', '@vue/reactivity', '@vue/runtime-core', '@vue/runtime-dom']
+  const notices = ['vue', 'vue-router', 'fflate', 'webaudio-tinysynth', '@vue/shared', '@vue/reactivity', '@vue/runtime-core', '@vue/runtime-dom']
     .map(name => `--- ${name} ---\n${readFileSync(join(root, 'node_modules', name, 'LICENSE'), 'utf8')}`)
     .join('\n\n');
   writeFileSync(join(root, 'dist/licenses/project-notice.txt'), readFileSync(join(root, 'LICENSE')));

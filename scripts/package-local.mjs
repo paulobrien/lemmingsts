@@ -62,6 +62,12 @@ if (process.argv[1] && fileURLToPath(import.meta.url) === resolve(process.argv[1
   try {
     const destination = packageLocalGame(resolve(process.env.LEMMINGS_DOS_DIR || 'dos/lemmings'), resolve('dist'));
     console.warn(`Game files were added to ${destination}. Anyone with access to this deployment can download them. Use an authenticated host if the files must remain private.`);
+    const audioDirectory = resolve(process.env.LEMMINGS_WINDOWS_AUDIO_DIR || 'dos/windows-audio');
+    if (process.env.LEMMINGS_WINDOWS_AUDIO_DIR || existsSync(audioDirectory)) {
+      const { packageWindowsAudio } = await import('./package-windows-audio.mjs');
+      const audio = packageWindowsAudio(audioDirectory, resolve('dist'));
+      console.warn(`Windows audio was added to ${audio}. Anyone with access to this deployment can download it.`);
+    }
   } catch (error) {
     console.error(error instanceof Error ? error.message : error);
     process.exitCode = 1;
