@@ -2,6 +2,7 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { createApp, defineComponent, h, nextTick } from 'vue';
 import MainView from '../../src/views/main-view.vue';
+import { readGameMode, readGameModePreference, writeGameMode } from '../../src/game/game-mode';
 
 const mock = vi.hoisted(() => ({
   bundled: vi.fn(async (): Promise<'imported' | 'existing' | 'absent'> => 'absent'),
@@ -88,6 +89,46 @@ describe('home setup', () => {
     expect(view.container.textContent).toContain('Add DOS files');
     expect(view.container.textContent).not.toContain('Game files added to this device.');
     view.unmount();
+  });
+
+  it('keeps Windows-only play available when browser preferences cannot be saved', async () => {
+    mock.hasAudio.mockResolvedValue(true);
+    mock.hasWindowsGame.mockResolvedValue(true);
+    mock.hasStandaloneGraphics.mockResolvedValue(true);
+    const spy = vi.spyOn(Storage.prototype, 'setItem').mockImplementation(() => { throw new Error('QuotaExceededError'); });
+    const view = await mount();
+    try {
+      expect(view.container.querySelector<HTMLSelectElement>('.game-mode select')!.value).toBe('windows');
+      expect(view.container.querySelector('a.primary-button')).not.toBeNull();
+      expect(view.container.querySelector('.level-picker')).not.toBeNull();
+      expect(view.container.textContent).toContain('Game mode changed for this visit, but this browser could not save your preference.');
+      // The game view reads this function when navigating from the home screen.
+      expect(readGameMode()).toBe('windows');
+      expect(readGameModePreference()).toBeNull();
+    } finally { view.unmount(); spy.mockRestore(); writeGameMode('dos'); }
+  });
+
+  it('uses an unsaved manual choice for play and retains it when returning home', async () => {
+    mock.hasFiles.mockResolvedValue(true);
+    mock.hasAudio.mockResolvedValue(true);
+    mock.hasWindowsGame.mockResolvedValue(true);
+    mock.hasStandaloneGraphics.mockResolvedValue(true);
+    let view = await mount();
+    const spy = vi.spyOn(Storage.prototype, 'setItem').mockImplementation(() => { throw new Error('blocked'); });
+    try {
+      const select = view.container.querySelector<HTMLSelectElement>('.game-mode select')!;
+      select.value = 'dos';
+      select.dispatchEvent(new Event('change', { bubbles: true }));
+      await nextTick();
+      expect(select.value).toBe('dos');
+      expect(readGameMode()).toBe('dos');
+      expect(readGameModePreference()).toBe('dos');
+      expect(view.container.textContent).toContain('could not save your preference');
+      view.unmount();
+      view = await mount();
+      expect(view.container.querySelector<HTMLSelectElement>('.game-mode select')!.value).toBe('dos');
+      expect(view.container.querySelector('a.primary-button')).not.toBeNull();
+    } finally { view.unmount(); spy.mockRestore(); writeGameMode('dos'); }
   });
 
   it('offers play when deployment files were successfully installed locally', async () => {

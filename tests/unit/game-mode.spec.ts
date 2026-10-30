@@ -4,7 +4,7 @@ import { readGameMode, readGameModePreference, writeGameMode } from '../../src/g
 
 describe('device game mode', () => {
   beforeEach(() => localStorage.clear());
-  afterEach(() => vi.restoreAllMocks());
+  afterEach(() => { vi.restoreAllMocks(); writeGameMode('dos'); });
   it('defaults to DOS and stores a single explicit mode', () => {
     expect(readGameMode()).toBe('dos');
     expect(writeGameMode('windows')).toBe(true);
@@ -43,5 +43,32 @@ describe('device game mode', () => {
     vi.spyOn(Storage.prototype, 'setItem').mockImplementation(() => { throw Error('blocked'); });
     expect(readGameMode()).toBe('dos');
     expect(writeGameMode('windows')).toBe(false);
+    expect(readGameMode()).toBe('windows');
+    expect(readGameModePreference()).toBe('windows');
+  });
+  it('preserves an unsaved explicit choice across automatic availability switches', () => {
+    const spy = vi.spyOn(Storage.prototype, 'setItem').mockImplementation(() => { throw Error('full'); });
+    expect(writeGameMode('windows')).toBe(false);
+    expect(writeGameMode('dos', false)).toBe(false);
+    expect(readGameMode()).toBe('dos');
+    expect(readGameModePreference()).toBe('windows');
+    spy.mockRestore();
+    expect(writeGameMode('windows', false)).toBe(true);
+    expect(readGameMode()).toBe('windows');
+    expect(readGameModePreference()).toBe('windows');
+    expect(localStorage.getItem('lemmings.game-mode.v1')).toBe('windows');
+    expect(localStorage.getItem('lemmings.game-mode.preference.v1')).toBe('windows');
+  });
+  it('keeps the chosen edition consistent if only the second storage write fails', () => {
+    writeGameMode('dos');
+    const setItem = Storage.prototype.setItem;
+    vi.spyOn(Storage.prototype, 'setItem').mockImplementation(function (this: Storage, key: string, value: string) {
+      if (key === 'lemmings.game-mode.v1') throw Error('full');
+      setItem.call(this, key, value);
+    });
+    expect(writeGameMode('windows')).toBe(false);
+    expect(readGameMode()).toBe('windows');
+    expect(readGameModePreference()).toBe('windows');
+    expect(localStorage.getItem('lemmings.game-mode.v1')).toBe('dos');
   });
 });

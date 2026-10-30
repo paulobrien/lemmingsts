@@ -14,6 +14,7 @@
                 <option value="windows" :disabled="!windowsReady">Windows{{ windowsReady ? '' : ' (add complete Windows files)' }}</option>
               </select>
             </label>
+            <p v-if="modeMessage" class="status-message" role="status">{{ modeMessage }}</p>
             <p v-if="gameMode === 'windows' && !windowsReady" class="hint" role="status">Windows files are not ready on this device. Add them below or choose DOS to play.</p>
             <div class="level-picker" v-if="groups.length">
               <label>Difficulty <select v-model.number="selectedGroup" @change="selectedLevel = 0"><option v-for="(group, index) in groups" :key="group.name" :value="index">{{ group.name }}</option></select></label>
@@ -116,6 +117,7 @@ const checkingAutomaticFiles = ref(true);
 const message = ref('');
 const backupMessage = ref('');
 const voiceMessage = ref('');
+const modeMessage = ref('');
 const voicesReady = ref(false);
 const audioReady = ref(false);
 const graphicsReady = ref(false);
@@ -224,7 +226,8 @@ watch([gameMode, windowsReady, dosReady], async ([mode, hasWindows, hasDos]) => 
   if (desired && mode !== desired) {
     ++groupRequest;
     groups.value = [];
-    if (writeGameMode(desired, false)) gameMode.value = desired;
+    modeMessage.value = writeGameMode(desired, false) ? '' : 'Game mode changed for this visit, but this browser could not save your preference.';
+    gameMode.value = desired;
     return;
   }
   const generation = ++groupRequest;
@@ -288,7 +291,10 @@ async function removeVoices() {
   try {
     await clearWindowsFiles();
     await refreshVoices();
-    if (gameMode.value === 'windows' && writeGameMode('dos', false)) gameMode.value = 'dos';
+    if (gameMode.value === 'windows') {
+      modeMessage.value = writeGameMode('dos', false) ? '' : 'Game mode changed for this visit, but this browser could not save your preference.';
+      gameMode.value = 'dos';
+    }
     voiceMessage.value = 'Windows files removed from this browser.';
   }
   catch { voiceMessage.value = 'Could not remove the Windows files. Please try again.'; }
@@ -297,11 +303,12 @@ async function removeVoices() {
 function onGameModeChange(event: Event) {
   const select = event.target as HTMLSelectElement;
   const mode = select.value;
-  if ((mode !== 'dos' && mode !== 'windows') || (mode === 'windows' && !windowsReady.value) || (mode === 'dos' && !dosReady.value) || !writeGameMode(mode)) {
+  if ((mode !== 'dos' && mode !== 'windows') || (mode === 'windows' && !windowsReady.value) || (mode === 'dos' && !dosReady.value)) {
     select.value = gameMode.value;
     voiceMessage.value = 'Could not select that game mode. Check the game files and browser storage.';
     return;
   }
+  modeMessage.value = writeGameMode(mode) ? '' : 'Game mode changed for this visit, but this browser could not save your preference.';
   gameModePreference.value = mode;
   gameMode.value = mode;
   voiceMessage.value = '';
