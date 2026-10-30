@@ -12,7 +12,10 @@ const sprite = (width: number, height: number): WindowsSpriteFrame => ({
 function validFrames() {
   const frames = Array.from({ length: 354 }, () => sprite(16, 16));
   frames[335] = sprite(16, 22);
-  for (let index = 349; index <= 353; index++) frames[index] = sprite(16, 8);
+  for (let index = 349; index <= 353; index++) {
+    frames[index] = sprite(16, 8);
+    frames[index].mask[index - 349 + 10] = 1;
+  }
   return frames;
 }
 
@@ -22,13 +25,14 @@ describe('Windows gameplay masks', () => {
     const masks = createWindowsMaskProvider(new Uint8Array());
     expect(masks.GetMask(MaskTypes.BASHING_R).length).toBe(4);
     expect(masks.GetMask(MaskTypes.MINEING_L).length).toBe(2);
-    expect(masks.GetMask(MaskTypes.NUMBERS).length).toBe(6);
+    expect(masks.GetMask(MaskTypes.NUMBERS).length).toBe(9);
     const mine = masks.GetMask(MaskTypes.MINEING_L).getMask(0);
     expect([mine.offsetX, mine.offsetY]).toEqual([-7, -16]);
     expect(mine.at(0, 0)).toBe(true);
     expect(mine.at(1, 0)).toBe(false);
     expect(masks.GetMask(MaskTypes.NUMBERS).getMask(0).getMask().some(Boolean)).toBe(false);
-    expect(masks.GetMask(MaskTypes.NUMBERS).getMask(5).getMask().some(Boolean)).toBe(true);
+    expect(masks.GetMask(MaskTypes.NUMBERS).getMask(4).getMask()[14]).toBe(1); // 5
+    expect(masks.GetMask(MaskTypes.NUMBERS).getMask(8).getMask()[10]).toBe(1); // 1
   });
   it('rejects missing, malformed, or empty gameplay masks', () => {
     decoded.frames = validFrames().slice(0, 350);

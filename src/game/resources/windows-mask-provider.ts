@@ -24,8 +24,8 @@ export function createWindowsMaskProvider(bytes: Uint8Array): MaskProvider {
   lists[MaskTypes.MINEING_R] = new MaskList([344, 345].map(i => frame(i, 16, 16, -8, -16)));
   lists[MaskTypes.MINEING_L] = new MaskList([346, 347].map(i => frame(i, 16, 16, -7, -16)));
   lists[MaskTypes.EXPLODING] = new MaskList([frame(335, 16, 22, -8, -14)]);
-  // Only 1–5 appear in the bomber countdown. Slot zero is never rendered.
+  // The DOS engine requests slots 4–8 for countdown digits 5–1.
   const blank = new Mask(16, 8, -8, -17, new Int8Array(128));
-  lists[MaskTypes.NUMBERS] = new MaskList([blank, ...[349, 350, 351, 352, 353].map(i => frame(i, 16, 8, -8, -17))]);
+  lists[MaskTypes.NUMBERS] = new MaskList([blank, blank, blank, blank, ...[353, 352, 351, 350, 349].map(i => frame(i, 16, 8, -8, -17))]);
   return new MaskProvider(lists);
 }
