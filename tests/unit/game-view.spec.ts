@@ -55,8 +55,9 @@ const mock = vi.hoisted(() => {
     const replace = vi.fn(async () => undefined);
     const route = { params: { gameType: '1' }, query: {} as Record<string, string | number> };
     const verifyHints = vi.fn(async (): Promise<'verified' | 'different' | 'unavailable'> => 'verified');
+    const verifyWindowsHints = vi.fn(async (): Promise<'verified' | 'different' | 'unavailable'> => 'verified');
     const exampleMove = vi.fn(async (): Promise<{ x: number; y: number; skill: number; gameSeconds: number } | null> => ({ x: 100, y: 60, skill: 8, gameSeconds: 5 }));
-    return { timer, level, display, stage, game, skills, resources, music, midiContext, midiSynth, getWindowsAudioFile, prepareWindowsTerrain, prepareWindowsSprites, prepareWindowsObjects, config, getGame, replace, route, endEvent, soundEvent, effects, assignmentEvent, nukeRequest, verifyHints, exampleMove, graphicsError, zoomChange };
+    return { timer, level, display, stage, game, skills, resources, music, midiContext, midiSynth, getWindowsAudioFile, prepareWindowsTerrain, prepareWindowsSprites, prepareWindowsObjects, config, getGame, replace, route, endEvent, soundEvent, effects, assignmentEvent, nukeRequest, verifyHints, verifyWindowsHints, exampleMove, graphicsError, zoomChange };
 });
 
 vi.mock('vue-router', () => ({
@@ -65,7 +66,7 @@ vi.mock('vue-router', () => ({
 }));
 vi.mock('@/game/view/stage', () => ({ Stage: vi.fn(function () { return mock.stage; }) }));
 vi.mock('@/game/view/keyboard-targeting', () => ({ KeyboardTargeting: vi.fn(function () { return { reset: vi.fn(), dispose: vi.fn() }; }) }));
-vi.mock('@/game/solutions/hint-compatibility', () => ({ verifyHintData: mock.verifyHints }));
+vi.mock('@/game/solutions/hint-compatibility', () => ({ verifyHintData: mock.verifyHints, verifyWindowsHintData: mock.verifyWindowsHints }));
 vi.mock('@/game/solutions/example-first-move', () => ({ getExampleFirstMove: mock.exampleMove }));
 vi.mock('@/game/resources/sound/sound-effects-player', () => ({ SoundEffectsPlayer: vi.fn(function () { return mock.effects; }) }));
 vi.mock('webaudio-tinysynth', () => ({ default: vi.fn(function () { return mock.midiSynth; }) }));
@@ -127,6 +128,7 @@ describe('game view lifecycle', () => {
         mock.getGame.mockImplementation(async () => mock.game);
         mock.skills.getSkill.mockImplementation(() => 10);
         mock.verifyHints.mockResolvedValue('verified');
+        mock.verifyWindowsHints.mockResolvedValue('verified');
         mock.exampleMove.mockResolvedValue({ x: 100, y: 60, skill: 8, gameSeconds: 5 });
         mock.resources.getLevel.mockImplementation(async () => mock.level);
         mock.resources.getMusicPlayer.mockImplementation(async () => mock.music);
@@ -705,6 +707,25 @@ describe('game view lifecycle', () => {
         await flushPromises();
         expect(wrapper.container.textContent).not.toContain('Show a hint');
         wrapper.unmount();
+    });
+
+    it('gates Windows hints and first-move examples on the Windows compatibility result', async () => {
+        localStorage.setItem('lemmings.game-mode.v1', 'windows');
+        mock.verifyWindowsHints.mockResolvedValueOnce('different');
+        const wrapper = mountView(); await flushPromises();
+        expect(mock.verifyWindowsHints).toHaveBeenCalledOnce();
+        expect(mock.verifyHints).not.toHaveBeenCalled();
+        expect(wrapper.container.textContent).toContain('Hints were verified for a different Windows data set.');
+        expect(wrapper.container.textContent).not.toContain('Show a hint');
+        wrapper.unmount();
+
+        mock.verifyWindowsHints.mockResolvedValue('verified');
+        const second = mountView(); await flushPromises();
+        button(second.container, 'Show a hint').click(); await nextTick();
+        button(second.container, 'Show example first move').click(); await flushPromises();
+        expect(mock.exampleMove).toHaveBeenCalledWith(expect.anything(), 0, 0,
+            expect.objectContaining({ groupIndex: 0, levelIndex: 0, replay: expect.any(String) }));
+        second.unmount();
     });
 
     it('shows an optional tested example and clears it when hints are hidden', async () => {

@@ -12,7 +12,8 @@ import { CommandSelectSkill } from '@/game/game-play/commands/command-select-ski
 import { SkillTypes } from '@/game/game-play/skill-types';
 import { readSettings, recordCompletion, rememberLevel, saveSettings } from '@/game/progress';
 import { getTestedSolution } from '@/game/solutions/tested-solutions';
-import { verifyHintData, type HintCompatibility } from '@/game/solutions/hint-compatibility';
+import { getWindowsTestedSolution } from '@/game/solutions/windows-tested-solutions';
+import { verifyHintData, verifyWindowsHintData, type HintCompatibility } from '@/game/solutions/hint-compatibility';
 import { getExampleFirstMove, type ExampleFirstMove } from '@/game/solutions/example-first-move';
 import { Position2D } from '@/game/utilities/position2d';
 import { Level } from '@/game/resources/level';
@@ -181,8 +182,10 @@ export default defineComponent({
 
         const title = computed(() => level.value?.name || 'Loading level');
         const canPlay = computed(() => !!level.value && !loading.value && !error.value);
-        const availableHints = computed(() => gameMode.value === 'dos' && gameType.value === GameTypes.LEMMINGS
-            ? getTestedSolution(groupIndex.value, levelIndex.value)?.hints ?? [] : []);
+        const testedSolution = computed(() => gameType.value !== GameTypes.LEMMINGS ? undefined :
+            gameMode.value === 'windows' ? getWindowsTestedSolution(groupIndex.value, levelIndex.value) :
+                getTestedSolution(groupIndex.value, levelIndex.value));
+        const availableHints = computed(() => testedSolution.value?.hints ?? []);
         const hints = computed(() => hintCompatibility.value === 'verified' ? availableHints.value : []);
         const exampleSkillName = computed(() => skillButtons.find(skill => skill.type === exampleMove.value?.skill)?.name || 'skill');
         const exampleClock = computed(() => {
@@ -211,7 +214,7 @@ export default defineComponent({
             exampleBusy.value = true;
             exampleError.value = '';
             try {
-                const move = await getExampleFirstMove(factory, groupIndex.value, levelIndex.value);
+                const move = await getExampleFirstMove(factory, groupIndex.value, levelIndex.value, testedSolution.value);
                 if (disposed || generation !== exampleGeneration || levelGeneration !== loadGeneration) return;
                 if (!move) { exampleError.value = 'No visual example is available for this level.'; return; }
                 exampleMove.value = move;
@@ -297,14 +300,14 @@ export default defineComponent({
                 level.value = nextLevel;
                 nextLevelAvailable.value = levelIndex.value + 1 < group.length || groupIndex.value + 1 < config.level.order.length;
                 noteSaveResult(rememberLevel(requestedGame, requestedGroup, requestedLevel, gameMode.value));
-                if (requestedGame === GameTypes.LEMMINGS && gameMode.value === 'dos') {
-                    void verifyHintData().then(result => {
+                if (requestedGame === GameTypes.LEMMINGS) {
+                    const verify = gameMode.value === 'windows' ? verifyWindowsHintData : verifyHintData;
+                    void verify().then(result => {
                         if (!disposed && generation === loadGeneration) hintCompatibility.value = result;
                     }).catch(() => {
                         if (!disposed && generation === loadGeneration) hintCompatibility.value = 'unavailable';
                     });
                 }
-                if (gameMode.value === 'windows') hintCompatibility.value = 'unavailable';
                 if (stage) {
                     const display = stage.getGameDisplay();
                     stage.resetFade();

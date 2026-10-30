@@ -99,7 +99,7 @@
       <p v-if="exampleMove" role="status">Tested example, not live advice: use {{ exampleSkillName }} near the highlighted spot when the timer shows about {{ exampleClock }}.</p>
       <p v-else-if="exampleError" role="status">{{ exampleError }}</p>
     </section>
-    <p v-else-if="availableHints.length && !loading && !error && hintCompatibility === 'different'" class="hint">Hints were verified for a different DOS data set. You can still play this level.</p>
+    <p v-else-if="availableHints.length && !loading && !error && hintCompatibility === 'different'" class="hint">Hints were verified for a different {{ gameMode === 'windows' ? 'Windows' : 'DOS' }} data set. You can still play this level.</p>
     <p v-else-if="availableHints.length && !loading && !error && hintCompatibility === 'unavailable'" class="hint">Hint compatibility could not be checked. You can still play this level.</p>
     </div>
     </section>
