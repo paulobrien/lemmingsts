@@ -15,6 +15,8 @@ export interface GameSettings {
     soundEnabled: boolean;
 }
 
+export type ProgressEdition = 'dos' | 'windows';
+
 export interface ProgressBackup {
     format: 'lemmings-progress';
     version: 1;
@@ -23,7 +25,16 @@ export interface ProgressBackup {
     lastLevel: LevelLocation | null;
 }
 
+interface ProgressBackupV2 extends Omit<ProgressBackup, 'version'> {
+    version: 2;
+    windowsProgress: LevelCompletion[];
+    windowsLastLevel: LevelLocation | null;
+}
+type RestoredBackup = ProgressBackup | ProgressBackupV2;
+
 const PROGRESS_KEY = 'lemmings.progress.v1';
+const WINDOWS_PROGRESS_KEY = 'lemmings.windows-progress.v1';
+const WINDOWS_LAST_LEVEL_KEY = 'lemmings.windows-last-level.v1';
 const SETTINGS_KEY = 'lemmings.settings.v1';
 const LAST_LEVEL_KEY = 'lemmings.last-level.v1';
 // A restore is a single localStorage write; later saves update this snapshot.
@@ -74,15 +85,15 @@ function isSettings(value: unknown): value is GameSettings {
         typeof value.musicEnabled === 'boolean' && typeof value.soundEnabled === 'boolean';
 }
 
-function isBackup(value: unknown): value is ProgressBackup {
-    if (!isRecord(value) || !hasExactKeys(value, ['format', 'version', 'progress', 'settings', 'lastLevel']) ||
-        value.format !== 'lemmings-progress' || value.version !== 1 || !Array.isArray(value.progress) ||
-        value.progress.length > 120 || !isSettings(value.settings) ||
-        !hasExactKeys(value.settings as unknown as Record<string, unknown>, ['speed', 'musicEnabled', 'soundEnabled'])) return false;
-    if (value.lastLevel !== null && (!isLocation(value.lastLevel) ||
-        !hasExactKeys(value.lastLevel as unknown as Record<string, unknown>, ['gameType', 'groupIndex', 'levelIndex']))) return false;
+function validLastLevel(value: unknown): boolean {
+    return value === null || (isLocation(value) &&
+        hasExactKeys(value as unknown as Record<string, unknown>, ['gameType', 'groupIndex', 'levelIndex']));
+}
+
+function validProgress(value: unknown): boolean {
+    if (!Array.isArray(value) || value.length > 120) return false;
     const seen = new Set<string>();
-    for (const entry of value.progress) {
+    for (const entry of value) {
         if (!isCompletion(entry) || !hasExactKeys(entry as unknown as Record<string, unknown>, ['gameType', 'groupIndex', 'levelIndex', 'bestSavedPercent'])) return false;
         const key = `${entry.gameType}/${entry.groupIndex}/${entry.levelIndex}`;
         if (seen.has(key)) return false;
@@ -91,15 +102,24 @@ function isBackup(value: unknown): value is ProgressBackup {
     return true;
 }
 
-function restoredState(): ProgressBackup | null {
+function isBackup(value: unknown): value is RestoredBackup {
+    if (!isRecord(value) || value.format !== 'lemmings-progress' || !isSettings(value.settings) ||
+        !hasExactKeys(value.settings as unknown as Record<string, unknown>, ['speed', 'musicEnabled', 'soundEnabled']) ||
+        !validProgress(value.progress) || !validLastLevel(value.lastLevel)) return false;
+    if (value.version === 1) return hasExactKeys(value, ['format', 'version', 'progress', 'settings', 'lastLevel']);
+    return value.version === 2 && hasExactKeys(value, ['format', 'version', 'progress', 'settings', 'lastLevel', 'windowsProgress', 'windowsLastLevel']) &&
+        validProgress(value.windowsProgress) && validLastLevel(value.windowsLastLevel);
+}
+
+function restoredState(): RestoredBackup | null {
     const value = readJson(RESTORED_STATE_KEY);
     return isBackup(value) ? value : null;
 }
 
-export function readProgress(): LevelCompletion[] {
+export function readProgress(edition: ProgressEdition = 'dos'): LevelCompletion[] {
     const restored = restoredState();
-    if (restored) return restored.progress;
-    const value = readJson(PROGRESS_KEY);
+    if (restored) return edition === 'dos' ? restored.progress : restored.version === 2 ? restored.windowsProgress : [];
+    const value = readJson(edition === 'dos' ? PROGRESS_KEY : WINDOWS_PROGRESS_KEY);
     if (!Array.isArray(value)) return [];
     const entries = new Map<string, LevelCompletion>();
     for (const item of value) {
@@ -115,15 +135,20 @@ export function readProgress(): LevelCompletion[] {
     return Array.from(entries.values());
 }
 
-export function recordCompletion(gameType: number, groupIndex: number, levelIndex: number, savedPercent: number): boolean {
+export function recordCompletion(gameType: number, groupIndex: number, levelIndex: number, savedPercent: number, edition: ProgressEdition = 'dos'): boolean {
     const entry = { gameType, groupIndex, levelIndex, bestSavedPercent: savedPercent };
     if (!isCompletion(entry)) return false;
     const restored = restoredState();
-    const progress = restored ? restored.progress : readProgress();
+    const progress = readProgress(edition);
     const previous = progress.find(item => item.gameType === gameType && item.groupIndex === groupIndex && item.levelIndex === levelIndex);
     if (previous) previous.bestSavedPercent = Math.max(previous.bestSavedPercent, savedPercent);
     else progress.push(entry);
-    return restored ? writeJson(RESTORED_STATE_KEY, { ...restored, progress }) : writeJson(PROGRESS_KEY, progress);
+    if (restored) {
+        if (edition === 'dos') return writeJson(RESTORED_STATE_KEY, { ...restored, progress });
+        return writeJson(RESTORED_STATE_KEY, { ...restored, version: 2, windowsProgress: progress,
+            windowsLastLevel: restored.version === 2 ? restored.windowsLastLevel : null });
+    }
+    return writeJson(edition === 'dos' ? PROGRESS_KEY : WINDOWS_PROGRESS_KEY, progress);
 }
 
 export function readSettings(): GameSettings {
@@ -144,20 +169,25 @@ export function saveSettings(settings: GameSettings): boolean {
     return restored ? writeJson(RESTORED_STATE_KEY, { ...restored, settings: cleanSettings }) : writeJson(SETTINGS_KEY, cleanSettings);
 }
 
-export function readLastLevel(): LevelLocation | null {
+export function readLastLevel(edition: ProgressEdition = 'dos'): LevelLocation | null {
     const restored = restoredState();
-    if (restored) return restored.lastLevel;
-    const value = readJson(LAST_LEVEL_KEY);
+    if (restored) return edition === 'dos' ? restored.lastLevel : restored.version === 2 ? restored.windowsLastLevel : null;
+    const value = readJson(edition === 'dos' ? LAST_LEVEL_KEY : WINDOWS_LAST_LEVEL_KEY);
     return isLocation(value)
         ? { gameType: value.gameType, groupIndex: value.groupIndex, levelIndex: value.levelIndex }
         : null;
 }
 
-export function rememberLevel(gameType: number, groupIndex: number, levelIndex: number): boolean {
+export function rememberLevel(gameType: number, groupIndex: number, levelIndex: number, edition: ProgressEdition = 'dos'): boolean {
     const lastLevel = { gameType, groupIndex, levelIndex };
     if (!isLocation(lastLevel)) return false;
     const restored = restoredState();
-    return restored ? writeJson(RESTORED_STATE_KEY, { ...restored, lastLevel }) : writeJson(LAST_LEVEL_KEY, lastLevel);
+    if (restored) {
+        if (edition === 'dos') return writeJson(RESTORED_STATE_KEY, { ...restored, lastLevel });
+        return writeJson(RESTORED_STATE_KEY, { ...restored, version: 2, windowsLastLevel: lastLevel,
+            windowsProgress: restored.version === 2 ? restored.windowsProgress : [] });
+    }
+    return writeJson(edition === 'dos' ? LAST_LEVEL_KEY : WINDOWS_LAST_LEVEL_KEY, lastLevel);
 }
 
 /** Export only project-owned progress/settings, never the original game files. */
@@ -168,7 +198,10 @@ export function exportProgressBackup(): string {
         format: 'lemmings-progress', version: 1,
         progress: readProgress(), settings: readSettings(), lastLevel: readLastLevel(),
     };
-    return JSON.stringify(backup, null, 2);
+    const windowsProgress = readProgress('windows');
+    const windowsLastLevel = readLastLevel('windows');
+    return JSON.stringify(windowsProgress.length || windowsLastLevel
+        ? { ...backup, version: 2, windowsProgress, windowsLastLevel } : backup, null, 2);
 }
 
 /** Replace progress/settings atomically after validating the entire backup. */

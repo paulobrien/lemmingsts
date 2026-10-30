@@ -16,6 +16,56 @@ describe('local game progress', () => {
         ]);
     });
 
+    it('keeps DOS and Windows completion and last-level state independent', () => {
+        recordCompletion(1, 0, 1, 60);
+        recordCompletion(1, 0, 1, 90, 'windows');
+        rememberLevel(1, 0, 2);
+        rememberLevel(1, 0, 3, 'windows');
+        expect(readProgress()[0].bestSavedPercent).toBe(60);
+        expect(readProgress('windows')[0].bestSavedPercent).toBe(90);
+        expect(readLastLevel()?.levelIndex).toBe(2);
+        expect(readLastLevel('windows')?.levelIndex).toBe(3);
+        const backup = exportProgressBackup();
+        expect(JSON.parse(backup).version).toBe(2);
+        localStorage.clear();
+        expect(restoreProgressBackup(backup)).toBe(true);
+        expect(readProgress()[0].bestSavedPercent).toBe(60);
+        expect(readProgress('windows')[0].bestSavedPercent).toBe(90);
+        expect(readLastLevel()?.levelIndex).toBe(2);
+        expect(readLastLevel('windows')?.levelIndex).toBe(3);
+        recordCompletion(1, 0, 1, 95, 'windows');
+        expect(readProgress('windows')[0].bestSavedPercent).toBe(95);
+        expect(readProgress()[0].bestSavedPercent).toBe(60);
+    });
+
+    it('restores a legacy backup without inheriting stale Windows progress', () => {
+        recordCompletion(1, 0, 1, 60);
+        const legacy = exportProgressBackup();
+        recordCompletion(1, 0, 1, 90, 'windows');
+        rememberLevel(1, 0, 3, 'windows');
+        expect(restoreProgressBackup(legacy)).toBe(true);
+        expect(readProgress('windows')).toEqual([]);
+        expect(readLastLevel('windows')).toBeNull();
+        rememberLevel(1, 0, 4, 'windows');
+        expect(readProgress()[0].bestSavedPercent).toBe(60);
+        expect(readLastLevel('windows')?.levelIndex).toBe(4);
+    });
+
+    it('rejects malformed Windows backup data without replacing either edition', () => {
+        recordCompletion(1, 0, 1, 60);
+        recordCompletion(1, 0, 1, 90, 'windows');
+        const backup = exportProgressBackup();
+        const value = JSON.parse(backup);
+        for (const bad of [
+            { ...value, windowsProgress: [...value.windowsProgress, value.windowsProgress[0]] },
+            { ...value, windowsLastLevel: { gameType: 1, groupIndex: 4, levelIndex: 0 } },
+            { ...value, windowsProgress: [{ ...value.windowsProgress[0], secret: 'file' }] },
+        ]) {
+            expect(() => restoreProgressBackup(JSON.stringify(bad))).toThrow();
+            expect(exportProgressBackup()).toBe(backup);
+        }
+    });
+
     it('uses safe defaults when stored data is invalid', () => {
         localStorage.setItem('lemmings.progress.v1', '{invalid');
         localStorage.setItem('lemmings.settings.v1', JSON.stringify({ speed: 0, musicEnabled: true }));
