@@ -87,7 +87,7 @@ test('imports the local DOS files, plays, and reloads offline', async ({ page, c
   const resetZoom = page.getByRole('button', { name: 'Reset zoom' })
   await expect(resetZoom).toBeDisabled()
   const canvas = page.locator('canvas[aria-label="Lemmings level. Drag to move the view."]')
-  await canvas.hover({ position: { x: 20, y: 20 } })
+  await canvas.hover({ position: { x: 20, y: 100 } })
   await page.mouse.wheel(0, -120)
   await expect(resetZoom).toBeEnabled()
   await resetZoom.click()
@@ -180,7 +180,9 @@ test('completes the first level with a canvas interaction and keeps progress', a
   })).toBe(0)
 
   await page.getByRole('link', { name: 'Level selection' }).click()
+  await expect(page.getByLabel('Level')).toHaveValue('1')
   await page.reload()
+  await expect(page.getByLabel('Level')).toHaveValue('1')
   await expect(page.getByLabel('Level').locator('option').first()).toHaveText('1 (best 100%)')
 })
 
