@@ -8,10 +8,11 @@ import type { GameVictoryCondition } from '../../src/game/game-play/game-victory
 import type { SkillPanelSprites } from '../../src/game/resources/skill-panel-sprites';
 import type { DisplayImage } from '../../src/game/view/display-image';
 import { Position2D } from '../../src/game/utilities/position2d';
+import { GameStateTypes } from '../../src/game/game-state-types';
 
 describe('classic nuke control', () => {
     it('sends each panel press to shared confirmation and ignores the double-click event', () => {
-        const game = { queueCommand: vi.fn() };
+        const game = { queueCommand: vi.fn(), getGameState: () => GameStateTypes.RUNNING };
         const event = () => new EventHandler();
         const skills = { onCountChanged: event(), onSelectionChanged: event() };
         const timer = { onGameTick: event() };

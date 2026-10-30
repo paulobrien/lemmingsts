@@ -10,6 +10,7 @@ import { SkillTypes } from '../game-play/skill-types';
 import { SkillPanelSprites } from '../resources/skill-panel-sprites';
 import { DisplayImage } from './display-image';
 import { Frame } from '../resources/frame';
+import { GameStateTypes } from '../game-state-types';
 
 /** handles the in-game-gui. e.g. the panel on the bottom of the game */
 export class GameGui {
@@ -72,6 +73,7 @@ export class GameGui {
 
     /// handel click on the skills panel
     private handleSkillMouseDown(x: number) {
+        if (this.game.getGameState() !== GameStateTypes.RUNNING) return;
         const panelIndex = Math.trunc(x / 16);
 
         if (panelIndex == 0) {
@@ -106,6 +108,7 @@ export class GameGui {
 
 
     public handleSkillDoubleClick(x: number) {
+        if (this.game.getGameState() !== GameStateTypes.RUNNING) return;
         const panelIndex = Math.trunc(x / 16);
 
         /// trigger the nuke for all lemmings

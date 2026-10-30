@@ -168,6 +168,7 @@ export class Game {
 
     /** run the game */
     public start() {
+        if (this.getGameState() !== GameStateTypes.RUNNING) return;
         this.gameTimer.continue();
     }
 
@@ -221,7 +222,7 @@ export class Game {
     }
 
     public queueCommand(newCommand: ICommand): boolean {
-        if (!this.commandManager) {
+        if (!this.commandManager || this.getGameState() !== GameStateTypes.RUNNING) {
             return false;
         }
 
@@ -235,6 +236,11 @@ export class Game {
 
     /** run one step in game time and render the result */
     private onGameTimerTick() {
+        // A result is final, even if a caller resumes the exposed timer.
+        if (this.finalGameState !== GameStateTypes.UNKNOWN) {
+            this.gameTimer.suspend();
+            return;
+        }
 
         /// run game logic
         this.runGameLogic();
@@ -296,6 +302,7 @@ export class Game {
         if ((state != GameStateTypes.RUNNING) && (state != GameStateTypes.UNKNOWN)) {
             this.gameVictoryCondition.doFinalize();
             this.finalGameState = state;
+            this.gameTimer.suspend();
 
             this.onGameEnd.trigger(new GameResult(this));
         }
