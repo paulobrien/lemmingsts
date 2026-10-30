@@ -295,7 +295,8 @@ export class Level {
     /** render ground to display */
     public render(gameDisplay: DisplayImage) {
         gameDisplay.initSize(this.width, this.height);
-
+        const native = this.windowsTerrain;
+        gameDisplay.setNativeBackground(native?.pixels ?? null, native?.width, native?.height);
         gameDisplay.setBackground(this.groundImage, this.groundMask);
     }
 

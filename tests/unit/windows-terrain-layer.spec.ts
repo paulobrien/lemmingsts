@@ -1,4 +1,4 @@
-import { describe, expect, it } from 'vitest';
+import { describe, expect, it, vi } from 'vitest';
 import { GameTypes } from '../../src/game/game-types';
 import { DrawProperties } from '../../src/game/resources/draw-properties';
 import { Level } from '../../src/game/resources/level';
@@ -8,6 +8,7 @@ import { LevelProperties } from '../../src/game/resources/lemmings/level-propert
 import { SolidLayer } from '../../src/game/resources/solid-layer';
 import { WindowsTerrainLayer } from '../../src/game/resources/windows-terrain-layer';
 import type { WindowsSpriteFrame } from '../../src/game/resources/windows-graphics';
+import type { DisplayImage } from '../../src/game/view/display-image';
 
 const colors = new Uint32Array([0, 0x123456, 0xabcdef]);
 const frame = (indices: number[], mask: number[]): WindowsSpriteFrame => ({
@@ -75,5 +76,20 @@ describe('native Windows terrain presentation', () => {
       new Uint8ClampedArray(16), new SolidLayer(2, 2, new Int8Array(4)), palette, palette);
     expect(() => level.setWindowsTerrain(layer)).toThrow();
     expect(level.getWindowsTerrain()).toBeUndefined();
+  });
+
+  it('supplies or clears the native background before drawing the DOS frame', () => {
+    const layer = new WindowsTerrainLayer(1, 1, [], [], colors);
+    const palette = new ColorPalette();
+    const level = new Level(1, 1, GameTypes.LEMMINGS, 0, 0, new LevelProperties(), 0, false,
+      new Uint8ClampedArray(4), new SolidLayer(1, 1, new Int8Array(1)), palette, palette);
+    const display = { initSize: vi.fn(), setNativeBackground: vi.fn(), setBackground: vi.fn() };
+    level.setWindowsTerrain(layer);
+    level.render(display as unknown as DisplayImage);
+    expect(display.setNativeBackground).toHaveBeenCalledWith(layer.pixels, 2, 2);
+    expect(display.setNativeBackground.mock.invocationCallOrder[0]).toBeLessThan(display.setBackground.mock.invocationCallOrder[0]);
+    level.setWindowsTerrain(undefined);
+    level.render(display as unknown as DisplayImage);
+    expect(display.setNativeBackground).toHaveBeenLastCalledWith(null, undefined, undefined);
   });
 });
