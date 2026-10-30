@@ -1,13 +1,13 @@
 import { existsSync, lstatSync, mkdirSync, mkdtempSync, readFileSync, readdirSync, renameSync, rmSync, writeFileSync } from 'node:fs';
 import { join, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { WINDOWS_GRAPHICS_FILES } from '../src/game/resources/file/windows-graphics-names.ts';
+import { WINDOWS_GRAPHICS_ALL_FILES, WINDOWS_GRAPHICS_FILES } from '../src/game/resources/file/windows-graphics-names.ts';
 import { decodeWindowsPalette, decodeWindowsSprites } from '../src/game/resources/windows-graphics.ts';
 
 /** Package only the separately supplied, validated Windows graphics. */
 export function packageWindowsGraphics(source, build) {
   if (!existsSync(source) || !lstatSync(source).isDirectory() || !existsSync(build) || !lstatSync(build).isDirectory()) throw new Error('Graphics source and build must be real directories.');
-  const selected = new Map(), allowed = new Set(WINDOWS_GRAPHICS_FILES);
+  const selected = new Map(), allowed = new Set(WINDOWS_GRAPHICS_ALL_FILES);
   for (const subdir of ['GFX', 'STYLES']) {
     const folder = join(source, subdir);
     if (!existsSync(folder)) continue;

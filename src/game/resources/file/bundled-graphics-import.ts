@@ -1,5 +1,5 @@
-import { canAutoImportWindowsGraphics, importWindowsGraphicsIfMissing } from './windows-graphics-store';
-import { WINDOWS_GRAPHICS_FILES } from './windows-graphics-names';
+import { canAutoImportWindowsGraphics, canAutoImportWindowsUiGraphics, importWindowsGraphicsIfMissing } from './windows-graphics-store';
+import { WINDOWS_GRAPHICS_ALL_FILES, WINDOWS_GRAPHICS_FILES } from './windows-graphics-names';
 
 const MAX_TOTAL = 8 * 1024 * 1024;
 
@@ -28,7 +28,7 @@ async function readBounded(response: Response, limit: number): Promise<Uint8Arra
 
 /** Discover optional deployment-supplied graphics without replacing the player's files. */
 export async function importBundledWindowsGraphics(baseUrl = import.meta.env.BASE_URL): Promise<'imported' | 'existing' | 'absent'> {
-  if (!await canAutoImportWindowsGraphics()) return 'existing';
+  if (!await canAutoImportWindowsGraphics() && !await canAutoImportWindowsUiGraphics()) return 'existing';
   const base = new URL(baseUrl, window.location.href);
   if (base.origin !== window.location.origin || base.username || base.password || base.search || base.hash || !base.pathname.endsWith('/')) throw new Error('Invalid graphics bundle location.');
   const directory = new URL('data/local-windows-graphics/', base);
@@ -42,10 +42,10 @@ export async function importBundledWindowsGraphics(baseUrl = import.meta.env.BAS
     if (response.status === 404 || contentType === 'text/html') return 'absent';
     if (!response.ok || contentType !== 'application/json') throw new Error('Invalid graphics manifest.');
     const manifest = JSON.parse(new TextDecoder().decode(await readBounded(response, 16 * 1024)));
-    const allowed = new Set(WINDOWS_GRAPHICS_FILES.map(name => name.toLowerCase()));
+    const allowed = new Set(WINDOWS_GRAPHICS_ALL_FILES.map(name => name.toLowerCase()));
     if (!manifest || manifest.version !== 1 || !Array.isArray(manifest.files) || manifest.files.length > allowed.size ||
         new Set(manifest.files).size !== manifest.files.length || manifest.files.some((name: unknown) => typeof name !== 'string' || !allowed.has(name)) ||
-        manifest.files.length !== WINDOWS_GRAPHICS_FILES.length) throw new Error('Invalid graphics manifest.');
+        WINDOWS_GRAPHICS_FILES.some(name => !manifest.files.includes(name.toLowerCase()))) throw new Error('Invalid graphics manifest.');
     const files: File[] = [];
     let remaining = MAX_TOTAL;
     for (const name of manifest.files as string[]) {

@@ -1,12 +1,12 @@
 import { unzipSync } from 'fflate';
 import { decodeWindowsPalette, decodeWindowsSprites } from '../windows-graphics';
-import { WINDOWS_GRAPHICS_FILES } from './windows-graphics-names';
+import { WINDOWS_GRAPHICS_ALL_FILES, WINDOWS_GRAPHICS_FILES, WINDOWS_UI_GRAPHICS_FILES } from './windows-graphics-names';
 import { readWindowsGraphicsIso } from './windows-iso';
 
 const DATABASE = 'lemmings-windows-graphics';
 const STORE = 'graphics';
 const REMOVED = '__automatic_graphics_import_disabled__';
-const allowed = new Set(WINDOWS_GRAPHICS_FILES);
+const allowed = new Set(WINDOWS_GRAPHICS_ALL_FILES);
 const MAX_ARCHIVE = 16 * 1024 * 1024;
 const MAX_FILE = 1024 * 1024;
 const MAX_TOTAL = 8 * 1024 * 1024;
@@ -72,7 +72,7 @@ async function readSelection(input: FileList | readonly File[]): Promise<{ name:
   if ([...selected.values()].reduce((sum, file) => sum + file.size, 0) > MAX_TOTAL) throw new Error('The graphics files are too large.');
   const result: { name: string; data: ArrayBuffer }[] = [];
   // Decode one file at a time to bound peak memory before opening the transaction.
-  for (const name of WINDOWS_GRAPHICS_FILES) {
+  for (const name of selected.keys()) {
     const file = selected.get(name)!;
     if (file.size > MAX_FILE) throw new Error(`${name} is too large.`);
     const data = await file.arrayBuffer();
@@ -107,7 +107,30 @@ async function importFiles(files: FileList | readonly File[], onlyIfMissing: boo
     };
     if (onlyIfMissing) {
       const count = store.count();
-      count.onsuccess = () => { if (count.result === 0) write(); };
+      count.onsuccess = () => {
+        if (count.result === 0) { write(); return; }
+        // Existing installs may acquire optional UI assets only from a bundle
+        // with the same palette, never from a different edition or after removal.
+        const keys = store.getAllKeys();
+        keys.onsuccess = () => {
+          const saved = new Set(keys.result);
+          if (saved.has(REMOVED) || !WINDOWS_GRAPHICS_FILES.every(name => saved.has(name))) return;
+          const palette = store.get('FE.PAL');
+          palette.onsuccess = () => {
+            const existing = palette.result as ArrayBuffer | undefined;
+            const supplied = selection.find(file => file.name === 'FE.PAL')?.data;
+            if (!existing || !supplied || existing.byteLength !== supplied.byteLength) return;
+            const suppliedBytes = new Uint8Array(supplied);
+            if (!new Uint8Array(existing).every((value, index) => value === suppliedBytes[index])) return;
+            for (const file of selection) {
+              if (WINDOWS_UI_GRAPHICS_FILES.includes(file.name) && !saved.has(file.name)) {
+                store.put(file.data, file.name);
+                imported = true;
+              }
+            }
+          };
+        };
+      };
     } else write();
     await done;
     return imported;
@@ -130,6 +153,12 @@ export async function hasWindowsGraphics(): Promise<boolean> {
 }
 export async function canAutoImportWindowsGraphics(): Promise<boolean> {
   return (await keys()).size === 0;
+}
+/** Existing installations can acquire new, matching UI files without replacing their art. */
+export async function canAutoImportWindowsUiGraphics(): Promise<boolean> {
+  const saved = await keys();
+  return !saved.has(REMOVED) && WINDOWS_GRAPHICS_FILES.every(name => saved.has(name)) &&
+    WINDOWS_UI_GRAPHICS_FILES.some(name => !saved.has(name));
 }
 export async function clearWindowsGraphics(): Promise<void> {
   const db = await openDatabase();

@@ -2,8 +2,8 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { indexedDB } from 'fake-indexeddb';
 import { zipSync } from 'fflate';
-import { WINDOWS_GRAPHICS_FILES } from '../../src/game/resources/file/windows-graphics-names';
-import { canAutoImportWindowsGraphics, clearWindowsGraphics, getWindowsGraphicsFile, hasWindowsGraphics,
+import { WINDOWS_GRAPHICS_FILES, WINDOWS_UI_GRAPHICS_FILES } from '../../src/game/resources/file/windows-graphics-names';
+import { canAutoImportWindowsGraphics, canAutoImportWindowsUiGraphics, clearWindowsGraphics, getWindowsGraphicsFile, hasWindowsGraphics,
   importWindowsGraphics, importWindowsGraphicsIfMissing } from '../../src/game/resources/file/windows-graphics-store';
 
 vi.stubGlobal('indexedDB', indexedDB);
@@ -60,5 +60,32 @@ describe('optional Windows graphics storage', () => {
     other[0] = new File([Uint8Array.from([...sprite().slice(0, -2), 7, 0x80])], 'lemmbig.spr');
     await Promise.all([importWindowsGraphicsIfMissing(other), importWindowsGraphics(manual)]);
     expect(await getWindowsGraphicsFile('LEMMBIG.SPR')).toEqual(sprite().buffer);
+  });
+
+  it('adds only missing icons to older matching installations and preserves manual files', async () => {
+    await importWindowsGraphics(files());
+    expect(await canAutoImportWindowsUiGraphics()).toBe(true);
+    const iconFiles = WINDOWS_UI_GRAPHICS_FILES.map(name => new File([sprite()], name));
+    expect(await importWindowsGraphicsIfMissing([...files(), ...iconFiles])).toBe(true);
+    expect(await getWindowsGraphicsFile('ICO_CLIM.SPR')).toEqual(sprite().buffer);
+    expect(await canAutoImportWindowsUiGraphics()).toBe(false);
+    const custom = files();
+    const alternate = Uint8Array.from([...sprite().slice(0, -2), 7, 0x80]);
+    await importWindowsGraphics([...custom, new File([alternate], 'ICO_CLIM.SPR')]);
+    expect(await importWindowsGraphicsIfMissing([...files(), ...iconFiles])).toBe(true);
+    expect(await getWindowsGraphicsFile('ICO_CLIM.SPR')).toEqual(alternate.buffer);
+    await clearWindowsGraphics();
+    expect(await canAutoImportWindowsUiGraphics()).toBe(false);
+    expect(await importWindowsGraphicsIfMissing([...files(), ...iconFiles])).toBe(false);
+  });
+
+  it('does not mix a deployment’s icons into graphics with a different palette', async () => {
+    const manual = files();
+    const index = manual.findIndex(file => file.name.toUpperCase() === 'FE.PAL');
+    manual[index] = new File([Uint8Array.from([0x20, 0x4c, 0x41, 0x50, 1, 0, 7, 8, 9, 0])], 'fe.pal');
+    await importWindowsGraphics(manual);
+    const iconFiles = WINDOWS_UI_GRAPHICS_FILES.map(name => new File([sprite()], name));
+    expect(await importWindowsGraphicsIfMissing([...files(), ...iconFiles])).toBe(false);
+    expect(await getWindowsGraphicsFile('ICO_CLIM.SPR')).toBeUndefined();
   });
 });

@@ -2,9 +2,9 @@
 import { beforeEach, expect, it, vi } from 'vitest';
 const mocks = vi.hoisted(() => ({ can: vi.fn(async () => true), save: vi.fn(async (_files: File[]) => true) }));
 vi.mock('../../src/game/resources/file/windows-graphics-store', () => ({
-  canAutoImportWindowsGraphics: mocks.can, importWindowsGraphicsIfMissing: mocks.save,
+  canAutoImportWindowsGraphics: mocks.can, canAutoImportWindowsUiGraphics: vi.fn(async () => false), importWindowsGraphicsIfMissing: mocks.save,
 }));
-vi.mock('../../src/game/resources/file/windows-graphics-names', () => ({ WINDOWS_GRAPHICS_FILES: ['LEMMBIG.SPR', 'FE.PAL'] }));
+vi.mock('../../src/game/resources/file/windows-graphics-names', () => ({ WINDOWS_GRAPHICS_FILES: ['LEMMBIG.SPR', 'FE.PAL'], WINDOWS_GRAPHICS_ALL_FILES: ['LEMMBIG.SPR', 'FE.PAL', 'ICO_CLIM.SPR'] }));
 import { importBundledWindowsGraphics } from '../../src/game/resources/file/bundled-graphics-import';
 const names = ['lemmbig.spr', 'fe.pal'];
 const manifest = (files: unknown[] = names) => new Response(JSON.stringify({version: 1, files}), {headers: {'content-type': 'application/json'}});
