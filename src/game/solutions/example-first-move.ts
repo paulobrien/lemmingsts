@@ -2,7 +2,7 @@ import { GameFactory } from '../game-factory';
 import { GameStateTypes } from '../game-state-types';
 import { GameTypes } from '../game-types';
 import { SkillTypes } from '../game-play/skill-types';
-import { getTestedSolution } from './tested-solutions';
+import { getTestedSolution, type TestedSolution } from './tested-solutions';
 
 export interface ExampleFirstMove {
   x: number;
@@ -12,8 +12,8 @@ export interface ExampleFirstMove {
 }
 
 /** Reconstruct an illustrative first move in a separate, disposable game. */
-export async function getExampleFirstMove(factory: GameFactory, group: number, level: number): Promise<ExampleFirstMove | null> {
-  const solution = getTestedSolution(group, level);
+export async function getExampleFirstMove(factory: GameFactory, group: number, level: number,
+  solution: TestedSolution | null | undefined = getTestedSolution(group, level)): Promise<ExampleFirstMove | null> {
   if (!solution) return null;
   let skill = SkillTypes.CLIMBER;
   let first: { tick: number; id: number } | null = null;
