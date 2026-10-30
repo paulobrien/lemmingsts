@@ -84,6 +84,8 @@ describe('offline shell updates', () => {
 
     it('does not overwrite the existing shell if a service worker installation cannot cache its assets', async () => {
         const app = worker();
+        const configUrl = `${origin}data/config.json`;
+        app.entries.set(configUrl, new Response('working config'));
         app.network.set(origin, new Response(newHtml));
         for (const path of ['data/config.json', 'manifest.webmanifest', 'icons/icon-192.png', 'icons/icon-512.png']) {
             app.network.set(`${origin}${path}`, new Response('ok'));
@@ -91,6 +93,37 @@ describe('offline shell updates', () => {
         app.network.set(`${origin}assets/new.js`, new Response('ok', { headers: { 'Content-Type': 'text/javascript' } }));
         await expect(app.install()).rejects.toThrow('asset unavailable or invalid');
         expect(await app.entries.get(origin)!.clone().text()).toBe(oldHtml);
+        expect(await app.entries.get(configUrl)!.clone().text()).toBe('working config');
+    });
+
+    it.each(['data/config.json', 'manifest.webmanifest', 'icons/icon-192.png', 'icons/icon-512.png'])('rejects installer HTML fallback for %s without changing the working offline files', async missingPath => {
+        const app = worker();
+        app.network.set(origin, new Response(newHtml));
+        const paths = ['data/config.json', 'manifest.webmanifest', 'icons/icon-192.png', 'icons/icon-512.png'];
+        for (const path of paths) {
+            app.entries.set(`${origin}${path}`, new Response(`working ${path}`));
+            app.network.set(`${origin}${path}`, new Response('new resource'));
+        }
+        app.network.set(`${origin}${missingPath}`, new Response('<html>SPA fallback</html>', { headers: { 'Content-Type': 'text/html' } }));
+        app.network.set(`${origin}assets/new.js`, new Response('new', { headers: { 'Content-Type': 'text/javascript' } }));
+        app.network.set(`${origin}assets/new.css`, new Response('style', { headers: { 'Content-Type': 'text/css' } }));
+        await expect(app.install()).rejects.toThrow('asset unavailable or invalid');
+        expect(await app.entries.get(origin)!.clone().text()).toBe(oldHtml);
+        for (const path of paths) expect(await app.entries.get(`${origin}${path}`)!.clone().text()).toBe(`working ${path}`);
+        expect(app.entries.has(`${origin}assets/new.js`)).toBe(false);
+    });
+
+    it('installs a complete shell with its supporting files for offline use', async () => {
+        const app = worker();
+        app.network.set(origin, new Response(newHtml));
+        app.network.set(`${origin}assets/new.js`, new Response('new', { headers: { 'Content-Type': 'text/javascript' } }));
+        app.network.set(`${origin}assets/new.css`, new Response('style', { headers: { 'Content-Type': 'text/css' } }));
+        const paths = ['data/config.json', 'manifest.webmanifest', 'icons/icon-192.png', 'icons/icon-512.png'];
+        for (const path of paths) app.network.set(`${origin}${path}`, new Response(`new ${path}`));
+        await app.install();
+        app.goOffline();
+        expect(await (await app.request(origin)).text()).toBe(newHtml);
+        for (const path of paths) expect(await (await app.request(`${origin}${path}`, 'cors')).text()).toBe(`new ${path}`);
     });
 
     it('rejects an HTTP 200 HTML fallback served for a missing hashed asset', async () => {

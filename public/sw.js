@@ -21,7 +21,7 @@ function isUsableShellResource(url, response) {
 
 // Never replace a working offline document until all of its hashed assets
 // have been cached. Keep old assets for tabs still running the previous build.
-async function cacheShell(cache, response) {
+async function cacheShell(cache, response, supportingResources = []) {
   const html = await response.clone().text();
   const resources = [...html.matchAll(/(?:src|href)="([^"]+)"/g)]
     .map(match => new URL(match[1], appUrl))
@@ -30,7 +30,7 @@ async function cacheShell(cache, response) {
   if (!resources.some(url => /\.js(?:\?|$)/.test(url))) throw new Error('App shell has no script');
   // SPA hosts may answer a missing hashed asset with their HTML fallback and
   // status 200. Do not commit a shell until each asset is actually usable.
-  const staged = await Promise.all([...new Set(resources)].map(async url => {
+  const staged = await Promise.all([...new Set([...resources, ...supportingResources])].map(async url => {
     const asset = await fetch(url);
     if (!asset.ok || !isUsableShellResource(url, asset)) throw new Error('App shell asset unavailable or invalid');
     return { url, asset };
@@ -44,8 +44,11 @@ self.addEventListener('install', event => {
     const cache = await caches.open(CACHE);
     const response = await fetch(appUrl, { cache: 'reload' });
     if (!response.ok) throw new Error('Could not cache the app');
-    await cache.addAll([new URL('data/config.json', base).href, new URL('manifest.webmanifest', base).href, new URL('icons/icon-192.png', base).href, new URL('icons/icon-512.png', base).href]);
-    await cacheShell(cache, response);
+    // Stage supporting files together with the document's assets. In
+    // particular, a SPA fallback for a missing config must not overwrite the
+    // working offline config even if installation later fails on a script.
+    await cacheShell(cache, response, ['data/config.json', 'manifest.webmanifest', 'icons/icon-192.png', 'icons/icon-512.png']
+      .map(path => new URL(path, base).href));
   })());
 });
 
