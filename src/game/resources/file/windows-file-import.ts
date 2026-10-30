@@ -1,3 +1,4 @@
+import { createWindowsMaskProvider } from '../windows-mask-provider';
 import { unzipSync } from 'fflate';
 import { openGameDatabase, ORIGINAL_STORE, WINDOWS_GAME_STORE, WINDOWS_GRAPHICS_STORE, transactionDone } from './game-file-database';
 import { prepareWindowsAudio, VOICE_AUTO_IMPORT_DISABLED } from './game-file-store';
@@ -50,10 +51,19 @@ export async function importWindowsFiles(input: FileList | readonly File[]): Pro
     game: disc || WINDOWS_GAME_FILES.some(name => names.has(name)),
   };
   if (!result.audio && !result.graphics && !result.game) throw new Error('No supported Windows Lemmings files were found.');
+  if (disc || (result.audio && result.graphics && result.game)) {
+    const missing = [...recognized].filter(name => !names.has(name));
+    if (missing.length) throw new Error(`Missing Windows files for standalone play: ${missing.join(', ')}`);
+  }
   // Sequential validation bounds peak decode memory and cannot mutate storage.
   const audio = result.audio ? await prepareWindowsAudio(files) : undefined;
   const graphics = result.graphics ? await prepareWindowsGraphics(files) : undefined;
   const game = result.game ? await prepareWindowsGame(files) : undefined;
+  const simulationSprites = graphics?.find(file => file.name === 'LEMMSMA.SPR');
+  if (simulationSprites) {
+    try { createWindowsMaskProvider(new Uint8Array(simulationSprites.data)); }
+    catch { throw new Error('LEMMSMA.SPR does not contain compatible Windows gameplay masks.'); }
+  }
   const database = await openGameDatabase();
   try {
     const stores = [audio && ORIGINAL_STORE, graphics && WINDOWS_GRAPHICS_STORE, game && WINDOWS_GAME_STORE].filter((name): name is string => Boolean(name));

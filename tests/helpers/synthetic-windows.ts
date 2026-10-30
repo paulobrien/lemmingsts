@@ -1,6 +1,6 @@
 import { WINDOWS_GAME_FILES, WINDOWS_LEVEL_FILES } from '../../src/game/resources/file/windows-game-names';
-import { WINDOWS_GRAPHICS_FILES } from '../../src/game/resources/file/windows-graphics-names';
-import { WINDOWS_VOICE_FILES } from '../../src/game/resources/file/windows-voice-files';
+import { WINDOWS_GRAPHICS_ALL_FILES, WINDOWS_GRAPHICS_FILES } from '../../src/game/resources/file/windows-graphics-names';
+import { WINDOWS_AUDIO_FILES, WINDOWS_VOICE_FILES } from '../../src/game/resources/file/windows-voice-files';
 
 /** Minimal invented fixtures; no original game assets. */
 export function windowsWav(marker = 1): Uint8Array<ArrayBuffer> {
@@ -36,4 +36,28 @@ export const windowsGraphicsFiles = (marker = 1) => WINDOWS_GRAPHICS_FILES.map(n
 export const windowsGameFiles = (marker = 1) => WINDOWS_GAME_FILES.map(name => new File([
   name === 'LEMMINGS.DB' ? windowsDatabase() : new Uint8Array(WINDOWS_LEVEL_FILES.includes(name) ? 2048 : 1056).fill(marker),
 ], name));
-export const windowsFiles = (marker = 1) => [...windowsAudioFiles(marker), ...windowsGraphicsFiles(marker), ...windowsGameFiles(marker)];
+/** Small, nonempty masks with the frame dimensions required by the simulation. */
+export function windowsMaskSprites(marker = 1): Uint8Array<ArrayBuffer> {
+  const count = 354; const tableEnd = 6 + count * 4;
+  const bytes = new Uint8Array(tableEnd + count * 15); const view = new DataView(bytes.buffer);
+  bytes.set([0x53, 0x52, 0x4c, 0x45]); view.setUint16(4, count, true);
+  for (let index = 0; index < count; index++) {
+    const offset = tableEnd + index * 15; view.setUint32(6 + index * 4, offset, true);
+    view.setUint16(offset + 4, 1, true); view.setUint16(offset + 6, 1, true);
+    view.setUint16(offset + 8, 16, true);
+    view.setUint16(offset + 10, index === 335 ? 22 : index >= 349 ? 8 : 16, true);
+    bytes.set([0x81, marker, 0x80], offset + 12);
+  }
+  return bytes;
+}
+export function windowsMidi(): Uint8Array<ArrayBuffer> {
+  return Uint8Array.from([77, 84, 104, 100, 0, 0, 0, 6, 0, 0, 0, 1, 0, 96,
+    77, 84, 114, 107, 0, 0, 0, 12, 0, 0x90, 60, 80, 96, 0x80, 60, 0, 0, 255, 47, 0]);
+}
+export const windowsFiles = (marker = 1) => [
+  ...WINDOWS_AUDIO_FILES.map(name => new File([name.endsWith('.MID') ? windowsMidi() : windowsWav(marker)], name)),
+  ...windowsGraphicsFiles(marker),
+  ...WINDOWS_GRAPHICS_ALL_FILES.filter(name => !WINDOWS_GRAPHICS_FILES.includes(name))
+    .map(name => new File([name === 'LEMMSMA.SPR' ? windowsMaskSprites(marker) : windowsSprite(marker)], name)),
+  ...windowsGameFiles(marker),
+];

@@ -71,6 +71,19 @@ describe('atomic Windows import', () => {
     await expect(importWindowsFiles([new File([zipSync(contents)], 'replacement.zip')])).rejects.toThrow('LEMMBIG.SPR');
     await expectVersion(1);
   });
+  it.each(['LEMMSMA.SPR', 'TIM1P.MID', 'ICO_PAWS.SPR'])(
+    'rejects an incomplete combined installation missing %s without replacing old files', async name => {
+      await importWindowsFiles(windowsFiles(1));
+      await expect(importWindowsFiles(windowsFiles(2).filter(file => file.name !== name))).rejects.toThrow(name);
+      await expectVersion(1);
+    },
+  );
+  it('rejects well-framed but incompatible gameplay masks before replacing anything', async () => {
+    await importWindowsFiles(windowsFiles(1));
+    const files = windowsFiles(2).map(file => file.name === 'LEMMSMA.SPR' ? new File([windowsSprite(2)], file.name) : file);
+    await expect(importWindowsFiles(files)).rejects.toThrow('compatible Windows gameplay masks');
+    await expectVersion(1);
+  });
   it('allows intentional audio-only and graphics-only selections without replacing other components', async () => {
     await importWindowsFiles(windowsFiles(1));
     expect(await importWindowsFiles(windowsAudioFiles(2))).toEqual({ audio: true, graphics: false, game: false });
