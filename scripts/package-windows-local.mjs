@@ -2,7 +2,7 @@ import { existsSync, lstatSync, mkdirSync, mkdtempSync, readFileSync, renameSync
 import { join, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { WINDOWS_AUDIO_FILES } from '../src/game/resources/file/windows-voice-files.ts';
-import { WINDOWS_GRAPHICS_ALL_FILES } from '../src/game/resources/file/windows-graphics-names.ts';
+import { WINDOWS_STANDALONE_GRAPHICS_FILES } from '../src/game/resources/file/windows-graphics-names.ts';
 import { decodeWindowsSprites } from '../src/game/resources/windows-graphics.ts';
 import { packageWindowsAudio } from './package-windows-audio.mjs';
 import { packageWindowsGame } from './package-windows-game.mjs';
@@ -27,7 +27,7 @@ export function packageStandaloneWindows({ gameDirectory, audioDirectory, graphi
       if (missing.length) throw new Error(`Missing standalone Windows ${label}: ${missing.join(', ')}`);
     };
     requireFiles(audio, WINDOWS_AUDIO_FILES, 'audio files');
-    requireFiles(graphics, WINDOWS_GRAPHICS_ALL_FILES, 'graphics files');
+    requireFiles(graphics, WINDOWS_STANDALONE_GRAPHICS_FILES, 'graphics files');
     const frames = decodeWindowsSprites(readFileSync(join(graphics, 'lemmsma.spr')));
     for (const [start, end, width, height] of [[335, 335, 16, 22], [336, 347, 16, 16], [349, 353, 16, 8]]) {
       for (let i = start; i <= end; i++) {

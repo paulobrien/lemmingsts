@@ -2,7 +2,7 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { indexedDB } from 'fake-indexeddb';
 import { zipSync } from 'fflate';
-import { WINDOWS_GRAPHICS_FILES, WINDOWS_UI_GRAPHICS_FILES, WINDOWS_GAME_GRAPHICS_FILES } from '../../src/game/resources/file/windows-graphics-names';
+import { WINDOWS_GRAPHICS_FILES, WINDOWS_UI_GRAPHICS_FILES, WINDOWS_GAME_GRAPHICS_FILES, WINDOWS_EXTRA_UI_GRAPHICS_FILES } from '../../src/game/resources/file/windows-graphics-names';
 import { canAutoImportWindowsGraphics, canAutoImportWindowsUiGraphics, clearWindowsGraphics, getWindowsGraphicsFile, hasWindowsGraphics, hasStandaloneWindowsGraphics,
   importWindowsGraphics, importWindowsGraphicsIfMissing } from '../../src/game/resources/file/windows-graphics-store';
 
@@ -65,7 +65,7 @@ describe('optional Windows graphics storage', () => {
   it('adds only missing icons to older matching installations and preserves manual files', async () => {
     await importWindowsGraphics(files());
     expect(await canAutoImportWindowsUiGraphics()).toBe(true);
-    const iconFiles = [...WINDOWS_UI_GRAPHICS_FILES, ...WINDOWS_GAME_GRAPHICS_FILES].map(name => new File([sprite()], name));
+    const iconFiles = [...WINDOWS_UI_GRAPHICS_FILES, ...WINDOWS_GAME_GRAPHICS_FILES, ...WINDOWS_EXTRA_UI_GRAPHICS_FILES].map(name => new File([sprite()], name));
     expect(await importWindowsGraphicsIfMissing([...files(), ...iconFiles])).toBe(true);
     expect(await getWindowsGraphicsFile('ICO_CLIM.SPR')).toEqual(sprite().buffer);
     expect(await getWindowsGraphicsFile('LEMMSMA.SPR')).toEqual(sprite().buffer);
@@ -81,6 +81,17 @@ describe('optional Windows graphics storage', () => {
     await clearWindowsGraphics();
     expect(await canAutoImportWindowsUiGraphics()).toBe(false);
     expect(await importWindowsGraphicsIfMissing([...files(), ...iconFiles])).toBe(false);
+  });
+
+  it('adds fast-forward art to an older matching graphics set without replacing its icons', async () => {
+    const existing = [...files(), ...WINDOWS_UI_GRAPHICS_FILES.map(name => new File([sprite()], name)),
+      ...WINDOWS_GAME_GRAPHICS_FILES.map(name => new File([sprite()], name))];
+    await importWindowsGraphics(existing);
+    expect(await getWindowsGraphicsFile('ICO_FF.SPR')).toBeUndefined();
+    expect(await canAutoImportWindowsUiGraphics()).toBe(true);
+    expect(await importWindowsGraphicsIfMissing([...existing, new File([sprite()], 'ICO_FF.SPR')])).toBe(true);
+    expect(await getWindowsGraphicsFile('ICO_FF.SPR')).toEqual(sprite().buffer);
+    expect(await getWindowsGraphicsFile('ICO_PAWS.SPR')).toEqual(sprite().buffer);
   });
 
   it('does not mix a deployment’s icons into graphics with a different palette', async () => {

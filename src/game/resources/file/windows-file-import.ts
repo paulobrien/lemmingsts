@@ -6,7 +6,7 @@ import { prepareWindowsGame, REMOVED as GAME_REMOVED } from './windows-game-stor
 import { prepareWindowsGraphics, REMOVED as GRAPHICS_REMOVED } from './windows-graphics-store';
 import { WINDOWS_AUDIO_FILES } from './windows-voice-files';
 import { WINDOWS_GAME_FILES } from './windows-game-names';
-import { WINDOWS_GRAPHICS_ALL_FILES } from './windows-graphics-names';
+import { WINDOWS_GRAPHICS_ALL_FILES, WINDOWS_STANDALONE_GRAPHICS_FILES } from './windows-graphics-names';
 import { readWindowsFilesIso } from './windows-iso';
 
 const recognized = new Set([...WINDOWS_AUDIO_FILES, ...WINDOWS_GAME_FILES, ...WINDOWS_GRAPHICS_ALL_FILES]);
@@ -52,7 +52,7 @@ export async function importWindowsFiles(input: FileList | readonly File[]): Pro
   };
   if (!result.audio && !result.graphics && !result.game) throw new Error('No supported Windows Lemmings files were found.');
   if (disc || (result.audio && result.graphics && result.game)) {
-    const missing = [...recognized].filter(name => !names.has(name));
+    const missing = [...WINDOWS_AUDIO_FILES, ...WINDOWS_GAME_FILES, ...WINDOWS_STANDALONE_GRAPHICS_FILES].filter(name => !names.has(name));
     if (missing.length) throw new Error(`Missing Windows files for standalone play: ${missing.join(', ')}`);
   }
   // Sequential validation bounds peak decode memory and cannot mutate storage.

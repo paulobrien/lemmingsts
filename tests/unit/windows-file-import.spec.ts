@@ -4,7 +4,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { zipSync } from 'fflate';
 import { allowBundledWindowsOnReload, clearWindowsFiles, importWindowsFiles } from '../../src/game/resources/file/windows-file-import';
 import { canAutoImportLemmingsFiles, clearLemmingsFiles, hasLemmingsFiles, getLemmingsFile, getWindowsAudioFile, importLemmingsFiles, importWindowsVoiceFilesIfMissing, REQUIRED_LEMMINGS_FILES } from '../../src/game/resources/file/game-file-store';
-import { getWindowsGraphicsFile, importWindowsGraphicsIfMissing } from '../../src/game/resources/file/windows-graphics-store';
+import { getWindowsGraphicsFile, hasStandaloneWindowsGraphics, importWindowsGraphicsIfMissing } from '../../src/game/resources/file/windows-graphics-store';
 import { getWindowsGameFile, importWindowsGameIfMissing } from '../../src/game/resources/file/windows-game-store';
 import { WINDOWS_GAME_STORE, WINDOWS_GRAPHICS_STORE } from '../../src/game/resources/file/game-file-database';
 import { windowsAudioFiles, windowsFiles, windowsGameFiles, windowsGraphicsFiles, windowsSprite, windowsWav } from '../helpers/synthetic-windows';
@@ -19,6 +19,11 @@ async function expectVersion(marker: number) {
 }
 
 describe('atomic Windows import', () => {
+  it('keeps an older complete Windows set usable without optional fast-forward art', async () => {
+    await importWindowsFiles(windowsFiles(1).filter(file => file.name !== 'ICO_FF.SPR'));
+    expect(await hasStandaloneWindowsGraphics()).toBe(true);
+    expect(await getWindowsGraphicsFile('ICO_FF.SPR')).toBeUndefined();
+  });
   it('replaces all selected components together while preserving DOS data', async () => {
     await importLemmingsFiles(REQUIRED_LEMMINGS_FILES.map((name, index) => new File([Uint8Array.from(syntheticDosData(name, index + 1))], name)));
     const ground = await getLemmingsFile('GROUND0O.DAT');

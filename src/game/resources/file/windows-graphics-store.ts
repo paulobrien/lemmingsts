@@ -2,7 +2,7 @@ import { openGameDatabase as openDatabase, transactionDone, WINDOWS_GRAPHICS_STO
 import { unzipSync } from 'fflate';
 import { decodeWindowsPalette, decodeWindowsSprites } from '../windows-graphics';
 import { createWindowsMaskProvider } from '../windows-mask-provider';
-import { WINDOWS_GRAPHICS_ALL_FILES, WINDOWS_GRAPHICS_FILES, WINDOWS_OPTIONAL_GRAPHICS_FILES } from './windows-graphics-names';
+import { WINDOWS_GRAPHICS_ALL_FILES, WINDOWS_GRAPHICS_FILES, WINDOWS_OPTIONAL_GRAPHICS_FILES, WINDOWS_STANDALONE_GRAPHICS_FILES } from './windows-graphics-names';
 import { readWindowsGraphicsIso } from './windows-iso';
 
 const STORE = WINDOWS_GRAPHICS_STORE;
@@ -136,7 +136,7 @@ export async function hasWindowsGraphics(): Promise<boolean> {
 /** Standalone needs the low-resolution simulation sprites and complete controls. */
 export async function hasStandaloneWindowsGraphics(): Promise<boolean> {
   const saved = await keys();
-  if (!WINDOWS_GRAPHICS_ALL_FILES.every(name => saved.has(name))) return false;
+  if (!WINDOWS_STANDALONE_GRAPHICS_FILES.every(name => saved.has(name))) return false;
   try {
     const lemmings = await getWindowsGraphicsFile('LEMMSMA.SPR');
     if (!lemmings) return false;
