@@ -137,6 +137,7 @@ export default defineComponent({
         const exampleError = ref('');
         const nukeArmed = ref(false);
         const nukeExecuted = ref(false);
+        const nativeWindowsPanel = ref(false);
         const selectedSkill = ref<SkillTypes>(SkillTypes.CLIMBER);
         const skillCounts = ref<Record<number, number>>({});
         const releaseRate = ref(0);
@@ -157,7 +158,8 @@ export default defineComponent({
             if (!active) clearCanvasGesture();
             void nextTick(() => {
                 if (paused.value) focusPauseMenu();
-                else (active ? playing.value ? gameCanvas.value : startControl.value : fullscreenEnterButton.value)?.focus();
+                else (active ? playing.value ? gameCanvas.value : startControl.value :
+                    nativeWindowsPanel.value && playing.value ? gameCanvas.value : fullscreenEnterButton.value)?.focus();
             });
         });
         const musicEnabled = ref(settings.musicEnabled);
@@ -280,6 +282,7 @@ export default defineComponent({
             levelSucceeded.value = false;
             nukeArmed.value = false;
             nukeExecuted.value = false;
+            nativeWindowsPanel.value = false;
             assignmentMessage.value = '';
             savedCount.value = 0;
             resultMessage.value = '';
@@ -360,7 +363,11 @@ export default defineComponent({
                         prepareWindowsPanel(),
                     ]);
                     if (disposed || generation !== loadGeneration || !stage) { nextGame.stop(); return; }
-                    if (panel) { nextGame.setWindowsPanel(panel.panel); windowsSkillIcons.value = panel.skillIcons; }
+                    if (panel) {
+                        nextGame.setWindowsPanel(panel.panel, panel.nativePanel);
+                        nativeWindowsPanel.value = panel.panel.length === 13;
+                        windowsSkillIcons.value = panel.skillIcons;
+                    }
                     if (terrain?.status === 'ready' && sprites) {
                         nextGame.level.setWindowsTerrain(terrain.layer);
                         if (objects) for (const [frame, image] of objects) sprites.set(frame, image);
@@ -377,6 +384,10 @@ export default defineComponent({
                     if (firstAvailable) game.queueCommand(new CommandSelectSkill(firstAvailable.type));
                 }
                 game.setNukeRequestHandler(confirmNuke);
+                if (gameMode.value === 'windows') {
+                    game.setFastForwardRequestHandler(() => setSpeed(speed.value === 1 ? 4 : 1));
+                    game.setFastForwardActive(speed.value > 1);
+                }
                 game.onPlayerAssignment.on(result => {
                     switch (result) {
                         case 'miss': assignmentMessage.value = 'No lemming found there. Tap closer to a lemming.'; break;
@@ -438,6 +449,9 @@ export default defineComponent({
                 // the phone. Apply the same pause policy as a running game.
                 onVisibilityChange();
                 updateStats();
+                if (nativeWindowsPanel.value) {
+                    void nextTick(() => { if (playing.value && !paused.value) gameCanvas.value?.focus(); });
+                }
                 if (musicEnabled.value) void playMusic();
             } catch (reason) {
                 if (generation === loadGeneration) error.value = reason instanceof Error ? reason.message : 'Could not start this level.';
@@ -473,7 +487,7 @@ export default defineComponent({
         function resumeFromMenu() {
             if (!game || !paused.value || finished.value) return;
             togglePause();
-            void nextTick(() => { if (!paused.value) (fullscreenActive.value ? gameCanvas.value : pauseControl.value)?.focus(); });
+            void nextTick(() => { if (!paused.value) (fullscreenActive.value || nativeWindowsPanel.value ? gameCanvas.value : pauseControl.value)?.focus(); });
         }
 
         async function restartFromMenu() {
@@ -481,7 +495,7 @@ export default defineComponent({
             await loadLevel();
             if (disposed || generation !== loadGeneration || !canPlay.value) return;
             await start();
-            if (!disposed && playing.value) await nextTick(() => (fullscreenActive.value ? gameCanvas.value : pauseControl.value)?.focus());
+            if (!disposed && playing.value) await nextTick(() => (fullscreenActive.value || nativeWindowsPanel.value ? gameCanvas.value : pauseControl.value)?.focus());
         }
 
         function selectSkill(type: SkillTypes) {
@@ -516,7 +530,10 @@ export default defineComponent({
 
         function setSpeed(value: number) {
             speed.value = value;
-            if (game) game.getGameTimer().speedFactor = value;
+            if (game) {
+                game.getGameTimer().speedFactor = value;
+                if (gameMode.value === 'windows') game.setFastForwardActive(value > 1);
+            }
             noteSaveResult(saveSettings({ speed: value, musicEnabled: musicEnabled.value, soundEnabled: soundEnabled.value }));
         }
 
@@ -690,7 +707,7 @@ export default defineComponent({
             window.removeEventListener('keydown', onKeyDown);
         });
 
-        return { gameScreen, fullscreenEnterButton, startControl, gameCanvas, beginCanvasGesture, finishCanvasGesture, cancelCanvasGesture, loseCanvasCapture, finishCanvasGestureFromClick, gameMode, graphicsError, graphicsNotice, windowsSkillIcons, pauseControl, pauseHeading, fullscreenActive, fullscreenControlsOpen, fullscreenMode, toggleFullscreen,
+        return { gameScreen, fullscreenEnterButton, startControl, gameCanvas, beginCanvasGesture, finishCanvasGesture, cancelCanvasGesture, loseCanvasCapture, finishCanvasGestureFromClick, gameMode, nativeWindowsPanel, graphicsError, graphicsNotice, windowsSkillIcons, pauseControl, pauseHeading, fullscreenActive, fullscreenControlsOpen, fullscreenMode, toggleFullscreen,
             level, levelIndex, groupName, title, error, loading, playing, paused,
             finished, levelSucceeded, nextLevelAvailable, savedCount, saveWarning, assignmentMessage, keyboardMessage, resultMessage, hints, availableHints, hintCompatibility, visibleHintCount, exampleMove, exampleBusy, exampleError, exampleSkillName, exampleClock, hideHints, showExample, clearExample, nukeArmed, nukeExecuted, selectedSkill, skillCounts, releaseRate, gameTime, speed,
             musicEnabled, soundEnabled, skillButtons, canPlay, start, openPauseMenu, resumeFromMenu, restartFromMenu, selectSkill, changeReleaseRate,

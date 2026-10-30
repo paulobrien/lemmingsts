@@ -1,4 +1,41 @@
 import { expect, test } from '@playwright/test'
+import { pressGamePanel } from './fullscreen-helpers'
+
+test('the original Windows fast-forward panel controls speed, including fullscreen', async ({ page }, testInfo) => {
+  test.skip(process.env.RUN_PRIVATE_GAME_TESTS !== '1' || !process.env.LEMMINGS_WINDOWS_ISO, 'Requires LEMMINGS_WINDOWS_ISO')
+  if (testInfo.project.name === 'android-tablet') await page.setViewportSize({ width: 1280, height: 800 })
+  await page.goto('/')
+  await page.locator('input[accept*=".iso"]').setInputFiles(process.env.LEMMINGS_WINDOWS_ISO!)
+  await expect(page.getByLabel('Game mode')).toHaveValue('windows')
+  await page.getByRole('link', { name: 'Play Lemmings' }).click()
+  await page.getByRole('button', { name: 'Start level' }).click()
+  const canvas = page.getByLabel('Lemmings level. Drag to move the view.')
+  const touch = testInfo.project.name.startsWith('android-')
+  await expect(page.locator('.game-toolbar')).toHaveClass(/windows-hidden-controls/)
+  await expect(page.locator('.game-screen')).toHaveClass(/native-windows-playing/)
+  const hints = page.locator('.hints')
+  await expect(hints).toHaveClass(/windows-hidden-controls/)
+  await expect(hints).toHaveCSS('clip', 'rect(0px, 0px, 0px, 0px)')
+  await page.getByRole('button', { name: 'Show a hint' }).focus()
+  await expect(hints).toHaveCSS('clip', 'auto')
+  await canvas.focus()
+  await expect(hints).toHaveCSS('clip', 'rect(0px, 0px, 0px, 0px)')
+  if (testInfo.project.name === 'android-tablet') {
+    const levelBox = await canvas.boundingBox()
+    const screenBox = await page.locator('.game-screen').boundingBox()
+    expect(levelBox!.width).toBeGreaterThan(screenBox!.width * 0.98)
+  }
+  await pressGamePanel(canvas, touch, 11)
+  await pressGamePanel(canvas, touch, 10)
+  await expect(page.getByLabel('Speed')).toHaveValue('4')
+  await page.getByLabel('Speed').selectOption('2')
+  await page.getByRole('button', { name: 'Fullscreen', exact: true }).click()
+  await page.getByRole('button', { name: 'Resume', exact: true }).click()
+  await pressGamePanel(canvas, touch, 11)
+  await pressGamePanel(canvas, touch, 10)
+  await expect(page.getByLabel('Speed')).toHaveValue('1')
+  await page.getByRole('button', { name: 'Exit fullscreen', exact: true }).click()
+})
 
 test('plays a complete level using Windows artwork from an ISO', async ({ page }, testInfo) => {
   test.skip(process.env.RUN_PRIVATE_GAME_TESTS !== '1' || !process.env.LEMMINGS_WINDOWS_ISO,
@@ -26,7 +63,7 @@ test('plays a complete level using Windows artwork from an ISO', async ({ page }
   expect(await terrainHash()).not.toEqual(0)
   await page.getByRole('button', { name: 'Start level' }).click()
   await expect(page.locator('.time')).toHaveText('4-54', { timeout: 15_000 })
-  await page.getByRole('button', { name: 'Pause', exact: true }).click()
+  await pressGamePanel(canvas, testInfo.project.name.startsWith('android-'), 10)
   await expect(page.getByRole('region', { name: 'Paused' })).toBeVisible()
 
   // Find the leading lemming by the Windows palette's blue clothing.
@@ -67,5 +104,6 @@ test('reopens and starts the Windows game offline after importing only the ISO',
   await page.getByRole('link', { name: 'Play Lemmings' }).click()
   await expect(page.getByRole('button', { name: 'Start level' })).toBeEnabled()
   await page.getByRole('button', { name: 'Start level' }).click()
-  await expect(page.getByRole('button', { name: 'Pause', exact: true })).toBeVisible()
+  await pressGamePanel(page.getByLabel('Lemmings level. Drag to move the view.'), false, 10)
+  await expect(page.getByRole('region', { name: 'Paused' })).toBeVisible()
 })

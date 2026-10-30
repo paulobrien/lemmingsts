@@ -1,0 +1,27 @@
+import { expect, test } from '@playwright/test'
+import { pressGamePanel } from './fullscreen-helpers'
+
+test('Windows panel uses the original controls in fullscreen', async ({ page }, testInfo) => {
+  test.skip(process.env.RUN_PRIVATE_GAME_TESTS !== '1' || !process.env.LEMMINGS_WINDOWS_ISO, 'Requires the local Windows ISO')
+  test.setTimeout(60_000)
+  await page.goto('/')
+  await page.locator('input[accept*=".iso"]').setInputFiles(process.env.LEMMINGS_WINDOWS_ISO!)
+  await expect(page.getByLabel('Game mode')).toHaveValue('windows')
+  await page.getByRole('link', { name: 'Play Lemmings' }).click()
+  await expect(page.getByRole('button', { name: 'Start level' })).toBeEnabled()
+  await page.getByRole('button', { name: 'Fullscreen', exact: true }).click()
+  await page.getByRole('button', { name: 'Start level' }).click()
+  const canvas = page.locator('canvas[aria-label^="Lemmings level"]')
+  const touch = testInfo.project.name.startsWith('android-')
+  const speed = page.locator('.speed select')
+  await pressGamePanel(canvas, touch, 11)
+  await expect(speed).toHaveValue('4')
+  await pressGamePanel(canvas, touch, 11)
+  await expect(speed).toHaveValue('1')
+  await pressGamePanel(canvas, touch, 10)
+  await expect(page.getByRole('region', { name: 'Paused' })).toBeVisible()
+  await page.getByRole('button', { name: 'Resume', exact: true }).click()
+  await pressGamePanel(canvas, touch, 12)
+  await expect(page.getByText(/Nuke will bomb all lemmings/)).toBeVisible()
+  await page.getByRole('button', { name: 'Cancel', exact: true }).click()
+})

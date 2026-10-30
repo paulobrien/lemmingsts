@@ -9,7 +9,7 @@
           Save at least {{ level.needCount }} of {{ level.releaseCount }} lemmings<template v-if="!playing && !finished">, {{ level.timeLimit }} {{ level.timeLimit === 1 ? 'minute' : 'minutes' }}</template>
         </p>
       </div>
-      <div class="audio-controls" role="group" aria-label="Audio settings">
+      <div class="audio-controls" :class="{ 'windows-hidden-controls': nativeWindowsPanel && playing && !paused && !nukeArmed }" role="group" aria-label="Audio settings">
       <button class="quiet" type="button" :disabled="loading" :aria-pressed="musicEnabled" @click="toggleMusic">
         Music {{ musicEnabled ? 'on' : 'off' }}
       </button>
@@ -19,7 +19,7 @@
       </div>
     </header>
 
-    <section ref="gameScreen" class="game-screen" :class="{ 'is-fullscreen': fullscreenActive }" aria-label="Game screen">
+    <section ref="gameScreen" class="game-screen" :class="{ 'is-fullscreen': fullscreenActive, 'native-windows-playing': nativeWindowsPanel && playing && !paused && !nukeArmed }" aria-label="Game screen">
     <div v-if="error" class="notice error" role="alert">{{ error }}</div>
     <p v-else-if="loading" class="notice" role="status">Getting the level ready…</p>
     <p v-else-if="resultMessage" class="notice" role="status">{{ resultMessage }}</p>
@@ -27,6 +27,7 @@
     <p v-if="saveWarning" class="notice error" role="status">{{ saveWarning }}</p>
     <p v-if="graphicsError" class="notice error" role="status">{{ graphicsError }}</p>
     <p v-else-if="graphicsNotice" class="notice" role="status">{{ graphicsNotice }}</p>
+    <p v-if="gameMode === 'windows' && playing && !nativeWindowsPanel" class="notice" role="status">To use fast-forward on the original Windows panel, reimport your Windows ISO. The controls below remain available.</p>
 
     <div class="canvas-frame">
       <canvas ref="gameCanvas" width="800" height="480" tabindex="0" aria-label="Lemmings level. Drag to move the view." aria-describedby="game-objective keyboard-instructions" @pointerdown.capture="beginCanvasGesture" @pointerup.capture="finishCanvasGesture" @pointercancel.capture="cancelCanvasGesture" @lostpointercapture="loseCanvasCapture" @click.capture="finishCanvasGestureFromClick">
@@ -37,7 +38,7 @@
     <p id="keyboard-instructions" class="visually-hidden">Use left and right arrows to choose a lemming, Enter to assign the selected skill, and Space to pause.</p>
     <p class="visually-hidden" role="status" aria-live="polite">{{ keyboardMessage }}</p>
 
-    <button v-if="fullscreenActive && playing && !paused" class="visually-hidden fullscreen-a11y-pause" type="button" aria-controls="pause-menu" @click="openPauseMenu">Pause game</button>
+    <button v-if="(fullscreenActive || nativeWindowsPanel) && playing && !paused" class="visually-hidden fullscreen-a11y-pause" type="button" aria-controls="pause-menu" @click="openPauseMenu">Pause game</button>
     <div id="game-controls" class="game-controls" :class="{ 'controls-open': fullscreenControlsOpen }">
     <section v-if="playing && paused" id="pause-menu" class="pause-menu" role="region" aria-labelledby="pause-menu-heading">
       <h2 id="pause-menu-heading" ref="pauseHeading" tabindex="-1">Paused</h2>
@@ -49,7 +50,7 @@
         <button type="button" :aria-pressed="fullscreenActive" @click="toggleFullscreen">{{ fullscreenActive ? 'Exit fullscreen' : 'Fullscreen' }}</button>
       </div>
     </section>
-    <div class="game-toolbar" aria-label="Level controls">
+    <div class="game-toolbar" :class="{ 'windows-hidden-controls': nativeWindowsPanel && playing && !paused && !nukeArmed }" aria-label="Level controls">
       <button v-if="!playing && !finished" ref="startControl" class="primary" type="button" :disabled="!canPlay" @click="start">Start level</button>
       <button v-else-if="playing && !paused" ref="pauseControl" class="primary" type="button" aria-controls="pause-menu" :aria-expanded="paused" @click="openPauseMenu">Pause</button>
       <button v-if="finished && levelSucceeded && nextLevelAvailable" class="primary" type="button" @click="changeLevel(1)">Next level</button>
@@ -71,7 +72,7 @@
 
     <p v-if="fullscreenMode === 'expanded'" class="fullscreen-status" role="status">Expanded view (browser fullscreen unavailable)</p>
 
-    <section v-if="playing || finished" class="skill-section" aria-label="Lemming skills">
+    <section v-if="playing || finished" class="skill-section" :class="{ 'windows-hidden-controls': nativeWindowsPanel && playing && !paused && !nukeArmed }" aria-label="Lemming skills">
       <div class="skill-grid">
         <button v-for="(skill, index) in skillButtons" :key="skill.type" type="button" class="skill-button"
           :class="{ selected: selectedSkill === skill.type }" :aria-pressed="selectedSkill === skill.type"
@@ -91,7 +92,7 @@
       <p class="interaction-notice" role="status" aria-live="polite">{{ assignmentMessage }}</p>
     </section>
 
-    <section v-if="hints.length && !loading && !error" class="hints" aria-label="Hints">
+    <section v-if="hints.length && !loading && !error" class="hints" :class="{ 'windows-hidden-controls': nativeWindowsPanel && playing && !paused && !nukeArmed }" aria-label="Hints">
       <button v-if="visibleHintCount < hints.length" type="button" @click="visibleHintCount++">{{ visibleHintCount ? 'Another hint' : 'Show a hint' }}</button>
       <button v-if="visibleHintCount" type="button" @click="hideHints">Hide hints</button>
       <ol v-if="visibleHintCount" aria-live="polite"><li v-for="hint in hints.slice(0, visibleHintCount)" :key="hint">{{ hint }}</li></ol>
@@ -139,6 +140,7 @@ button:hover:not(:disabled) { background: var(--color-panel-raised); box-shadow:
 button:focus-visible, select:focus-visible { outline: 2px solid var(--color-focus); outline-offset: 2px; }
 canvas:focus-visible { outline: 2px solid var(--color-focus); outline-offset: -3px; }
 .visually-hidden { position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px; overflow: hidden; clip: rect(0, 0, 0, 0); white-space: nowrap; border: 0; }
+.windows-mode .windows-hidden-controls:not(:focus-within) { position: absolute; box-sizing: border-box; width: 1px; height: 1px; padding: 0; margin: -1px; overflow: hidden; clip: rect(0, 0, 0, 0); white-space: nowrap; border: 0; }
 .fullscreen-a11y-pause:focus-visible { position: absolute; top: .5rem; left: .5rem; z-index: 3; width: auto; height: auto; margin: 0; padding: .55rem .8rem; clip: auto; overflow: visible; border: 2px solid; }
 button:disabled { cursor: not-allowed; opacity: .45; }
 button.zoom-button { min-width: 44px; box-sizing: border-box; }
@@ -189,6 +191,24 @@ button:active:not(:disabled), .pause-link:active { border-color: var(--color-edg
 @media (min-width: 900px) {
   /* Keep the canvas and the first control row together on shorter desktop screens. */
   .game-page { max-width: min(var(--content-width), max(50rem, calc((100dvh - 17rem) * 5 / 3 + 4rem))); }
+}
+@media (min-width: 900px) and (orientation: landscape) and (pointer: coarse) {
+  /* Use the tablet width while keeping the level and its controls visible together. */
+  .game-page { max-width: none; }
+  .game-screen:not(.is-fullscreen) {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) 14rem;
+    column-gap: .75rem;
+    align-items: start;
+  }
+  .game-screen:not(.is-fullscreen) > .hint,
+  .game-screen:not(.is-fullscreen) > .notice { grid-column: 1 / -1; }
+  .game-screen:not(.is-fullscreen) > .canvas-frame { grid-column: 1; min-width: 0; }
+  .game-screen:not(.is-fullscreen) > .game-controls { grid-column: 2; min-width: 0; padding-top: 0; }
+  .game-screen.native-windows-playing:not(.is-fullscreen) { grid-template-columns: minmax(0, 1fr); }
+  .game-screen.native-windows-playing:not(.is-fullscreen) > .game-controls { grid-column: 1; }
+  .game-screen:not(.is-fullscreen) .game-toolbar { margin-top: 0; }
+  .game-screen:not(.is-fullscreen) .skill-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
 }
 @media (max-width: 600px) {
   .game-page { padding: 1rem .75rem; }

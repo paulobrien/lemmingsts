@@ -27,12 +27,15 @@ const mock = vi.hoisted(() => {
     const soundEvent: { handler?: (effect: number) => void } = {};
     const assignmentEvent: { handler?: (result: string) => void } = {};
     const nukeRequest: { handler?: () => void } = {};
+    const fastForwardRequest: { handler?: () => void } = {};
     const effects = { play: vi.fn(async () => undefined), stop: vi.fn() };
     const game = {
         level,
         getGameTimer: vi.fn(() => timer), getGameSkills: vi.fn(() => skills),
         getVictoryCondition: vi.fn(() => ({ getCurrentReleaseRate: () => 50, getSurvivorsCount: () => 3 })),
-        setGameDisplay: vi.fn(), setGuiDisplay: vi.fn(), setNukeRequestHandler: vi.fn((handler: () => void) => { nukeRequest.handler = handler; }), start: vi.fn(() => timer.continue()),
+        setGameDisplay: vi.fn(), setGuiDisplay: vi.fn(), setWindowsPanel: vi.fn(), setNukeRequestHandler: vi.fn((handler: () => void) => { nukeRequest.handler = handler; }),
+        setFastForwardRequestHandler: vi.fn((handler: () => void) => { fastForwardRequest.handler = handler; }), setFastForwardActive: vi.fn(),
+        start: vi.fn(() => timer.continue()),
         stop: vi.fn(() => timer.suspend()), queueCommand: vi.fn(() => true),
         onGameEnd: { on: vi.fn((handler: (result: { state: number; survivorPercentage: number }) => void) => { endEvent.handler = handler; }) },
         onSoundEffect: { on: vi.fn((handler: (effect: number) => void) => { soundEvent.handler = handler; }) },
@@ -49,6 +52,7 @@ const mock = vi.hoisted(() => {
     const prepareWindowsTerrain = vi.fn(async (_level: unknown): Promise<{ status: 'ready'; layer: object; usesDosBackground?: true } | { status: 'unavailable' }> => ({ status: 'unavailable' }));
     const prepareWindowsSprites = vi.fn(async (_sprites: unknown): Promise<Map<object, object> | null> => null);
     const prepareWindowsObjects = vi.fn(async (_level: unknown): Promise<Map<object, object> | null> => null);
+    const prepareWindowsPanel = vi.fn(async (): Promise<{ panel: object[]; nativePanel: object[]; skillIcons: string[] } | null> => null);
     const resources = { getLevel: vi.fn(async () => level), getSoundTrack: vi.fn(), getMusicPlayer: vi.fn(async () => music) };
     const config = { level: { groups: ['Fun'], order: [[0, 1]], getGroupLength: () => 2 } };
     const getGame = vi.fn(async () => game);
@@ -57,7 +61,7 @@ const mock = vi.hoisted(() => {
     const verifyHints = vi.fn(async (): Promise<'verified' | 'different' | 'unavailable'> => 'verified');
     const verifyWindowsHints = vi.fn(async (): Promise<'verified' | 'different' | 'unavailable'> => 'verified');
     const exampleMove = vi.fn(async (): Promise<{ x: number; y: number; skill: number; gameSeconds: number } | null> => ({ x: 100, y: 60, skill: 8, gameSeconds: 5 }));
-    return { timer, level, display, stage, game, skills, resources, music, midiContext, midiSynth, getWindowsAudioFile, prepareWindowsTerrain, prepareWindowsSprites, prepareWindowsObjects, config, getGame, replace, route, endEvent, soundEvent, effects, assignmentEvent, nukeRequest, verifyHints, verifyWindowsHints, exampleMove, graphicsError, zoomChange };
+    return { timer, level, display, stage, game, skills, resources, music, midiContext, midiSynth, getWindowsAudioFile, prepareWindowsTerrain, prepareWindowsSprites, prepareWindowsObjects, prepareWindowsPanel, config, getGame, replace, route, endEvent, soundEvent, effects, assignmentEvent, nukeRequest, fastForwardRequest, verifyHints, verifyWindowsHints, exampleMove, graphicsError, zoomChange };
 });
 
 vi.mock('vue-router', () => ({
@@ -74,6 +78,7 @@ vi.mock('@/game/resources/file/game-file-store', () => ({ getWindowsAudioFile: m
 vi.mock('@/game/resources/prepare-windows-terrain', () => ({ prepareWindowsTerrain: mock.prepareWindowsTerrain }));
 vi.mock('@/game/resources/prepare-windows-sprites', () => ({ prepareWindowsSprites: mock.prepareWindowsSprites }));
 vi.mock('@/game/resources/prepare-windows-objects', () => ({ prepareWindowsObjects: mock.prepareWindowsObjects }));
+vi.mock('@/game/resources/windows-panel', () => ({ prepareWindowsPanel: mock.prepareWindowsPanel }));
 vi.mock('@/game/game-factory', () => ({ GameFactory: vi.fn(function () {
     return { getConfig: async () => mock.config, getGameResources: async () => mock.resources, getGame: mock.getGame };
 }) }));
@@ -123,6 +128,7 @@ describe('game view lifecycle', () => {
         vi.clearAllMocks();
         localStorage.clear();
         mock.timer.running = false;
+        mock.timer.speedFactor = 1;
         mock.route.params.gameType = '1';
         mock.route.query = {};
         mock.getGame.mockImplementation(async () => mock.game);
@@ -137,6 +143,7 @@ describe('game view lifecycle', () => {
         mock.prepareWindowsTerrain.mockReset().mockResolvedValue({ status: 'unavailable' });
         mock.prepareWindowsSprites.mockReset().mockResolvedValue(null);
         mock.prepareWindowsObjects.mockReset().mockResolvedValue(null);
+        mock.prepareWindowsPanel.mockReset().mockResolvedValue(null);
         mock.level.getWindowsTerrain.mockReset().mockReturnValue(undefined);
     });
 
@@ -165,6 +172,77 @@ describe('game view lifecycle', () => {
         button(wrapper.container, 'Start level').click(); await flushPromises();
         expect(mock.game.start).toHaveBeenCalledOnce();
     });
+
+    it('connects the Windows fast-forward icon to speed, settings and panel state', async () => {
+        localStorage.setItem('lemmings.game-mode.v1', 'windows');
+        mock.prepareWindowsPanel.mockResolvedValue({ panel: Array(13).fill({}), nativePanel: Array(13).fill({}), skillIcons: [] });
+        const wrapper = mountView(); await flushPromises();
+        button(wrapper.container, 'Start level').click(); await flushPromises();
+        expect(mock.game.setFastForwardActive).toHaveBeenLastCalledWith(false);
+        mock.fastForwardRequest.handler?.(); await nextTick();
+        expect(mock.timer.speedFactor).toBe(4);
+        expect(mock.game.setFastForwardActive).toHaveBeenLastCalledWith(true);
+        expect(JSON.parse(localStorage.getItem('lemmings.settings.v1')!).speed).toBe(4);
+        button(wrapper.container, 'Pause game').click(); await nextTick();
+        const select = wrapper.container.querySelector<HTMLSelectElement>('.speed select')!;
+        select.value = '2'; select.dispatchEvent(new Event('change', { bubbles: true })); await nextTick();
+        expect(mock.timer.speedFactor).toBe(2);
+        expect(mock.game.setFastForwardActive).toHaveBeenLastCalledWith(true);
+        button(wrapper.container, 'Resume').click(); await nextTick();
+        mock.fastForwardRequest.handler?.(); await nextTick();
+        expect(mock.timer.speedFactor).toBe(1);
+        expect(mock.game.setFastForwardActive).toHaveBeenLastCalledWith(false);
+        wrapper.unmount();
+    });
+
+    it('keeps extra Windows controls accessible but visually tucked away, and exposes nuke confirmation', async () => {
+        localStorage.setItem('lemmings.game-mode.v1', 'windows');
+        mock.prepareWindowsPanel.mockResolvedValue({ panel: Array(13).fill({}), nativePanel: Array(13).fill({}), skillIcons: [] });
+        const wrapper = mountView(); await flushPromises();
+        button(wrapper.container, 'Start level').click(); await flushPromises();
+        const toolbar = wrapper.container.querySelector<HTMLElement>('.game-toolbar')!;
+        const skills = wrapper.container.querySelector<HTMLElement>('.skill-section')!;
+        const audio = wrapper.container.querySelector<HTMLElement>('.audio-controls')!;
+        const hints = wrapper.container.querySelector<HTMLElement>('.hints')!;
+        const screen = wrapper.container.querySelector<HTMLElement>('.game-screen')!;
+        expect(toolbar.classList.contains('windows-hidden-controls')).toBe(true);
+        expect(skills.classList.contains('windows-hidden-controls')).toBe(true);
+        expect(audio.classList.contains('windows-hidden-controls')).toBe(true);
+        expect(hints.classList.contains('windows-hidden-controls')).toBe(true);
+        expect(screen.classList.contains('native-windows-playing')).toBe(true);
+        expect(button(wrapper.container, 'Pause game')).toBeDefined();
+        expect(button(wrapper.container, 'Dig10')).toBeDefined();
+        mock.nukeRequest.handler?.(); await nextTick();
+        expect(toolbar.classList.contains('windows-hidden-controls')).toBe(false);
+        expect(skills.classList.contains('windows-hidden-controls')).toBe(false);
+        expect(audio.classList.contains('windows-hidden-controls')).toBe(false);
+        expect(hints.classList.contains('windows-hidden-controls')).toBe(false);
+        expect(screen.classList.contains('native-windows-playing')).toBe(false);
+        expect(button(wrapper.container, 'Confirm nuke')).toBeDefined();
+        expect(button(wrapper.container, 'Cancel')).toBeDefined();
+        button(wrapper.container, 'Cancel').click(); await nextTick();
+        expect(skills.classList.contains('windows-hidden-controls')).toBe(true);
+        button(wrapper.container, 'Pause game').click(); await nextTick();
+        expect(toolbar.classList.contains('windows-hidden-controls')).toBe(false);
+        expect(skills.classList.contains('windows-hidden-controls')).toBe(false);
+        expect(hints.classList.contains('windows-hidden-controls')).toBe(false);
+        expect(screen.classList.contains('native-windows-playing')).toBe(false);
+        expect(button(wrapper.container, 'Resume')).toBeDefined();
+        wrapper.unmount();
+    });
+
+    it.each([null, { panel: Array(12).fill({}), nativePanel: Array(12).fill({}), skillIcons: [] }])(
+        'keeps the normal controls available if the Windows fast-forward panel is missing', async panel => {
+            localStorage.setItem('lemmings.game-mode.v1', 'windows');
+            mock.prepareWindowsPanel.mockResolvedValue(panel);
+            const wrapper = mountView(); await flushPromises();
+            button(wrapper.container, 'Start level').click(); await flushPromises();
+            expect(wrapper.container.querySelector('.game-toolbar')!.classList.contains('windows-hidden-controls')).toBe(false);
+            expect(wrapper.container.querySelector('.skill-section')!.classList.contains('windows-hidden-controls')).toBe(false);
+            expect(wrapper.container.textContent).toContain('reimport your Windows ISO');
+            expect(button(wrapper.container, 'Pause')).toBeDefined();
+            wrapper.unmount();
+        });
 
     it('prepares native terrain and sprite mapping before the game clock starts', async () => {
         const layer = { marker: 'native terrain' }, sprites = new Map(), objectFrame = {}, objectImage = {};

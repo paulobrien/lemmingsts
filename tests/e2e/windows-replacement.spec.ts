@@ -1,4 +1,5 @@
 import { expect, test, type Page } from '@playwright/test'
+import { pressGamePanel } from './fullscreen-helpers'
 
 async function storedFiles(page: Page) {
   return page.evaluate(async () => {
@@ -28,7 +29,7 @@ async function storedFiles(page: Page) {
   })
 }
 
-test('a failed Windows replacement preserves the installed files and remains playable after reload', async ({ page }) => {
+test('a failed Windows replacement preserves the installed files and remains playable after reload', async ({ page }, testInfo) => {
   test.skip(process.env.RUN_PRIVATE_GAME_TESTS !== '1' || !process.env.LEMMINGS_WINDOWS_ISO,
     'Requires the local Windows ISO')
   test.setTimeout(60_000)
@@ -64,5 +65,6 @@ test('a failed Windows replacement preserves the installed files and remains pla
   await page.getByRole('link', { name: 'Play Lemmings' }).click()
   await expect(page.getByRole('button', { name: 'Start level' })).toBeEnabled()
   await page.getByRole('button', { name: 'Start level' }).click()
-  await expect(page.getByRole('button', { name: 'Pause', exact: true })).toBeVisible()
+  await pressGamePanel(page.getByLabel('Lemmings level. Drag to move the view.'), testInfo.project.name.startsWith('android-'), 10)
+  await expect(page.getByRole('region', { name: 'Paused' })).toBeVisible()
 })

@@ -2,7 +2,7 @@ import { readdir } from 'node:fs/promises'
 import { resolve } from 'node:path'
 import { expect, test } from '@playwright/test'
 
-test('keeps level details and sound controls readable on narrow screens', async ({ page }) => {
+test('keeps level details and sound controls readable on narrow screens', async ({ page }, testInfo) => {
   test.skip(process.env.RUN_PRIVATE_GAME_TESTS !== '1', 'Requires local, untracked original game files')
   const files = (await readdir(resolve('dos/lemmings')))
     .filter(name => name.toLowerCase().endsWith('.dat'))
@@ -27,6 +27,25 @@ test('keeps level details and sound controls readable on narrow screens', async 
   }
 
   await page.setViewportSize({ width: 1280, height: 800 })
-  await expect(page.getByRole('button', { name: 'Start level', exact: true })).toBeInViewport({ ratio: 1 })
-  await expect(page.getByRole('button', { name: 'Fullscreen', exact: true })).toBeInViewport({ ratio: 1 })
+  if (testInfo.project.name === 'desktop') {
+    await expect(page.getByRole('button', { name: 'Start level', exact: true })).toBeInViewport({ ratio: 1 })
+    await expect(page.getByRole('button', { name: 'Fullscreen', exact: true })).toBeInViewport({ ratio: 1 })
+  } else {
+    for (const size of [{ width: 1280, height: 800 }, { width: 1200, height: 768 }]) {
+      await page.setViewportSize(size)
+      await page.evaluate(() => window.scrollTo(0, 0))
+      const dimensions = await page.locator('.game-page').evaluate(element => {
+        const canvas = element.querySelector('.canvas-frame')!.getBoundingClientRect()
+        const controls = element.querySelector('.game-controls')!.getBoundingClientRect()
+        return { width: element.getBoundingClientRect().width, viewport: window.innerWidth,
+          scroll: document.documentElement.scrollWidth, canvasWidth: canvas.width, canvasRight: canvas.right, controlsLeft: controls.left }
+      })
+      expect(dimensions.width).toBeCloseTo(dimensions.viewport, 0)
+      expect(dimensions.scroll).toBeLessThanOrEqual(dimensions.viewport)
+      expect(dimensions.canvasWidth).toBeGreaterThan(size.width * .65)
+      expect(dimensions.controlsLeft).toBeGreaterThanOrEqual(dimensions.canvasRight)
+      await expect(page.getByRole('button', { name: 'Start level', exact: true })).toBeInViewport({ ratio: 1 })
+      await expect(page.getByRole('button', { name: 'Fullscreen', exact: true })).toBeInViewport({ ratio: 1 })
+    }
+  }
 })

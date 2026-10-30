@@ -1,6 +1,7 @@
 import { readdir } from 'node:fs/promises'
 import { resolve } from 'node:path'
 import { expect, test } from '@playwright/test'
+import { pressGamePanel } from './fullscreen-helpers'
 
 for (const edition of ['dos', 'windows'] as const) {
   test(`shows the ${edition.toUpperCase()} target on the panel in fullscreen`, async ({ page }, testInfo) => {
@@ -38,7 +39,15 @@ for (const edition of ['dos', 'windows'] as const) {
     })
     await expect.poll(async () => (await targetPixels()).reduce((sum, value) => sum + value, 0)).toBeGreaterThan(50)
     const initial = await targetPixels()
-    await page.getByRole('button', { name: 'Fullscreen', exact: true }).click()
+    const enterFullscreen = async () => {
+      if (edition === 'windows') {
+        await pressGamePanel(canvas, testInfo.project.name !== 'desktop', 10)
+        await expect(page.getByRole('region', { name: 'Paused' })).toBeVisible()
+      }
+      await page.getByRole('button', { name: 'Fullscreen', exact: true }).click()
+      if (edition === 'windows') await page.getByRole('button', { name: 'Resume', exact: true }).click()
+    }
+    await enterFullscreen()
     await expect(page.locator('.game-screen')).toHaveClass(/is-fullscreen/)
     await expect(page.locator('.game-header')).toHaveAttribute('inert', '')
     await expect(objective).toHaveText(objectiveText!)
@@ -53,7 +62,7 @@ for (const edition of ['dos', 'windows'] as const) {
       await page.evaluate(() => document.exitFullscreen())
       await expect(page.locator('.game-screen')).not.toHaveClass(/is-fullscreen/)
       await page.setViewportSize({ width: Math.max(viewport.width, viewport.height), height: Math.min(viewport.width, viewport.height) })
-      await page.getByRole('button', { name: 'Fullscreen', exact: true }).click()
+      await enterFullscreen()
       await expect(page.locator('.game-screen')).toHaveClass(/is-fullscreen/)
       expect(await targetPixels()).toEqual(initial)
       await expect(canvas).toHaveAttribute('aria-describedby', /game-objective/)
