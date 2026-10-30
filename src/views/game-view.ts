@@ -227,6 +227,13 @@ export default defineComponent({
             music = null;
         }
 
+        function suspendMusic() {
+            // Invalidate an in-flight MIDI start without stopping a later
+            // resume of the same player when that older request resolves.
+            if (music instanceof WindowsMidiPlayer) musicGeneration++;
+            music?.suspend();
+        }
+
         function updateStats() {
             if (!game) return;
             const skills = game.getGameSkills();
@@ -364,7 +371,7 @@ export default defineComponent({
                         paused.value = !game.getGameTimer().isRunning();
                         if (paused.value !== wasPaused) {
                             if (paused.value) {
-                                music?.suspend(); stopEffects();
+                                suspendMusic(); stopEffects();
                                 void nextTick(focusPauseMenu);
                             } else music?.play();
                         }
@@ -408,7 +415,7 @@ export default defineComponent({
             if (!game || finished.value) return;
             game.getGameTimer().toggle();
             paused.value = !game.getGameTimer().isRunning();
-            if (paused.value) { music?.suspend(); stopEffects(); }
+            if (paused.value) { suspendMusic(); stopEffects(); }
             else music?.play();
         }
 
@@ -517,7 +524,10 @@ export default defineComponent({
                     // before loading or decoding has a chance to finish.
                     music = player;
                     const played = await player.play();
-                    if (disposed || !musicEnabled.value || generation !== musicGeneration) { player.stop(); return; }
+                    if (disposed || !musicEnabled.value || generation !== musicGeneration) {
+                        if (music !== player) player.stop();
+                        return;
+                    }
                     if (paused.value || document.hidden) { player.suspend(); return; }
                     if (played) {
                         return;
@@ -564,7 +574,7 @@ export default defineComponent({
 
         function onVisibilityChange() {
             if (document.hidden) {
-                music?.suspend();
+                suspendMusic();
                 stopEffects();
                 if (game && game.getGameTimer().isRunning()) {
                     game.getGameTimer().suspend();
