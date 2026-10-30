@@ -5,9 +5,22 @@ import { zipSync } from 'fflate';
 import { WINDOWS_GAME_FILES, WINDOWS_GROUND_FILES, WINDOWS_LEVEL_FILES } from '../../src/game/resources/file/windows-game-names';
 import { canAutoImportWindowsGame, clearWindowsGame, getWindowsGameFile, hasWindowsGame, importWindowsGame, importWindowsGameIfMissing } from '../../src/game/resources/file/windows-game-store';
 
+const database = () => {
+  const data = new Uint8Array(8 + 9 * 137);
+  const view = new DataView(data.buffer); view.setUint32(0, 2, true); view.setUint32(4, 9, true);
+  const record = (i: number, depth: number, folder: number, name: string, file = '') => {
+    const start = 8 + i * 137; data[start + 2] = depth; data[start + 3] = folder;
+    data.set(new TextEncoder().encode(name), start + 10); data.set(new TextEncoder().encode(file), start + 50);
+  };
+  record(0, 1, 1, 'Original', 'orig');
+  ['Fun', 'Tricky', 'Taxing', 'Mayhem'].forEach((name, i) => {
+    record(1 + 2 * i, 2, 1, name); record(2 + 2 * i, 3, 0, name, `LVL000${i}.LVL`);
+  });
+  return data;
+};
 const files = (marker = 1) => WINDOWS_GAME_FILES.map(name => {
   const size = WINDOWS_LEVEL_FILES.includes(name) ? 2048 : WINDOWS_GROUND_FILES.includes(name) ? 1056 : 145;
-  return new File([new Uint8Array(size).fill(marker)], name);
+  return new File([name === 'LEMMINGS.DB' ? database() : new Uint8Array(size).fill(marker)], name);
 });
 
 beforeEach(async () => {

@@ -1,6 +1,7 @@
 import { unzipSync } from 'fflate';
 import { WINDOWS_GAME_FILES, WINDOWS_GROUND_FILES, WINDOWS_LEVEL_FILES } from './windows-game-names';
 import { readWindowsGameIso } from './windows-iso';
+import { parseWindowsLevelDatabase } from '../windows-level-database';
 
 const DATABASE = 'lemmings-windows-game';
 const STORE = 'files';
@@ -72,6 +73,10 @@ async function readSelection(input: FileList | readonly File[]): Promise<{ name:
         (WINDOWS_GROUND_FILES.includes(name) && data.byteLength !== 1056) ||
         (name === 'LEMMINGS.DB' && (data.byteLength < 145 || (data.byteLength - 8) % 137 !== 0))) {
       throw new Error(`${name} is not a supported Windows Lemmings game file.`);
+    }
+    if (name === 'LEMMINGS.DB') {
+      try { parseWindowsLevelDatabase(data); }
+      catch { throw new Error('LEMMINGS.DB is not a supported Windows Lemmings level database.'); }
     }
     result.push({ name, data });
   }
