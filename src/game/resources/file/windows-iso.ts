@@ -1,15 +1,25 @@
 import { WINDOWS_MUSIC_FILES, WINDOWS_SOUND_FILES } from './windows-voice-files';
+import { WINDOWS_GRAPHICS_GFX_FILES, WINDOWS_GRAPHICS_STYLE_FILES } from './windows-graphics-names';
 
 const BLOCK_SIZE = 2048;
 const MAX_DIRECTORY_BYTES = 4 * 1024 * 1024;
 const MAX_FILE_BYTES = 1024 * 1024;
-const MAX_AUDIO_BYTES = 8 * 1024 * 1024;
+const MAX_SELECTED_BYTES = 8 * 1024 * 1024;
 
 interface Entry { name: string; offset: number; size: number; directory: boolean; multiExtent: boolean }
 
 /** Read recognized Windows audio from the canonical LEMMINGS folder of an ISO 9660 image.
  * Uses bounded slices so a disc image is never loaded into memory as a whole. */
 export async function readWindowsAudioIso(image: File): Promise<File[]> {
+  return readWindowsIsoFiles(image, [['SOUND', WINDOWS_SOUND_FILES], ['MUSIC', WINDOWS_MUSIC_FILES]]);
+}
+
+/** Extract only the Windows high-resolution game art, independently of audio. */
+export async function readWindowsGraphicsIso(image: File): Promise<File[]> {
+  return readWindowsIsoFiles(image, [['GFX', WINDOWS_GRAPHICS_GFX_FILES], ['STYLES', WINDOWS_GRAPHICS_STYLE_FILES]]);
+}
+
+async function readWindowsIsoFiles(image: File, selections: ReadonlyArray<readonly [string, readonly string[]]>): Promise<File[]> {
   const invalid = (): never => { throw new Error('Could not read this Windows Lemmings ISO. Check that it is a valid ISO 9660 disc image.'); };
   const read = async (offset: number, size: number): Promise<Uint8Array<ArrayBuffer>> => {
     if (!Number.isSafeInteger(offset) || !Number.isSafeInteger(size) || offset < 0 || size < 0 || offset + size > image.size) return invalid();
@@ -74,7 +84,7 @@ export async function readWindowsAudioIso(image: File): Promise<File[]> {
   if (!game) throw new Error('This ISO does not contain a LEMMINGS folder.');
   const folders = await entries(game);
   const recognized = new Map<string, Entry>();
-  for (const [folderName, allowed] of [['SOUND', WINDOWS_SOUND_FILES], ['MUSIC', WINDOWS_MUSIC_FILES]] as const) {
+  for (const [folderName, allowed] of selections) {
     const folder = namedDirectory(folders, folderName);
     if (!folder) continue;
     const allowedNames = new Set(allowed);
@@ -84,6 +94,6 @@ export async function readWindowsAudioIso(image: File): Promise<File[]> {
       recognized.set(entry.name, entry);
     }
   }
-  if ([...recognized.values()].reduce((sum, entry) => sum + entry.size, 0) > MAX_AUDIO_BYTES) return invalid();
+  if ([...recognized.values()].reduce((sum, entry) => sum + entry.size, 0) > MAX_SELECTED_BYTES) return invalid();
   return Promise.all([...recognized].map(async ([name, entry]) => new File([await read(entry.offset, entry.size)], name)));
 }
