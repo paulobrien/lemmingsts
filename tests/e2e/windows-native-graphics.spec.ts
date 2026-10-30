@@ -86,3 +86,46 @@ test('composites native terrain and sprites without affecting the panel', async 
   expect(resultPixels.onlyOverwrite).toEqual({ solid: [0, 0, 255, 255], empty: [0, 0, 80, 255] })
   expect(resultPixels.onlyOverwriteWithoutMask).toEqual({ first: [0, 0, 255, 255], second: [255, 255, 0, 255] })
 })
+
+test('keeps full-resolution Windows toolbar artwork behind the HUD', async ({ page }) => {
+  const result = await build({ configFile: false, logLevel: 'silent',
+    build: { write: false, lib: { entry: resolve('tests/e2e/fixtures/windows-native-graphics.ts'), formats: ['es'] } } })
+  const output = Array.isArray(result) ? result[0] : result
+  if (!('output' in output)) throw new Error('Could not bundle the graphics fixture')
+  const bundle = output.output.find(item => item.type === 'chunk')
+  if (!bundle || bundle.type !== 'chunk') throw new Error('Could not bundle the graphics fixture')
+  await page.route('**/__windows_panel_fixture.js', route => route.fulfill({ contentType: 'text/javascript', body: bundle.code }))
+  await page.goto('/')
+  const actual = await page.evaluate(async () => {
+    const path = '/__windows_panel_fixture.js'
+    const { Stage, Frame, GameGui } = await import(path)
+    const canvas = document.createElement('canvas'); canvas.width = 640; canvas.height = 180
+    const stage = new Stage(canvas, 2)
+    const noopEvent = { on: () => {} }
+    const panel = new Frame(320, 40); panel.fill(0, 0, 0)
+    const empty = new Frame(8, 8)
+    const sprites = { getPanelSprite: () => panel, getLetterSprite: () => undefined,
+      getNumberSpriteLeft: () => empty, getNumberSpriteRight: () => empty, getNumberSpriteEmpty: () => empty }
+    const skills = { onCountChanged: noopEvent, onSelectionChanged: noopEvent, getSkill: () => 0, getSelectedSkill: () => 8 }
+    const timer = { onGameTick: noopEvent, getGameLeftTimeString: () => '5' }
+    const victory = { getReleaseCount: () => 10, getNeedCount: () => 1, getOutCount: () => 0,
+      getSurvivorPercentage: () => 0, getMinReleaseRate: () => 0, getCurrentReleaseRate: () => 0 }
+    const gui = new GameGui({}, sprites, skills, timer, victory)
+    gui.setGuiDisplay(stage.getGuiDisplay())
+    const logical = Array.from({ length: 13 }, () => new Frame(16, 20))
+    const native = Array.from({ length: 13 }, () => new Frame(32, 40))
+    // An odd-positioned pixel cannot survive downsampling to 16x20.
+    native[0].setPixel(5, 21, 0xff0000ff)
+    gui.setWindowsPanel(logical, native); gui.render(); stage.redraw()
+    const pixel = (x: number, y: number) => Array.from(canvas.getContext('2d')!.getImageData(x, y, 1, 1).data)
+    const values = [pixel(5, 141), pixel(6, 141), pixel(0, 120), pixel(31, 159)]
+    // A new DOS game can reuse this same Stage and display.
+    const dos = new GameGui({}, sprites, skills, timer, victory)
+    dos.setGuiDisplay(stage.getGuiDisplay()); dos.render(); stage.redraw()
+    const dosAfterWindows = { pixel: pixel(5, 141), native: !!stage.getGuiDisplay().getNativeLayers() }
+    stage.dispose()
+    return { values, dosAfterWindows }
+  })
+  expect(actual.values).toEqual([[255, 0, 0, 255], [192, 192, 192, 255], [255, 255, 255, 255], [128, 128, 128, 255]])
+  expect(actual.dosAfterWindows).toEqual({ pixel: [0, 0, 0, 255], native: false })
+})

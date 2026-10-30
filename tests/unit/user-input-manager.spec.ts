@@ -72,6 +72,34 @@ describe('canvas input', () => {
         stage.dispose();
     });
 
+    it('centres a small level and maps touch, wheel and zoom relative to it', () => {
+        const element = canvas();
+        const stage = new Stage(element);
+        const playfield = stage.getGameDisplay();
+        vi.spyOn(playfield, 'getWidth').mockReturnValue(300);
+        vi.spyOn(playfield, 'getHeight').mockReturnValue(100);
+        const click = vi.fn();
+        playfield.onMouseDown.on(click);
+
+        // A 600x200 level is centred in the 800x380 playfield at (100,90).
+        pointer(element, 'pointerdown', 80, 85);
+        pointer(element, 'pointerup', 80, 85);
+        expect(click).toHaveBeenLastCalledWith(expect.objectContaining({ x: 20, y: 20 }));
+        pointer(element, 'pointerdown', 59.5, 85);
+        pointer(element, 'pointerup', 59.5, 85);
+        expect(click).toHaveBeenCalledTimes(1);
+        const margin = new WheelEvent('wheel', { clientX: 59.5, clientY: 85, deltaY: 1, cancelable: true });
+        element.dispatchEvent(margin);
+        expect(margin.defaultPrevented).toBe(false);
+
+        stage.zoomGame(-1);
+        // The centred offset changes to (175,115) at 1.5x.
+        pointer(element, 'pointerdown', 112.5, 92.5);
+        pointer(element, 'pointerup', 112.5, 92.5);
+        expect(click).toHaveBeenLastCalledWith(expect.objectContaining({ x: 20, y: 20 }));
+        stage.dispose();
+    });
+
     it('maps touch coordinates into the drawing buffer and releases the last pointer', () => {
         const element = canvas();
         const input = new UserInputManager(element);

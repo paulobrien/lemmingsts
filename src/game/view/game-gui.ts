@@ -23,13 +23,30 @@ export class GameGui {
     private display?: DisplayImage;
     private deltaReleaseRate = 0;
     private nukeRequestHandler: (() => void) | null = null;
+    private fastForwardRequestHandler: (() => void) | null = null;
+    private fastForwardActive = false;
     private windowsPanel: readonly Frame[] | null = null;
+    private windowsNativePanel: readonly Frame[] | null = null;
 
-    /** Override panel artwork while preserving all original HUD hit targets. */
-    public setWindowsPanel(icons: readonly Frame[] | null) {
-        this.windowsPanel = icons?.length === 12 ? icons : null;
+    /** New Windows art uses its original 13-button layout; older sets use DOS positions. */
+    public setWindowsPanel(icons: readonly Frame[] | null, nativeIcons?: readonly Frame[] | null) {
+        this.windowsPanel = icons?.length === 12 || icons?.length === 13 ? icons : null;
+        this.windowsNativePanel = this.windowsPanel && nativeIcons?.length === this.windowsPanel.length &&
+            nativeIcons.every(icon => icon.width === 32 && icon.height === 40) ? nativeIcons : null;
         this.backgroundChanged = true;
     }
+
+    public setFastForwardRequestHandler(handler: (() => void) | null) {
+        this.fastForwardRequestHandler = handler;
+    }
+
+    public setFastForwardActive(active: boolean) {
+        if (this.fastForwardActive === active) return;
+        this.fastForwardActive = active;
+        this.backgroundChanged = true;
+    }
+
+    private get isWindowsLayout(): boolean { return this.windowsPanel?.length === 13; }
 
     public setNukeRequestHandler(handler: (() => void) | null) {
         this.nukeRequestHandler = handler;
@@ -76,12 +93,12 @@ export class GameGui {
         if (this.game.getGameState() !== GameStateTypes.RUNNING) return;
         const panelIndex = Math.trunc(x / 16);
 
-        if (panelIndex == 0) {
+        if (panelIndex == (this.isWindowsLayout ? 9 : 0)) {
             this.deltaReleaseRate = -3;
             this.doReleaseRateChanges();
             return;
         }
-        if (panelIndex == 1) {
+        if (panelIndex == (this.isWindowsLayout ? 8 : 1)) {
 
             this.deltaReleaseRate = 3;
             this.doReleaseRateChanges();
@@ -93,7 +110,12 @@ export class GameGui {
             return;
         }
 
-        if (panelIndex == 11) {
+        if (this.isWindowsLayout && panelIndex == 11) {
+            this.fastForwardRequestHandler?.();
+            return;
+        }
+
+        if (panelIndex == (this.isWindowsLayout ? 12 : 11)) {
             this.nukeRequestHandler?.();
             return;
         }
@@ -112,7 +134,7 @@ export class GameGui {
         const panelIndex = Math.trunc(x / 16);
 
         /// trigger the nuke for all lemmings
-        if (panelIndex == 11 && !this.nukeRequestHandler) {
+        if (panelIndex == (this.isWindowsLayout ? 12 : 11) && !this.nukeRequestHandler) {
             this.game.queueCommand(new CommandNuke());
         }
     }
@@ -175,12 +197,15 @@ export class GameGui {
 
             const panelImage = this.skillPanelSprites.getPanelSprite();
             display.initSize(panelImage.width, panelImage.height);
+            // The Stage can reuse its GUI display for a different game/mode.
+            if (display.getNativeLayers?.()) display.setNativeBackground(null);
             display.setBackground(panelImage.getData());
 
             if (this.windowsPanel) {
                 for (let index = 0; index < this.windowsPanel.length; index++) {
-                    display.drawFrameCovered(this.windowsPanel[index], index * 16, 20, 0, 0, 0);
+                    display.drawFrameCovered(this.windowsPanel[index], index * 16, 20, 192, 192, 192);
                 }
+                if (this.windowsNativePanel) this.setNativeWindowsPanel(display);
             }
 
             /// redraw everything
@@ -210,8 +235,8 @@ export class GameGui {
 
         /////////
         /// white skill numbers
-        this.drawPanelNumber(display, this.gameVictoryCondition.getMinReleaseRate(), 0);
-        this.drawPanelNumber(display, this.gameVictoryCondition.getCurrentReleaseRate(), 1);
+        this.drawPanelNumber(display, this.gameVictoryCondition.getMinReleaseRate(), this.isWindowsLayout ? 9 : 0);
+        this.drawPanelNumber(display, this.gameVictoryCondition.getCurrentReleaseRate(), this.isWindowsLayout ? 8 : 1);
 
         if (this.skillsCountChanged) {
             this.skillsCountChanged = false;
@@ -227,8 +252,34 @@ export class GameGui {
         if (this.skillSelectionChanged) {
             this.skillSelectionChanged = false;
             this.drawSelection(display, this.getPanelIndexBySkill(this.skills.getSelectedSkill()));
+            if (this.isWindowsLayout && this.fastForwardActive) this.drawSelection(display, 11);
         }
 
+    }
+
+    /** Composite player-supplied 32×40 artwork onto native grey Windows buttons. */
+    private setNativeWindowsPanel(display: DisplayImage): void {
+        const image = display.getImageData();
+        if (!image || !this.windowsNativePanel) return;
+        const width = image.width * 2, height = image.height * 2;
+        const pixels = new Uint8ClampedArray(width * height * 4);
+        const out = new Uint32Array(pixels.buffer);
+        const original = new Uint32Array(image.data.buffer, image.data.byteOffset, image.data.byteLength / 4);
+        for (let y = 0; y < image.height; y++) for (let x = 0; x < image.width; x++) {
+            const color = original[y * image.width + x], at = y * 2 * width + x * 2;
+            out[at] = out[at + 1] = out[at + width] = out[at + width + 1] = color;
+        }
+        for (let slot = 0; slot < this.windowsNativePanel.length; slot++) {
+            const icon = this.windowsNativePanel[slot], source = icon.getBuffer(), mask = icon.getMask();
+            for (let y = 0; y < 40; y++) for (let x = 0; x < 32; x++) {
+                const destX = slot * 32 + x, destY = 40 + y;
+                if (destX >= width || destY >= height) continue;
+                // Win95-style raised control edges; icon pixels remain unscaled.
+                const base = y === 0 || x === 0 ? 0xffffffff : y === 39 || x === 31 ? 0xff808080 : 0xffc0c0c0;
+                out[destY * width + destX] = mask[y * 32 + x] ? source[y * 32 + x] : base;
+            }
+        }
+        display.setNativeBackground(pixels, width, height);
     }
 
     /** left pad a string with spaces */
@@ -242,6 +293,7 @@ export class GameGui {
 
     /** return the skillType for an index */
     private getSkillByPanelIndex(panelIndex: number): SkillTypes {
+        if (this.isWindowsLayout) panelIndex += 2;
         switch (Math.trunc(panelIndex)) {
             case 2: return SkillTypes.CLIMBER;
             case 3: return SkillTypes.FLOATER;
@@ -257,6 +309,7 @@ export class GameGui {
 
     /** return the index for a skillType */
     private getPanelIndexBySkill(skill: SkillTypes): number {
+        if (this.isWindowsLayout) return SkillTypes.isValid(skill) ? skill - 1 : -1;
         switch (skill) {
             case SkillTypes.CLIMBER: return 2;
             case SkillTypes.FLOATER: return 3;

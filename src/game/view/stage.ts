@@ -19,6 +19,8 @@ export class Stage {
     private exampleHint: Position2D | null = null;
     private nativeCanvas: HTMLCanvasElement | null = null;
     private nativeForegroundCanvas: HTMLCanvasElement | null = null;
+    private nativeGuiCanvas: HTMLCanvasElement | null = null;
+    private nativeGuiForegroundCanvas: HTMLCanvasElement | null = null;
     public readonly onGraphicsError = new EventHandler<string>();
     /** True when the playfield is away from its starting scale. */
     public readonly onZoomChange = new EventHandler<boolean>();
@@ -47,14 +49,35 @@ export class Stage {
         this.clear();
     }
 
+    /** Centre a playfield that does not fill the viewport; the panel stays fixed. */
+    private contentOffset(stageImage: StageImageProperties): Position2D {
+        if (stageImage !== this.gameImgProps || !stageImage.display) return new Position2D(0, 0);
+        const width = stageImage.display.getWidth(), height = stageImage.display.getHeight();
+        if (!width || !height) return new Position2D(0, 0);
+        const scale = stageImage.viewPoint.scale;
+        return new Position2D(Math.max(0, Math.floor((stageImage.width - width * scale) / 2)),
+            Math.max(0, Math.floor((stageImage.height - height * scale) / 2)));
+    }
+
     private calcPosition2D(stageImage: StageImageProperties, e: Position2D): Position2D {
-        const x = (stageImage.viewPoint.getSceneX(e.x - stageImage.x));
-        const y = (stageImage.viewPoint.getSceneY(e.y - stageImage.y));
+        const offset = this.contentOffset(stageImage);
+        const x = (stageImage.viewPoint.getSceneX(e.x - stageImage.x - offset.x));
+        const y = (stageImage.viewPoint.getSceneY(e.y - stageImage.y - offset.y));
 
         const result = new Position2D(x, y);
         // Keep touch assistance bounded so a tap still selects a nearby lemming.
         result.hitSlop = Math.min(12, e.hitSlop / stageImage.viewPoint.scale);
         return result;
+    }
+
+    /** Do not target the edge of a level by tapping its empty margins. */
+    private isInContent(stageImage: StageImageProperties, e: Position2D): boolean {
+        if (stageImage !== this.gameImgProps || !stageImage.display) return true;
+        const width = stageImage.display.getWidth(), height = stageImage.display.getHeight();
+        if (!width || !height) return true;
+        const offset = this.contentOffset(stageImage), scale = stageImage.viewPoint.scale;
+        const x = e.x - stageImage.x - offset.x, y = e.y - stageImage.y - offset.y;
+        return x >= 0 && y >= 0 && x < width * scale && y < height * scale;
     }
 
 
@@ -66,7 +89,7 @@ export class Stage {
             }
 
             const stageImage = this.getStageImageAt(e.x, e.y);
-            if ((stageImage == null) || (stageImage.display == null)) return;
+            if ((stageImage == null) || (stageImage.display == null) || !this.isInContent(stageImage, e)) return;
 
             stageImage.display.onDoubleClick.trigger(this.calcPosition2D(stageImage, e));
         });
@@ -112,7 +135,7 @@ export class Stage {
 
             const distance = Math.hypot(e.x - pressPosition.x, e.y - pressPosition.y);
             if (stageImage === this.gameImgProps && !this.dragging && distance < 12
-                && this.getStageImageAt(e.x, e.y) === stageImage) {
+                && this.getStageImageAt(e.x, e.y) === stageImage && this.isInContent(stageImage, e)) {
                 stageImage.display.onMouseDown.trigger(this.calcPosition2D(stageImage, e));
             }
             stageImage.display.onMouseUp.trigger(this.calcPosition2D(stageImage, e));
@@ -149,10 +172,7 @@ export class Stage {
                     return;
                 }
 
-                const x = e.x - stageImage.x;
-                const y = e.y - stageImage.y;
-
-                stageImage.display.onMouseMove.trigger(new Position2D(stageImage.viewPoint.getSceneX(x), stageImage.viewPoint.getSceneY(y)));
+                stageImage.display.onMouseMove.trigger(this.calcPosition2D(stageImage, e));
             }
         });
     }
@@ -167,7 +187,7 @@ export class Stage {
             const stageImage = this.getStageImageAt(e.x, e.y);
             // The classic panel must stay at its original scale; wheel zoom is
             // for inspecting the level only.
-            if (stageImage !== this.gameImgProps || !stageImage.display) {
+            if (stageImage !== this.gameImgProps || !stageImage.display || !this.isInContent(stageImage, e)) {
                 return;
             }
             const scene = this.calcPosition2D(stageImage, e);
@@ -235,6 +255,8 @@ export class Stage {
         this.exampleHint = null;
         this.nativeCanvas = null;
         this.nativeForegroundCanvas = null;
+        this.nativeGuiCanvas = null;
+        this.nativeGuiForegroundCanvas = null;
         this.onGraphicsError.dispose();
         this.onZoomChange.dispose();
         this.controller.dispose();
@@ -426,6 +448,15 @@ export class Stage {
         const outH = display.height;
         const outW = display.width;
 
+        // Starting positions can be set before the level image exists. Clamp
+        // them once the dimensions are known, including for small levels.
+        if (display === this.gameImgProps) {
+            display.viewPoint.x = this.limitValue(0, display.viewPoint.x, img.width - outW / display.viewPoint.scale);
+            display.viewPoint.y = this.limitValue(0, display.viewPoint.y, img.height - outH / display.viewPoint.scale);
+        }
+        const offset = this.contentOffset(display);
+        const destX = display.x + offset.x, destY = display.y + offset.y;
+
         //- Display Layers
         let dW = img.width - display.viewPoint.x; //- display width
         if ((dW * display.viewPoint.scale) > outW) {
@@ -441,32 +472,43 @@ export class Stage {
 
         // Compose native artwork at its original 2× resolution when available.
         let nativeCanvas: HTMLCanvasElement | null = null;
-        const native = display === this.gameImgProps ? display.display?.getNativeLayers() : undefined;
+        const native = display.display?.getNativeLayers();
         if (native) {
             try {
-                if (!this.nativeCanvas) this.nativeCanvas = document.createElement('canvas');
-                if (!this.nativeForegroundCanvas) this.nativeForegroundCanvas = document.createElement('canvas');
-                for (const canvas of [this.nativeCanvas, this.nativeForegroundCanvas]) {
+                const game = display === this.gameImgProps;
+                if (game) {
+                    if (!this.nativeCanvas) this.nativeCanvas = document.createElement('canvas');
+                    if (!this.nativeForegroundCanvas) this.nativeForegroundCanvas = document.createElement('canvas');
+                } else {
+                    if (!this.nativeGuiCanvas) this.nativeGuiCanvas = document.createElement('canvas');
+                    if (!this.nativeGuiForegroundCanvas) this.nativeGuiForegroundCanvas = document.createElement('canvas');
+                }
+                const backCanvas = (game ? this.nativeCanvas : this.nativeGuiCanvas)!;
+                const frontCanvas = (game ? this.nativeForegroundCanvas : this.nativeGuiForegroundCanvas)!;
+                for (const canvas of [backCanvas, frontCanvas]) {
                     if (canvas.width !== native.background.width || canvas.height !== native.background.height) {
                         canvas.width = native.background.width;
                         canvas.height = native.background.height;
                     }
                 }
-                const background = this.nativeCanvas.getContext('2d');
-                const foreground = this.nativeForegroundCanvas.getContext('2d');
+                const background = backCanvas.getContext('2d');
+                const foreground = frontCanvas.getContext('2d');
                 if (!background || !foreground) throw new Error('Native graphics canvas unavailable');
                 background.putImageData(native.background, 0, 0);
                 foreground.putImageData(native.foreground, 0, 0);
-                background.drawImage(this.nativeForegroundCanvas, 0, 0);
-                nativeCanvas = this.nativeCanvas;
+                background.drawImage(frontCanvas, 0, 0);
+                nativeCanvas = backCanvas;
             } catch {
-                this.nativeCanvas = null;
-                this.nativeForegroundCanvas = null;
+                if (display === this.gameImgProps) { this.nativeCanvas = null; this.nativeForegroundCanvas = null; }
+                else { this.nativeGuiCanvas = null; this.nativeGuiForegroundCanvas = null; }
                 display.display?.rejectNativeBackground();
             }
         } else if (display === this.gameImgProps) {
             this.nativeCanvas = null;
             this.nativeForegroundCanvas = null;
+        } else {
+            this.nativeGuiCanvas = null;
+            this.nativeGuiForegroundCanvas = null;
         }
 
         const ctx = this.stageCav.getContext('2d');
@@ -480,16 +522,16 @@ export class Stage {
         }
         if (nativeCanvas) {
             ctx.drawImage(nativeCanvas, display.viewPoint.x * 2, display.viewPoint.y * 2, dW * 2, dH * 2,
-                display.x, display.y, Math.trunc(dW * display.viewPoint.scale), Math.trunc(dH * display.viewPoint.scale));
+                destX, destY, Math.trunc(dW * display.viewPoint.scale), Math.trunc(dH * display.viewPoint.scale));
         } else {
             ctx.drawImage(display.cav, display.viewPoint.x, display.viewPoint.y, dW, dH,
-                display.x, display.y, Math.trunc(dW * display.viewPoint.scale), Math.trunc(dH * display.viewPoint.scale));
+                destX, destY, Math.trunc(dW * display.viewPoint.scale), Math.trunc(dH * display.viewPoint.scale));
         }
 
         if (display === this.gameImgProps && this.exampleHint) {
             const scale = display.viewPoint.scale;
-            const x = display.x + (this.exampleHint.x - display.viewPoint.x) * scale;
-            const y = display.y + (this.exampleHint.y - display.viewPoint.y) * scale;
+            const x = destX + (this.exampleHint.x - display.viewPoint.x) * scale;
+            const y = destY + (this.exampleHint.y - display.viewPoint.y) * scale;
             ctx.save();
             ctx.beginPath();
             ctx.rect(display.x, display.y, display.width, display.height);
@@ -504,8 +546,8 @@ export class Stage {
             const selected = this.keyboardTarget();
             if (selected) {
                 const scale = display.viewPoint.scale;
-                const x = display.x + (selected.x - display.viewPoint.x) * scale;
-                const y = display.y + (selected.y - display.viewPoint.y) * scale;
+                const x = destX + (selected.x - display.viewPoint.x) * scale;
+                const y = destY + (selected.y - display.viewPoint.y) * scale;
                 ctx.save();
                 ctx.beginPath();
                 ctx.rect(display.x, display.y, display.width, display.height);
@@ -521,7 +563,7 @@ export class Stage {
         if (this.fadeAlpha != 0) {
             ctx.globalAlpha = this.fadeAlpha;
             ctx.fillStyle = 'black';
-            ctx.fillRect(display.x, display.y, Math.trunc(dW * display.viewPoint.scale), Math.trunc(dH * display.viewPoint.scale));
+            ctx.fillRect(destX, destY, Math.trunc(dW * display.viewPoint.scale), Math.trunc(dH * display.viewPoint.scale));
         }
     }
 }

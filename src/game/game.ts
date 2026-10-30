@@ -136,8 +136,18 @@ export class Game {
         this.gameGui.setNukeRequestHandler(handler);
     }
 
-    public setWindowsPanel(icons: readonly Frame[] | null) {
-        this.gameGui.setWindowsPanel(icons);
+    public setFastForwardRequestHandler(handler: (() => void) | null) {
+        this.gameGui.setFastForwardRequestHandler(handler);
+    }
+
+    public setFastForwardActive(active: boolean) {
+        this.gameGui.setFastForwardActive(active);
+        this.gameGui.render();
+        this.guiDisplay?.redraw();
+    }
+
+    public setWindowsPanel(icons: readonly Frame[] | null, nativeIcons?: readonly Frame[] | null) {
+        this.gameGui.setWindowsPanel(icons, nativeIcons);
     }
 
 
@@ -182,6 +192,7 @@ export class Game {
         this.onSoundEffect.dispose();
         this.onPlayerAssignment.dispose();
         this.gameGui.setNukeRequestHandler(null);
+        this.gameGui.setFastForwardRequestHandler(null);
         this.triggerManager.onSoundEffect.dispose();
     }
 
