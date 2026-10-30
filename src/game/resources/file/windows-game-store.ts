@@ -1,35 +1,16 @@
+import { openGameDatabase as openDatabase, transactionDone, WINDOWS_GAME_STORE } from './game-file-database';
 import { unzipSync } from 'fflate';
 import { WINDOWS_GAME_FILES, WINDOWS_GROUND_FILES, WINDOWS_LEVEL_FILES } from './windows-game-names';
 import { readWindowsGameIso } from './windows-iso';
 import { parseWindowsLevelDatabase } from '../windows-level-database';
 
-const DATABASE = 'lemmings-windows-game';
-const STORE = 'files';
-const REMOVED = '__automatic_game_import_disabled__';
+const STORE = WINDOWS_GAME_STORE;
+export const REMOVED = '__automatic_game_import_disabled__';
 const allowed = new Set(WINDOWS_GAME_FILES);
 const MAX_ARCHIVE = 16 * 1024 * 1024;
 const MAX_TOTAL = 8 * 1024 * 1024;
 
-function openDatabase(): Promise<IDBDatabase> {
-  if (typeof indexedDB === 'undefined') return Promise.reject(new Error('Local storage is unavailable.'));
-  return new Promise((resolve, reject) => {
-    const request = indexedDB.open(DATABASE, 1);
-    let blocked = false;
-    request.onupgradeneeded = () => request.result.createObjectStore(STORE);
-    request.onsuccess = () => { if (blocked) request.result.close(); else resolve(request.result); };
-    request.onerror = () => reject(new Error('Could not open Windows game storage.'));
-    request.onblocked = () => { blocked = true; reject(new Error('Windows game storage is in use by another tab.')); };
-  });
-}
-function transactionDone(transaction: IDBTransaction): Promise<void> {
-  return new Promise((resolve, reject) => {
-    transaction.oncomplete = () => resolve();
-    transaction.onabort = () => reject(transaction.error ?? new Error('Could not save Windows game data.'));
-    transaction.onerror = () => {};
-  });
-}
-
-async function readSelection(input: FileList | readonly File[]): Promise<{ name: string; data: ArrayBuffer }[]> {
+export async function prepareWindowsGame(input: FileList | readonly File[]): Promise<{ name: string; data: ArrayBuffer }[]> {
   let files = Array.from(input);
   const iso = files.filter(file => file.name.toLowerCase().endsWith('.iso'));
   if (iso.length) {
@@ -87,7 +68,7 @@ async function readSelection(input: FileList | readonly File[]): Promise<{ name:
 export async function importWindowsGame(files: FileList | readonly File[]): Promise<void> { await importFiles(files, false); }
 export async function importWindowsGameIfMissing(files: FileList | readonly File[]): Promise<boolean> { return importFiles(files, true); }
 async function importFiles(files: FileList | readonly File[], onlyIfMissing: boolean): Promise<boolean> {
-  const selected = await readSelection(files);
+  const selected = await prepareWindowsGame(files);
   const db = await openDatabase();
   try {
     const tx = db.transaction(STORE, 'readwrite');

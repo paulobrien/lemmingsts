@@ -19,7 +19,7 @@ const files = () => WINDOWS_GRAPHICS_FILES.map(name => new File([data(name)], na
 describe('optional Windows graphics storage', () => {
   beforeEach(async () => {
     await new Promise<void>((resolve, reject) => {
-      const request = indexedDB.deleteDatabase('lemmings-windows-graphics');
+      const request = indexedDB.deleteDatabase('lemmings-game-files');
       request.onsuccess = () => resolve(); request.onerror = () => reject(request.error);
     });
   });

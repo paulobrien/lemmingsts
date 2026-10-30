@@ -25,6 +25,15 @@ export async function readWindowsGameIso(image: File): Promise<File[]> {
   return readWindowsIsoFiles(image, [['LEVEL/ORIG', WINDOWS_LEVEL_FILES], ['STYLES', WINDOWS_GROUND_FILES], ['USERS', ['LEMMINGS.DB']]]);
 }
 
+/** Extract the supported Windows edition together for an atomic user import. */
+export async function readWindowsFilesIso(image: File): Promise<File[]> {
+  return readWindowsIsoFiles(image, [
+    ['SOUND', WINDOWS_SOUND_FILES], ['MUSIC', WINDOWS_MUSIC_FILES],
+    ['GFX', WINDOWS_GRAPHICS_GFX_FILES], ['STYLES', [...WINDOWS_GRAPHICS_STYLE_FILES, ...WINDOWS_GROUND_FILES]],
+    ['LEVEL/ORIG', WINDOWS_LEVEL_FILES], ['USERS', ['LEMMINGS.DB']],
+  ]);
+}
+
 async function readWindowsIsoFiles(image: File, selections: ReadonlyArray<readonly [string, readonly string[]]>): Promise<File[]> {
   const invalid = (): never => { throw new Error('Could not read this Windows Lemmings ISO. Check that it is a valid ISO 9660 disc image.'); };
   const read = async (offset: number, size: number): Promise<Uint8Array<ArrayBuffer>> => {

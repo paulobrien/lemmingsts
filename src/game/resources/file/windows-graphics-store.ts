@@ -1,37 +1,18 @@
+import { openGameDatabase as openDatabase, transactionDone, WINDOWS_GRAPHICS_STORE } from './game-file-database';
 import { unzipSync } from 'fflate';
 import { decodeWindowsPalette, decodeWindowsSprites } from '../windows-graphics';
 import { createWindowsMaskProvider } from '../windows-mask-provider';
 import { WINDOWS_GRAPHICS_ALL_FILES, WINDOWS_GRAPHICS_FILES, WINDOWS_OPTIONAL_GRAPHICS_FILES } from './windows-graphics-names';
 import { readWindowsGraphicsIso } from './windows-iso';
 
-const DATABASE = 'lemmings-windows-graphics';
-const STORE = 'graphics';
-const REMOVED = '__automatic_graphics_import_disabled__';
+const STORE = WINDOWS_GRAPHICS_STORE;
+export const REMOVED = '__automatic_graphics_import_disabled__';
 const allowed = new Set(WINDOWS_GRAPHICS_ALL_FILES);
 const MAX_ARCHIVE = 16 * 1024 * 1024;
 const MAX_FILE = 1024 * 1024;
 const MAX_TOTAL = 8 * 1024 * 1024;
 
-function openDatabase(): Promise<IDBDatabase> {
-  if (typeof indexedDB === 'undefined') return Promise.reject(new Error('Local storage is unavailable.'));
-  return new Promise((resolve, reject) => {
-    const request = indexedDB.open(DATABASE, 1);
-    let blocked = false;
-    request.onupgradeneeded = () => request.result.createObjectStore(STORE);
-    request.onsuccess = () => { if (blocked) request.result.close(); else resolve(request.result); };
-    request.onerror = () => reject(new Error('Could not open graphics storage.'));
-    request.onblocked = () => { blocked = true; reject(new Error('Graphics storage is in use by another tab.')); };
-  });
-}
-function transactionDone(transaction: IDBTransaction): Promise<void> {
-  return new Promise((resolve, reject) => {
-    transaction.oncomplete = () => resolve();
-    transaction.onabort = () => reject(transaction.error ?? new Error('Could not save graphics locally.'));
-    transaction.onerror = () => {};
-  });
-}
-
-async function readSelection(input: FileList | readonly File[]): Promise<{ name: string; data: ArrayBuffer }[]> {
+export async function prepareWindowsGraphics(input: FileList | readonly File[]): Promise<{ name: string; data: ArrayBuffer }[]> {
   let files = Array.from(input);
   const iso = files.filter(file => file.name.toLowerCase().endsWith('.iso'));
   if (iso.length) {
@@ -94,7 +75,7 @@ export async function importWindowsGraphicsIfMissing(files: FileList | readonly 
   return importFiles(files, true);
 }
 async function importFiles(files: FileList | readonly File[], onlyIfMissing: boolean): Promise<boolean> {
-  const selection = await readSelection(files);
+  const selection = await prepareWindowsGraphics(files);
   const db = await openDatabase();
   try {
     const transaction = db.transaction(STORE, 'readwrite');

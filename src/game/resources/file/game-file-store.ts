@@ -1,3 +1,4 @@
+import { openGameDatabase as openDatabase, transactionDone, ORIGINAL_STORE } from './game-file-database';
 import { unzipSync } from 'fflate';
 import { REQUIRED_LEMMINGS_FILES } from './dos-file-names';
 import { validateDosFiles } from './validate-dos-files';
@@ -6,11 +7,10 @@ import { readWindowsAudioIso } from './windows-iso';
 export { REQUIRED_LEMMINGS_FILES } from './dos-file-names';
 export { WINDOWS_AUDIO_FILES, WINDOWS_MUSIC_FILES, WINDOWS_SOUND_FILES, WINDOWS_VOICE_FILES } from './windows-voice-files';
 
-const DATABASE_NAME = 'lemmings-game-files';
-const STORE_NAME = 'original-lemmings';
+const STORE_NAME = ORIGINAL_STORE;
 // A deliberate removal must not be undone by automatic deployment imports.
 const AUTO_IMPORT_DISABLED = '__automatic_import_disabled__';
-const VOICE_AUTO_IMPORT_DISABLED = '__automatic_voice_import_disabled__';
+export const VOICE_AUTO_IMPORT_DISABLED = '__automatic_voice_import_disabled__';
 const requiredNames = new Set(REQUIRED_LEMMINGS_FILES);
 const voiceNames = new Set<string>(WINDOWS_AUDIO_FILES);
 const MAX_ARCHIVE_BYTES = 16 * 1024 * 1024;
@@ -39,34 +39,6 @@ export function validateLemmingsFiles(files: FileList | readonly File[]): FileVa
     empty: REQUIRED_LEMMINGS_FILES.filter((name) => selected.has(name) && selected.get(name)!.size === 0),
     duplicates: Array.from(duplicates).sort(),
   };
-}
-
-function openDatabase(): Promise<IDBDatabase> {
-  if (typeof indexedDB === 'undefined') {
-    return Promise.reject(new Error('Local storage is unavailable in this browser. Enable site storage and try again.'));
-  }
-  return new Promise((resolve, reject) => {
-    const request = indexedDB.open(DATABASE_NAME, 1);
-    let blocked = false;
-    request.onupgradeneeded = () => request.result.createObjectStore(STORE_NAME);
-    request.onsuccess = () => {
-      if (blocked) request.result.close();
-      else resolve(request.result);
-    };
-    request.onerror = () => reject(new Error('Could not open local game storage. Check your browser storage settings.'));
-    request.onblocked = () => {
-      blocked = true;
-      reject(new Error('Local game storage is in use by another tab. Close it and try again.'));
-    };
-  });
-}
-
-function transactionDone(transaction: IDBTransaction): Promise<void> {
-  return new Promise((resolve, reject) => {
-    transaction.oncomplete = () => resolve();
-    transaction.onabort = () => reject(transaction.error || new Error('Could not save game files locally. Check available storage and try again.'));
-    transaction.onerror = () => { /* onabort reports failure once the transaction has rolled back */ };
-  });
 }
 
 /** Validate and atomically replace the imported files with the selected original DOS files. */
@@ -236,7 +208,7 @@ export async function importWindowsVoiceFilesIfMissing(files: FileList | readonl
   return importVoiceFiles(files, true);
 }
 
-async function importVoiceFiles(files: FileList | readonly File[], onlyIfMissing: boolean): Promise<boolean> {
+export async function prepareWindowsAudio(files: FileList | readonly File[]): Promise<{ name: string; data: ArrayBuffer }[]> {
   let selected = Array.from(files);
   const discs = selected.filter(file => file.name.toLowerCase().endsWith('.iso'));
   if (discs.length) {
@@ -294,6 +266,11 @@ async function importVoiceFiles(files: FileList | readonly File[], onlyIfMissing
     else validateWindowsVoiceFile(name, data);
     return { name, data };
   }));
+  return buffers;
+}
+
+async function importVoiceFiles(files: FileList | readonly File[], onlyIfMissing: boolean): Promise<boolean> {
+  const buffers = await prepareWindowsAudio(files);
   const database = await openDatabase();
   try {
     const transaction = database.transaction(STORE_NAME, 'readwrite');

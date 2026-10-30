@@ -25,7 +25,7 @@ const files = (marker = 1) => WINDOWS_GAME_FILES.map(name => {
 
 beforeEach(async () => {
   await new Promise<void>((resolve, reject) => {
-    const request = indexedDB.deleteDatabase('lemmings-windows-game');
+    const request = indexedDB.deleteDatabase('lemmings-game-files');
     request.onsuccess = () => resolve(); request.onerror = () => reject(request.error);
   });
 });

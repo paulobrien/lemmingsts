@@ -16,13 +16,13 @@ test('shows verified Windows hints and hides them if imported data changes', asy
   // Mutate a different level record; the current level still loads but hints
   // must be disabled because the installed edition no longer matches the tested one.
   await page.evaluate(async () => {
-    const request = indexedDB.open('lemmings-windows-game')
+    const request = indexedDB.open('lemmings-game-files')
     const db = await new Promise<IDBDatabase>((resolve, reject) => {
       request.onsuccess = () => resolve(request.result); request.onerror = () => reject(request.error)
     })
     await new Promise<void>((resolve, reject) => {
-      const transaction = db.transaction('files', 'readwrite')
-      const store = transaction.objectStore('files')
+      const transaction = db.transaction('windows-game', 'readwrite')
+      const store = transaction.objectStore('windows-game')
       const get = store.get('LVL0097.LVL')
       get.onsuccess = () => {
         const bytes = new Uint8Array(get.result as ArrayBuffer)

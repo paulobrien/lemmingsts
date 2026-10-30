@@ -27,7 +27,7 @@ function content(name: string, value = 1): Uint8Array<ArrayBuffer> {
 }
 const manualFiles = (value: number) => names.map(name => new File([content(name, value)], name));
 const reset = () => new Promise<void>((resolve, reject) => {
-  const request = indexedDB.deleteDatabase('lemmings-windows-game'); request.onsuccess = () => resolve(); request.onerror = () => reject(request.error);
+  const request = indexedDB.deleteDatabase('lemmings-game-files'); request.onsuccess = () => resolve(); request.onerror = () => reject(request.error);
 });
 beforeEach(async () => {
   await reset(); vi.unstubAllGlobals(); vi.stubGlobal('indexedDB', indexedDB);
