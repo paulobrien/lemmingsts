@@ -1,12 +1,18 @@
 import { SoundEffect } from '../../game-play/sound-effects';
 
 /** Filenames in the player's own Windows Lemmings sound directory. */
-export type VoiceFileName = 'LETSGO.WAV' | 'OHNO.WAV' | 'YIPPEE.WAV';
+export type VoiceFileName = string;
 
 const voices: Partial<Record<number, VoiceFileName>> = {
     [SoundEffect.LetsGo]: 'LETSGO.WAV',
     [SoundEffect.OhNo]: 'OHNO.WAV',
     [SoundEffect.Exit]: 'YIPPEE.WAV',
+    [SoundEffect.Entrance]: 'DOOR.WAV',
+    [SoundEffect.Splat]: 'SPLAT.WAV',
+    [SoundEffect.Steel]: 'CHINK.WAV',
+    [SoundEffect.Explosion]: 'EXPLODE.WAV',
+    [SoundEffect.Fire]: 'FIRE.WAV',
+    [SoundEffect.Drowning]: 'GLUG.WAV',
 };
 
 /** Plays locally supplied sampled voices, falling back to the caller's normal effects on failure. */

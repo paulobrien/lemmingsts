@@ -43,7 +43,7 @@ describe('locally supplied voice effects', () => {
         const { context } = audio();
         const load = vi.fn(async () => null as Uint8Array | null);
         const player = new VoiceEffectsPlayer(load, () => context as unknown as AudioContext);
-        expect(await player.play(SoundEffect.Assign)).toBe(false);
+        expect(await player.play(999)).toBe(false);
         expect(load).not.toHaveBeenCalled();
         expect(await player.play(SoundEffect.LetsGo)).toBe(false);
         player.stop();

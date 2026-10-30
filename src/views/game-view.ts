@@ -18,6 +18,10 @@ import { Position2D } from '@/game/utilities/position2d';
 import { Level } from '@/game/resources/level';
 import { AudioPlayer } from '@/game/resources/sound/audio-player';
 import { SoundEffectsPlayer } from '@/game/resources/sound/sound-effects-player';
+import { VoiceEffectsPlayer } from '@/game/resources/sound/voice-effects-player';
+import { WindowsMidiPlayer, WINDOWS_MIDI_TRACKS } from '@/game/resources/sound/windows-midi-player';
+import { getWindowsAudioFile } from '@/game/resources/file/game-file-store';
+import { readAudioStyle } from '@/game/audio-style';
 import { Stage } from '@/game/view/stage';
 import { KeyboardTargeting } from '@/game/view/keyboard-targeting';
 import { assignPlayerSkill } from '@/game/view/player-assignment';
@@ -161,8 +165,13 @@ export default defineComponent({
         let game: Game | null = null;
         let stage: Stage | null = null;
         let keyboardTargeting: KeyboardTargeting | null = null;
-        let music: AudioPlayer | null = null;
+        let music: Pick<AudioPlayer, 'play' | 'suspend' | 'stop'> | null = null;
         let effects: SoundEffectsPlayer | null = null;
+        const windowsEffects = new VoiceEffectsPlayer(async name => {
+            const data = await getWindowsAudioFile(name);
+            return data ? new Uint8Array(data) : null;
+        });
+        let effectGeneration = 0;
         let disposed = false;
         let loadGeneration = 0;
         let musicGeneration = 0;
@@ -232,6 +241,8 @@ export default defineComponent({
 
         function disposeGame() {
             keyboardTargeting?.reset();
+            effectGeneration++;
+            windowsEffects.stop();
             effects?.stop();
             effects = null;
             game?.stop();
@@ -299,6 +310,7 @@ export default defineComponent({
 
         async function start() {
             if (!canPlay.value || !stage || loading.value) return;
+            if (soundEnabled.value && readAudioStyle() === 'windows') windowsEffects.prime();
             if (game) {
                 if (!finished.value) {
                     game.getGameTimer().continue();
@@ -334,7 +346,14 @@ export default defineComponent({
                 const activeResources = resources;
                 effects = activeResources ? new SoundEffectsPlayer(index => activeResources.getSoundTrack(index)) : null;
                 game.onSoundEffect.on(effect => {
-                    if (effect !== undefined && soundEnabled.value && playing.value && !paused.value) void effects?.play(effect);
+                    if (effect === undefined || !soundEnabled.value || !playing.value || paused.value) return;
+                    const generation = ++effectGeneration;
+                    if (readAudioStyle() !== 'windows') { windowsEffects.cancel(); void effects?.play(effect); return; }
+                    effects?.stop();
+                    windowsEffects.cancel();
+                    void windowsEffects.play(effect).then(played => {
+                        if (!played && generation === effectGeneration && soundEnabled.value && playing.value && !paused.value) void effects?.play(effect);
+                    });
                 });
                 stage.clearInputBindings();
                 game.setGameDisplay(stage.getGameDisplay());
@@ -345,7 +364,7 @@ export default defineComponent({
                         paused.value = !game.getGameTimer().isRunning();
                         if (paused.value !== wasPaused) {
                             if (paused.value) {
-                                music?.suspend(); effects?.stop();
+                                music?.suspend(); stopEffects();
                                 void nextTick(focusPauseMenu);
                             } else music?.play();
                         }
@@ -356,7 +375,7 @@ export default defineComponent({
                 game.onGameEnd.on(result => {
                     if (!result || !game) return;
                     game.getGameTimer().suspend();
-                    effects?.stop();
+                    stopEffects();
                     stopMusic();
                     playing.value = false;
                     paused.value = false;
@@ -389,7 +408,7 @@ export default defineComponent({
             if (!game || finished.value) return;
             game.getGameTimer().toggle();
             paused.value = !game.getGameTimer().isRunning();
-            if (paused.value) { music?.suspend(); effects?.stop(); }
+            if (paused.value) { music?.suspend(); stopEffects(); }
             else music?.play();
         }
 
@@ -490,6 +509,22 @@ export default defineComponent({
             stopMusic();
             const generation = musicGeneration;
             try {
+                if (readAudioStyle() === 'windows') {
+                    const name = WINDOWS_MIDI_TRACKS[levelIndex.value % WINDOWS_MIDI_TRACKS.length];
+                    const player = new WindowsMidiPlayer(async () => (await getWindowsAudioFile(name)) ?? null);
+                    player.prime();
+                    // Make pending playback visible to mute, pause and teardown
+                    // before loading or decoding has a chance to finish.
+                    music = player;
+                    const played = await player.play();
+                    if (disposed || !musicEnabled.value || generation !== musicGeneration) { player.stop(); return; }
+                    if (paused.value || document.hidden) { player.suspend(); return; }
+                    if (played) {
+                        return;
+                    }
+                    player.stop();
+                    music = null;
+                }
                 const player = await resources.getMusicPlayer(levelIndex.value % 20);
                 if (disposed || !musicEnabled.value || generation !== musicGeneration) { player.stop(); return; }
                 music = player;
@@ -513,7 +548,14 @@ export default defineComponent({
         function toggleSound() {
             soundEnabled.value = !soundEnabled.value;
             noteSaveResult(saveSettings({ speed: speed.value, musicEnabled: musicEnabled.value, soundEnabled: soundEnabled.value }));
-            if (!soundEnabled.value) effects?.stop();
+            if (!soundEnabled.value) stopEffects();
+            else if (readAudioStyle() === 'windows') windowsEffects.prime();
+        }
+
+        function stopEffects() {
+            effectGeneration++;
+            windowsEffects.cancel();
+            effects?.stop();
         }
 
         function zoom(delta: number) { stage?.zoomGame(delta); }
@@ -523,7 +565,7 @@ export default defineComponent({
         function onVisibilityChange() {
             if (document.hidden) {
                 music?.suspend();
-                effects?.stop();
+                stopEffects();
                 if (game && game.getGameTimer().isRunning()) {
                     game.getGameTimer().suspend();
                     paused.value = true;
