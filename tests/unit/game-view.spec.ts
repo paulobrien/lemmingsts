@@ -140,6 +140,23 @@ describe('game view lifecycle', () => {
         mock.level.getWindowsTerrain.mockReset().mockReturnValue(undefined);
     });
 
+    it('provides the live saved count and exact target in the game canvas description, including fullscreen', async () => {
+        const wrapper = mountView(); await flushPromises();
+        const canvas = wrapper.container.querySelector<HTMLCanvasElement>('canvas[aria-label^="Lemmings level"]')!;
+        const objective = () => wrapper.container.querySelector<HTMLElement>('#game-objective')!;
+        expect(canvas.getAttribute('aria-describedby')?.split(' ')).toContain('game-objective');
+        expect(objective().textContent).toContain('Saved 0. Save at least 8 of 10 lemmings.');
+        expect(objective().hasAttribute('aria-live')).toBe(false);
+        expect(objective().hasAttribute('role')).toBe(false);
+        button(wrapper.container, 'Start level').click(); await flushPromises();
+        expect(objective().textContent).toContain('Saved 3. Save at least 8 of 10 lemmings.');
+        button(wrapper.container, 'Fullscreen').click(); await flushPromises();
+        expect(wrapper.container.querySelector('.game-screen.is-fullscreen')).not.toBeNull();
+        expect(wrapper.container.querySelector('.game-screen #game-objective')).toBe(objective());
+        expect(wrapper.container.querySelector('.game-header')?.hasAttribute('inert')).toBe(true);
+        wrapper.unmount();
+    });
+
     it('explains when Windows art is missing without preventing the level from starting', async () => {
         localStorage.setItem('lemmings.game-mode.v1', 'windows');
         const wrapper = mountView(); await flushPromises();

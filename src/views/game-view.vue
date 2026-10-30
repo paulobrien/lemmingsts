@@ -29,10 +29,11 @@
     <p v-else-if="graphicsNotice" class="notice" role="status">{{ graphicsNotice }}</p>
 
     <div class="canvas-frame">
-      <canvas ref="gameCanvas" width="800" height="480" tabindex="0" aria-label="Lemmings level. Drag to move the view." aria-describedby="keyboard-instructions" @pointerdown.capture="beginCanvasGesture" @pointerup.capture="finishCanvasGesture" @pointercancel.capture="cancelCanvasGesture" @lostpointercapture="loseCanvasCapture" @click.capture="finishCanvasGestureFromClick">
+      <canvas ref="gameCanvas" width="800" height="480" tabindex="0" aria-label="Lemmings level. Drag to move the view." aria-describedby="game-objective keyboard-instructions" @pointerdown.capture="beginCanvasGesture" @pointerup.capture="finishCanvasGesture" @pointercancel.capture="cancelCanvasGesture" @lostpointercapture="loseCanvasCapture" @click.capture="finishCanvasGestureFromClick">
         Your browser does not support the game canvas.
       </canvas>
     </div>
+    <p id="game-objective" class="visually-hidden" v-if="level && !loading && !error">Saved {{ savedCount }}. Save at least {{ level.needCount }} of {{ level.releaseCount }} lemmings.</p>
     <p id="keyboard-instructions" class="visually-hidden">Use left and right arrows to choose a lemming, Enter to assign the selected skill, and Space to pause.</p>
     <p class="visually-hidden" role="status" aria-live="polite">{{ keyboardMessage }}</p>
 
