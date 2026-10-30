@@ -11,6 +11,7 @@ import { Rectangle as SteelRectangle } from './lemmings/rectangle';
 import { TriggerTypes } from './lemmings/trigger-types';
 import { Mask } from './mask';
 import { SolidLayer } from './solid-layer';
+import { WindowsTerrainLayer } from './windows-terrain-layer';
 
 interface ProtectionRegion { x: number; y: number; width: number; height: number; flag: number }
 
@@ -19,6 +20,7 @@ export class Level {
 
     /** the background image */
     private groundImage: Uint8ClampedArray;
+    private windowsTerrain?: WindowsTerrainLayer;
     // DOS uses an object map of 4×4 pixel cells, independent of terrain pixels.
     // Lemmix's ReadObjectMap / InitializeObjectMap document its alignment and
     // overwrite order: https://github.com/ericlangedijk/Lemmix/blob/master/src/Game.pas
@@ -223,6 +225,16 @@ export class Level {
         return this.groundMask;
     }
 
+    /** Attach optional presentation data without changing the physics mask. */
+    public setWindowsTerrain(layer: WindowsTerrainLayer | undefined): void {
+        if (layer && (layer.logicalWidth !== this.width || layer.logicalHeight !== this.height)) {
+            throw new Error('Windows terrain dimensions do not match the level.');
+        }
+        this.windowsTerrain = layer;
+    }
+
+    public getWindowsTerrain(): WindowsTerrainLayer | undefined { return this.windowsTerrain; }
+
 
 
 
@@ -254,6 +266,8 @@ export class Level {
         // Erased terrain and special-map backgrounds can be transparent.
         // New builder bricks must still be visible on those pixels.
         this.groundImage[index + 3] = 255;
+        this.windowsTerrain?.setGroundAt(x, y, (this.colorPalette.getR(palletIndex) << 16) |
+            (this.colorPalette.getG(palletIndex) << 8) | this.colorPalette.getB(palletIndex));
     }
 
     /** checks if a point is solid ground  */
@@ -272,6 +286,7 @@ export class Level {
         this.groundImage[index + 0] = 0; // R
         this.groundImage[index + 1] = 0; // G
         this.groundImage[index + 2] = 0; // B
+        this.windowsTerrain?.clearGroundAt(x, y);
     }
 
 
