@@ -1,4 +1,5 @@
 import { WINDOWS_MUSIC_FILES, WINDOWS_SOUND_FILES } from './windows-voice-files';
+import { WINDOWS_LEVEL_FILES, WINDOWS_GROUND_FILES } from './windows-game-names';
 import { WINDOWS_GRAPHICS_GFX_FILES, WINDOWS_GRAPHICS_STYLE_FILES } from './windows-graphics-names';
 
 const BLOCK_SIZE = 2048;
@@ -17,6 +18,11 @@ export async function readWindowsAudioIso(image: File): Promise<File[]> {
 /** Extract only the Windows high-resolution game art, independently of audio. */
 export async function readWindowsGraphicsIso(image: File): Promise<File[]> {
   return readWindowsIsoFiles(image, [['GFX', WINDOWS_GRAPHICS_GFX_FILES], ['STYLES', WINDOWS_GRAPHICS_STYLE_FILES]]);
+}
+
+/** Read standalone level records and metadata from the Windows disc. */
+export async function readWindowsGameIso(image: File): Promise<File[]> {
+  return readWindowsIsoFiles(image, [['LEVEL/ORIG', WINDOWS_LEVEL_FILES], ['STYLES', WINDOWS_GROUND_FILES], ['USERS', ['LEMMINGS.DB']]]);
 }
 
 async function readWindowsIsoFiles(image: File, selections: ReadonlyArray<readonly [string, readonly string[]]>): Promise<File[]> {
@@ -85,10 +91,16 @@ async function readWindowsIsoFiles(image: File, selections: ReadonlyArray<readon
   const folders = await entries(game);
   const recognized = new Map<string, Entry>();
   for (const [folderName, allowed] of selections) {
-    const folder = namedDirectory(folders, folderName);
+    let folder: Entry | undefined = game;
+    let children = folders;
+    for (const segment of folderName.split('/')) {
+      folder = namedDirectory(children, segment);
+      if (!folder) break;
+      children = await entries(folder);
+    }
     if (!folder) continue;
     const allowedNames = new Set(allowed);
-    for (const entry of await entries(folder)) {
+    for (const entry of children) {
       if (!allowedNames.has(entry.name)) continue;
       if (entry.directory || entry.multiExtent || entry.size > MAX_FILE_BYTES || recognized.has(entry.name)) return invalid();
       recognized.set(entry.name, entry);
