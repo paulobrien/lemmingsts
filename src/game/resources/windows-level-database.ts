@@ -81,7 +81,7 @@ export function readWindowsLevelRecord(entry: WindowsLevelEntry, buffer: ArrayBu
   const data = buffer instanceof Uint8Array ? buffer : new Uint8Array(buffer);
   if (data.byteLength !== LEVEL_SIZE) throw new Error(`Invalid Windows level file: ${entry.fileName}`);
   const level = new LevelReader(new BinaryReader(data));
-  if (entry.properties) level.levelProperties = entry.properties;
+  if (entry.properties) level.levelProperties = Object.assign(new LevelProperties(), entry.properties, { skills: [...entry.properties.skills] });
   else level.levelProperties.levelName = entry.name;
   return level;
 }

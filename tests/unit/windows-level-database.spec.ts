@@ -41,6 +41,8 @@ describe('Windows level database', () => {
     const bytes = new Uint8Array(2048); bytes.fill(255, 0x120, 0x760);
     const reader = readWindowsLevelRecord(entry, bytes);
     expect(reader.levelProperties).toEqual(entry.properties);
+    reader.levelProperties.skills[1]--;
+    expect(readWindowsLevelRecord(entry, bytes).levelProperties.skills[1]).toBe(1);
     expect(reader.terrains).toEqual([]);
     expect(() => readWindowsLevelRecord(entry, bytes.subarray(1))).toThrow(/Invalid Windows level file/);
     vi.restoreAllMocks();
