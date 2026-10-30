@@ -6,6 +6,7 @@ import { readGameMode, readGameModePreference, writeGameMode } from '../../src/g
 
 const mock = vi.hoisted(() => ({
   bundled: vi.fn(async (): Promise<'imported' | 'existing' | 'absent'> => 'absent'),
+  allowWindowsOnReload: vi.fn(async (_shouldAllow?: () => boolean) => undefined),
   hasFiles: vi.fn(async () => false),
   importFiles: vi.fn(async () => undefined),
   clearFiles: vi.fn(async () => undefined),
@@ -13,14 +14,14 @@ const mock = vi.hoisted(() => ({
   hasStandaloneGraphics: vi.fn(async () => false),
   importWindowsGame: vi.fn(async (_files: readonly File[]) => undefined),
   clearWindowsGame: vi.fn(async () => undefined),
-  bundledWindowsGame: vi.fn(async () => undefined),
-  bundledVoices: vi.fn(async () => undefined),
+  bundledWindowsGame: vi.fn(async (): Promise<'existing' | 'imported' | 'absent' | undefined> => undefined),
+  bundledVoices: vi.fn(async (): Promise<'existing' | 'imported' | 'absent' | undefined> => undefined),
   hasVoices: vi.fn(async () => false),
   hasAudio: vi.fn(async () => false),
   hasGraphics: vi.fn(async () => false),
   importVoices: vi.fn(async (_files: readonly File[]) => undefined),
   clearVoices: vi.fn(async () => undefined),
-  bundledGraphics: vi.fn(async () => undefined),
+  bundledGraphics: vi.fn(async (): Promise<'existing' | 'imported' | 'absent' | undefined> => undefined),
   importGraphics: vi.fn(async (_files: readonly File[]) => undefined),
   clearGraphics: vi.fn(async () => undefined),
 }));
@@ -33,6 +34,7 @@ vi.mock('@/game/resources/file/windows-game-store', () => ({ hasWindowsGame: moc
 vi.mock('@/game/resources/file/windows-graphics-store', () => ({ hasWindowsGraphics: mock.hasGraphics, hasStandaloneWindowsGraphics: mock.hasStandaloneGraphics, importWindowsGraphics: mock.importGraphics, clearWindowsGraphics: mock.clearGraphics }));
 vi.mock('@/game/resources/file/game-file-store', () => ({ hasLemmingsFiles: mock.hasFiles, clearLemmingsFiles: mock.clearFiles, importLemmingsFiles: mock.importFiles, hasWindowsVoiceFiles: mock.hasVoices, hasWindowsAudioFiles: mock.hasAudio, importWindowsVoiceFiles: mock.importVoices, clearWindowsVoiceFiles: mock.clearVoices }));
 vi.mock('@/game/resources/file/windows-file-import', () => ({
+  allowBundledWindowsOnReload: mock.allowWindowsOnReload,
   importWindowsFiles: async (files: readonly File[]) => {
     await mock.importVoices(files);
     const complete = files.some(file => /\.iso$/i.test(file.name));
@@ -65,6 +67,7 @@ describe('home setup', () => {
   beforeEach(() => {
     localStorage.clear();
     mock.bundled.mockReset().mockResolvedValue('absent');
+    mock.allowWindowsOnReload.mockReset().mockResolvedValue(undefined);
     mock.hasFiles.mockReset().mockResolvedValue(false);
     mock.importFiles.mockReset().mockResolvedValue(undefined);
     mock.clearFiles.mockReset().mockResolvedValue(undefined);
@@ -82,6 +85,55 @@ describe('home setup', () => {
     mock.bundledGraphics.mockReset().mockResolvedValue(undefined);
     mock.importGraphics.mockReset().mockResolvedValue(undefined);
     mock.clearGraphics.mockReset().mockResolvedValue(undefined);
+  });
+
+  it('shows Windows setup failure and allows retry even when DOS is playable', async () => {
+    mock.hasFiles.mockResolvedValue(true);
+    mock.bundledWindowsGame.mockRejectedValueOnce(new Error('network interrupted'));
+    const view = await mount();
+    try {
+      await vi.waitFor(() => expect(view.container.textContent).toContain('Windows files could not be set up automatically.'));
+      const retry = Array.from(view.container.querySelectorAll('button')).find(button => button.textContent === 'Retry Windows setup')!;
+      retry.click();
+      await vi.waitFor(() => expect(mock.bundledWindowsGame).toHaveBeenCalledTimes(2));
+      await vi.waitFor(() => expect(view.container.textContent).not.toContain('Windows files could not be set up automatically.'));
+    } finally { view.unmount(); }
+  });
+
+  it('retries an initially failed storage reset without repeating a successful reset', async () => {
+    mock.allowWindowsOnReload.mockRejectedValueOnce(new Error('storage temporarily blocked'));
+    const view = await mount();
+    try {
+      await vi.waitFor(() => expect(view.container.textContent).toContain('Windows files could not be set up automatically.'));
+      const retry = Array.from(view.container.querySelectorAll('button')).find(button => button.textContent === 'Retry Windows setup')!;
+      retry.click();
+      await vi.waitFor(() => expect(mock.allowWindowsOnReload).toHaveBeenCalledTimes(2));
+      await vi.waitFor(() => expect(view.container.textContent).not.toContain('Windows files could not be set up automatically.'));
+      expect(mock.bundledWindowsGame).toHaveBeenCalledOnce();
+    } finally { view.unmount(); }
+  });
+
+  it('starts Windows setup without waiting for the DOS bundle', async () => {
+    let finish!: (value: 'absent') => void;
+    mock.bundled.mockImplementation(() => new Promise(resolve => { finish = resolve; }));
+    const view = await mount();
+    try {
+      await vi.waitFor(() => expect(mock.bundledWindowsGame).toHaveBeenCalledOnce());
+    } finally { finish('absent'); view.unmount(); }
+  });
+
+  it('reports an incomplete deployment bundle but treats three absent bundles as normal', async () => {
+    mock.bundledVoices.mockResolvedValue('imported');
+    mock.bundledGraphics.mockResolvedValue('absent');
+    mock.bundledWindowsGame.mockResolvedValue('absent');
+    const partial = await mount();
+    await vi.waitFor(() => expect(partial.container.textContent).toContain('Windows files could not be set up automatically.'));
+    partial.unmount();
+    mock.bundledVoices.mockResolvedValue('absent');
+    const absent = await mount();
+    try { await vi.waitFor(() => expect(absent.container.textContent).not.toContain('Checking for Windows files on this installation…'));
+      expect(absent.container.textContent).not.toContain('Windows files could not be set up automatically.');
+    } finally { absent.unmount(); }
   });
 
   it('offers manual import when a deployment has no game files', async () => {

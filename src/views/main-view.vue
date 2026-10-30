@@ -11,7 +11,7 @@
             <label class="game-mode">Game mode
               <select :value="gameMode" :disabled="busy || voiceBusy" @change="onGameModeChange">
                 <option value="dos" :disabled="!dosReady">DOS{{ dosReady ? '' : ' (add DOS files)' }}</option>
-                <option value="windows" :disabled="!windowsReady">Windows{{ windowsReady ? '' : ' (add complete Windows files)' }}</option>
+                <option value="windows" :disabled="!windowsReady">Windows{{ windowsReady ? '' : windowsSetup === 'checking' ? ' (setting up…) ' : ' (add complete Windows files)' }}</option>
               </select>
             </label>
             <p v-if="modeMessage" class="status-message" role="status">{{ modeMessage }}</p>
@@ -33,6 +33,11 @@
           </div>
           <p class="offline-note" role="status">{{ offlineReadiness === 'checking' ? 'Preparing offline play…' : offlineReadiness === 'ready' ? (ready ? 'The app shell is ready offline; your game files are stored on this device.' : 'The app shell is ready offline. Add your game files to play.') : 'Offline play may be unavailable. Reconnect and reopen the app.' }}</p>
           <p v-if="checkingAutomaticFiles && !ready" class="offline-note" role="status">Checking for game files supplied by this installation. You can also add your own files now.</p>
+          <p v-if="windowsSetup === 'checking' && !windowsReady" class="offline-note" role="status">Checking for Windows files on this installation…</p>
+          <div v-if="windowsSetup === 'failed' && !windowsReady" class="offline-note" role="status">
+            Windows files could not be set up automatically. Check your connection and try again, or add your own files below.
+            <button class="text-button" type="button" @click="checkAutomaticVoices">Retry Windows setup</button>
+          </div>
           <input ref="fileInput" class="visually-hidden" type="file" multiple tabindex="-1" aria-hidden="true" @change="onFilesSelected" />
           <input ref="folderInput" class="visually-hidden" type="file" webkitdirectory multiple tabindex="-1" aria-hidden="true" @change="onFilesSelected" />
           <p v-if="message" class="status-message" role="status">{{ message }}</p>
@@ -106,7 +111,7 @@ import { importBundledWindowsGraphics } from '@/game/resources/file/bundled-grap
 import { importBundledWindowsGame } from '@/game/resources/file/bundled-windows-game-import';
 import { hasWindowsGraphics, hasStandaloneWindowsGraphics } from '@/game/resources/file/windows-graphics-store';
 import { hasWindowsGame } from '@/game/resources/file/windows-game-store';
-import { clearWindowsFiles, importWindowsFiles } from '@/game/resources/file/windows-file-import';
+import { allowBundledWindowsOnReload, clearWindowsFiles, importWindowsFiles } from '@/game/resources/file/windows-file-import';
 import { GameFactory } from '@/game/game-factory';
 import { GameTypes } from '@/game/game-types';
 import { readGameMode, readGameModePreference, writeGameMode, type GameMode } from '@/game/game-mode';
@@ -119,6 +124,7 @@ const baseUrl = import.meta.env.BASE_URL;
 const dosReady = ref(false);
 const busy = ref(false);
 const checkingAutomaticFiles = ref(true);
+const windowsSetup = ref<'checking' | 'done' | 'failed'>('checking');
 const message = ref('');
 const backupMessage = ref('');
 const voiceMessage = ref('');
@@ -146,6 +152,9 @@ let disposed = false;
 let manualGeneration = 0;
 let readinessGeneration = 0;
 let voiceReadinessGeneration = 0;
+let voiceManualGeneration = 0;
+let initialWindowsSetup: Promise<void> | undefined;
+let windowsCheck: Promise<void> | undefined;
 
 watch(dosReady, async (hasFiles) => {
   const request = ++artworkRequest;
@@ -207,7 +216,6 @@ async function checkAutomaticFiles() {
   } catch (error) {
     automaticSetupError = error instanceof Error ? error.message : 'Automatic setup could not be completed. Please add your game files manually.';
   }
-  void checkAutomaticVoices();
   if (disposed) return;
   checkingAutomaticFiles.value = false;
   if (busy.value) return;
@@ -221,6 +229,7 @@ onMounted(async () => {
   void refreshReadiness();
   void refreshVoices();
   void checkAutomaticFiles();
+  void checkAutomaticVoices();
 });
 let groupRequest = 0;
 watch([gameMode, windowsReady, dosReady], async ([mode, hasWindows, hasDos]) => {
@@ -271,16 +280,31 @@ async function refreshVoices() {
   }
 }
 async function checkAutomaticVoices() {
-  // Voice recordings are optional; a failed bundle must not block the game.
-  try { await importBundledWindowsVoices(); } catch { /* Manual voice import remains available. */ }
-  try { await importBundledWindowsGraphics(); } catch { /* Original graphics remain available. */ }
-  try { await importBundledWindowsGame(); } catch { /* Manual import remains available. */ }
-  await refreshVoices();
+  if (windowsCheck) return windowsCheck;
+  const check = async () => {
+    windowsSetup.value = 'checking';
+    try {
+      if (!initialWindowsSetup) initialWindowsSetup = allowBundledWindowsOnReload(() => !disposed && voiceManualGeneration === 0);
+      try { await initialWindowsSetup; }
+      catch (error) { initialWindowsSetup = undefined; throw error; }
+      const results = await Promise.allSettled([importBundledWindowsVoices(), importBundledWindowsGraphics(), importBundledWindowsGame()]);
+      await refreshVoices();
+      if (!disposed) {
+        const values = results.flatMap(result => result.status === 'fulfilled' ? [result.value] : []);
+        const incomplete = !windowsReady.value && values.includes('absent') && values.some(value => value === 'imported' || value === 'existing');
+        windowsSetup.value = results.some(result => result.status === 'rejected') || incomplete ? 'failed' : 'done';
+      }
+    } catch {
+      if (!disposed) windowsSetup.value = 'failed';
+    }
+  };
+  windowsCheck = check();
+  try { await windowsCheck; } finally { windowsCheck = undefined; }
 }
 async function onVoicesSelected(event: Event) {
   const input = event.target as HTMLInputElement;
   if (!input.files?.length) return;
-  voiceReadinessGeneration++; voiceBusy.value = true; voiceMessage.value = '';
+  voiceManualGeneration++; voiceReadinessGeneration++; voiceBusy.value = true; voiceMessage.value = '';
   try {
     const imported = await importWindowsFiles(input.files);
     await refreshVoices();
@@ -292,7 +316,7 @@ async function onVoicesSelected(event: Event) {
   finally { input.value = ''; voiceBusy.value = false; }
 }
 async function removeVoices() {
-  voiceReadinessGeneration++; voiceBusy.value = true; voiceMessage.value = '';
+  voiceManualGeneration++; voiceReadinessGeneration++; voiceBusy.value = true; voiceMessage.value = '';
   try {
     await clearWindowsFiles();
     await refreshVoices();
@@ -300,7 +324,7 @@ async function removeVoices() {
       modeMessage.value = writeGameMode('dos', false) ? '' : 'Game mode changed for this visit, but this browser could not save your preference.';
       gameMode.value = 'dos';
     }
-    voiceMessage.value = 'Windows files removed from this browser.';
+    voiceMessage.value = 'Windows files removed from this browser. If this site provides them, refresh to restore them.';
   }
   catch { voiceMessage.value = 'Could not remove the Windows files. Please try again.'; }
   finally { voiceBusy.value = false; }
