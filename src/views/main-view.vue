@@ -5,12 +5,12 @@
       <section class="hero" aria-labelledby="welcome-title">
         <div class="hero-copy">
           <h1 id="welcome-title">Let's get them home.</h1>
-          <p class="intro">{{ ready ? 'Choose a difficulty and level, then lead your lemmings to the exit.' : 'Add your original DOS game files to unlock 120 levels.' }}</p>
+          <p class="intro">{{ ready ? 'Choose a difficulty and level, then lead your lemmings to the exit.' : 'Add your original DOS or Windows Lemmings files to play.' }}</p>
           <p class="preview-note">Early preview. Testing on different devices is still underway.</p>
           <div v-if="ready" class="actions">
             <label class="game-mode">Game mode
               <select :value="gameMode" :disabled="busy || voiceBusy" @change="onGameModeChange">
-                <option value="dos">DOS</option>
+                <option value="dos" :disabled="!dosReady">DOS{{ dosReady ? '' : ' (add DOS files)' }}</option>
                 <option value="windows" :disabled="!windowsReady">Windows{{ windowsReady ? '' : ' (add complete Windows files)' }}</option>
               </select>
             </label>
@@ -20,14 +20,14 @@
               <label>Level <select v-model.number="selectedLevel"><option v-for="index in groups[selectedGroup].count" :key="index" :value="index - 1">{{ index }}{{ bestScore(selectedGroup, index - 1) === null ? '' : ` (best ${bestScore(selectedGroup, index - 1)}%)` }}</option></select></label>
             </div>
             <p v-if="bestScore(selectedGroup, selectedLevel) !== null" class="best-score">Best saved: {{ bestScore(selectedGroup, selectedLevel) }}%</p>
-            <router-link v-if="gameMode === 'dos' || windowsReady" class="primary-button" :to="{ name: 'game', params: { gameType: 1 }, query: { group: selectedGroup, level: selectedLevel } }">Play Lemmings</router-link>
+            <router-link v-if="(gameMode === 'dos' && dosReady) || (gameMode === 'windows' && windowsReady)" class="primary-button" :to="{ name: 'game', params: { gameType: 1 }, query: { group: selectedGroup, level: selectedLevel } }">Play Lemmings</router-link>
             <button v-else class="primary-button" type="button" disabled>Play Lemmings</button>
             <p class="ready-note">Your game files are ready on this device</p>
           </div>
           <div v-else class="actions">
-            <button class="primary-button" type="button" :disabled="busy" @click="fileInput?.click()">{{ busy ? 'Getting things ready…' : 'Add your game files' }}</button>
+            <button class="primary-button" type="button" :disabled="busy" @click="fileInput?.click()">{{ busy ? 'Getting things ready…' : 'Add DOS files' }}</button>
             <button class="text-button folder-button" type="button" :disabled="busy" @click="folderInput?.click()">Or choose a folder</button>
-            <p class="hint">A one-time setup using your original DOS Lemmings files or a ZIP archive.</p>
+            <p class="hint">Add DOS files here, or use Windows game files below to import a Windows ISO.</p>
           </div>
           <p class="offline-note" role="status">{{ offlineReadiness === 'checking' ? 'Preparing offline play…' : offlineReadiness === 'ready' ? (ready ? 'The app shell is ready offline; your game files are stored on this device.' : 'The app shell is ready offline. Add your game files to play.') : 'Offline play may be unavailable. Reconnect and reopen the app.' }}</p>
           <p v-if="checkingAutomaticFiles && !ready" class="offline-note" role="status">Checking for game files supplied by this installation. You can also add your own files now.</p>
@@ -37,7 +37,7 @@
         </div>
         <div class="hero-art" aria-hidden="true">
           <div class="art-frame">
-            <div class="art-topline"><span>LEMMINGS TS</span><span>120 levels</span></div>
+            <div class="art-topline"><span>LEMMINGS TS</span><span>{{ gameMode === 'windows' && windowsReady ? 'Windows levels' : '120 levels' }}</span></div>
             <div class="art-screen">
               <div class="fallback-landscape" :class="{ 'is-hidden': artworkReady }">
                 <span class="pixel-sun"></span><span class="pixel-mountain mountain-back"></span><span class="pixel-mountain mountain-front"></span>
@@ -56,14 +56,14 @@
         <div class="setup-detail">
           <p v-if="ready">Your original files are stored in this browser, ready for your next adventure. They stay on this device.</p>
           <p v-else>Select the original Lemmings <strong>.dat</strong> files together, or choose a ZIP containing them. They’re stored in this browser, not uploaded. You’ll need to add them separately on each device.</p>
-          <button v-if="ready" class="text-button" type="button" :disabled="busy || voiceBusy" @click="removeFiles">Remove game files</button>
+          <button v-if="dosReady" class="text-button" type="button" :disabled="busy || voiceBusy" @click="removeFiles">Remove DOS files</button>
         </div>
       </section>
       <section class="setup" aria-labelledby="voices-title">
         <div><h2 id="voices-title">Windows game files</h2></div>
         <div class="setup-detail">
           <p v-if="windowsReady">Your Windows sound and graphics files are ready on this device.</p>
-          <p v-else>Add your Windows Lemmings ISO, an extracted game folder, or a ZIP containing its audio and graphics files. They stay in this browser. Windows mode currently also uses the original DOS game data.</p>
+          <p v-else>Add your Windows Lemmings ISO, an extracted game folder, or a ZIP containing its audio and graphics files. They stay in this browser. The Windows ISO contains everything needed for Windows mode.</p>
           <div class="backup-actions">
             <button class="text-button" type="button" :disabled="busy || voiceBusy" @click="voiceInput?.click()">{{ voicesReady ? 'Replace Windows files' : 'Add Windows files' }}</button>
             <button class="text-button" type="button" :disabled="busy || voiceBusy" @click="voiceFolderInput?.click()">Choose game folder</button>
@@ -97,7 +97,9 @@ import { clearLemmingsFiles, hasLemmingsFiles, importLemmingsFiles, clearWindows
 import { importBundledLemmingsFiles } from '@/game/resources/file/bundled-game-import';
 import { importBundledWindowsVoices } from '@/game/resources/file/bundled-voice-import';
 import { importBundledWindowsGraphics } from '@/game/resources/file/bundled-graphics-import';
-import { clearWindowsGraphics, hasWindowsGraphics, importWindowsGraphics } from '@/game/resources/file/windows-graphics-store';
+import { importBundledWindowsGame } from '@/game/resources/file/bundled-windows-game-import';
+import { clearWindowsGraphics, hasWindowsGraphics, hasStandaloneWindowsGraphics, importWindowsGraphics } from '@/game/resources/file/windows-graphics-store';
+import { clearWindowsGame, hasWindowsGame, importWindowsGame } from '@/game/resources/file/windows-game-store';
 import { WINDOWS_GRAPHICS_FILES } from '@/game/resources/file/windows-graphics-names';
 import { GameFactory } from '@/game/game-factory';
 import { GameTypes } from '@/game/game-types';
@@ -108,7 +110,7 @@ import { offlineReadiness } from '@/offline-readiness';
 
 const baseUrl = import.meta.env.BASE_URL;
 
-const ready = ref(false);
+const dosReady = ref(false);
 const busy = ref(false);
 const checkingAutomaticFiles = ref(true);
 const message = ref('');
@@ -117,7 +119,10 @@ const voiceMessage = ref('');
 const voicesReady = ref(false);
 const audioReady = ref(false);
 const graphicsReady = ref(false);
-const windowsReady = computed(() => ready.value && audioReady.value && graphicsReady.value);
+const windowsGameReady = ref(false);
+const standaloneGraphicsReady = ref(false);
+const windowsReady = computed(() => windowsGameReady.value && audioReady.value && standaloneGraphicsReady.value);
+const ready = computed(() => dosReady.value || windowsReady.value);
 const voiceBusy = ref(false);
 const gameMode = ref<GameMode>(readGameMode());
 const fileInput = ref<HTMLInputElement | null>(null);
@@ -134,7 +139,7 @@ let manualGeneration = 0;
 let readinessGeneration = 0;
 let voiceReadinessGeneration = 0;
 
-watch(ready, async (hasFiles) => {
+watch(dosReady, async (hasFiles) => {
   const request = ++artworkRequest;
   artworkReady.value = false;
   if (!hasFiles) {
@@ -158,12 +163,12 @@ onBeforeUnmount(() => { artworkRequest++; disposed = true; readinessGeneration++
 const groups = ref<{ name: string; count: number }[]>([]);
 const selectedGroup = ref(0);
 const selectedLevel = ref(0);
-const progress = ref(readProgress());
+const progress = ref(readProgress(gameMode.value));
 function bestScore(group: number, level: number): number | null {
   return progress.value.find(entry => entry.gameType === GameTypes.LEMMINGS && entry.groupIndex === group && entry.levelIndex === level)?.bestSavedPercent ?? null;
 }
 function selectLastLevel() {
-  const last = readLastLevel();
+  const last = readLastLevel(gameMode.value);
   if (last?.gameType === GameTypes.LEMMINGS && groups.value[last.groupIndex] && last.levelIndex < groups.value[last.groupIndex].count) {
     selectedGroup.value = last.groupIndex;
     selectedLevel.value = last.levelIndex;
@@ -176,7 +181,7 @@ async function refreshReadiness() {
   const generation = ++readinessGeneration;
   try {
     const hasFiles = await hasLemmingsFiles();
-    if (!disposed && generation === readinessGeneration && !busy.value) ready.value = hasFiles;
+    if (!disposed && generation === readinessGeneration && !busy.value) dosReady.value = hasFiles;
     return hasFiles;
   } catch {
     if (!disposed && generation === readinessGeneration && !busy.value) message.value = 'This browser could not access local storage. Check your browser settings and try again.';
@@ -208,43 +213,53 @@ onMounted(async () => {
   void refreshReadiness();
   void refreshVoices();
   void checkAutomaticFiles();
-  try {
-    const config = await new GameFactory(`${import.meta.env.BASE_URL}data`).getConfig(GameTypes.LEMMINGS);
-    if (config) {
-      groups.value = config.level.groups.map((name, index) => ({ name, count: config.level.getGroupLength(index) }));
-      selectLastLevel();
-    }
-  } catch { if (!disposed && !message.value) message.value = 'The level list could not be loaded. Check your connection and try again.'; }
 });
+let groupRequest = 0;
+watch([gameMode, windowsReady, dosReady], async ([mode, hasWindows, hasDos]) => {
+  if (!hasDos && hasWindows && mode !== 'windows') {
+    if (writeGameMode('windows')) gameMode.value = 'windows';
+    return;
+  }
+  const generation = ++groupRequest;
+  if (mode === 'windows' && !hasWindows) { groups.value = []; return; }
+  try {
+    const config = await new GameFactory(`${import.meta.env.BASE_URL}data`, mode).getConfig(GameTypes.LEMMINGS);
+    if (disposed || generation !== groupRequest) return;
+    groups.value = config ? config.level.groups.map((name, index) => ({ name, count: config.level.getGroupLength(index) })) : [];
+    progress.value = readProgress(mode);
+    selectLastLevel();
+  } catch { if (!disposed && generation === groupRequest) groups.value = []; }
+}, { immediate: true });
 async function onFilesSelected(event: Event) {
   const input = event.target as HTMLInputElement;
   if (!input.files?.length) return;
   manualGeneration++; readinessGeneration++;
   busy.value = true; message.value = '';
-  try { await importLemmingsFiles(input.files); ready.value = true; message.value = 'Game files added. You’re ready to play!'; void checkAutomaticVoices(); }
+  try { await importLemmingsFiles(input.files); dosReady.value = true; message.value = 'Game files added. You’re ready to play!'; void checkAutomaticVoices(); }
   catch (error) { message.value = error instanceof Error ? error.message : 'Could not read those files. Please try again.'; }
   finally { input.value = ''; busy.value = false; void refreshReadiness(); }
 }
 async function removeFiles() {
   manualGeneration++; readinessGeneration++;
   busy.value = true; message.value = '';
-  try { await clearLemmingsFiles(); await clearWindowsGraphics(); ready.value = false; message.value = 'Game files removed from this browser.'; }
+  try { await clearLemmingsFiles(); dosReady.value = false; message.value = 'Game files removed from this browser.'; }
   catch { message.value = 'Could not remove the game files. Please try again.'; }
   finally { busy.value = false; void refreshReadiness(); void refreshVoices(); }
 }
 async function refreshVoices() {
   const generation = ++voiceReadinessGeneration;
   try {
-    const [voices, audio, graphics] = await Promise.all([hasWindowsVoiceFiles(), hasWindowsAudioFiles(), hasWindowsGraphics()]);
-    if (!disposed && generation === voiceReadinessGeneration) { voicesReady.value = voices; audioReady.value = audio; graphicsReady.value = graphics; }
+    const [voices, audio, graphics, game, standalone] = await Promise.all([hasWindowsVoiceFiles(), hasWindowsAudioFiles(), hasWindowsGraphics(), hasWindowsGame(), hasStandaloneWindowsGraphics()]);
+    if (!disposed && generation === voiceReadinessGeneration) { voicesReady.value = voices; audioReady.value = audio; graphicsReady.value = graphics; windowsGameReady.value = game; standaloneGraphicsReady.value = standalone; }
   } catch {
-    if (!disposed && generation === voiceReadinessGeneration) { voicesReady.value = false; audioReady.value = false; graphicsReady.value = false; }
+    if (!disposed && generation === voiceReadinessGeneration) { voicesReady.value = false; audioReady.value = false; graphicsReady.value = false; windowsGameReady.value = false; standaloneGraphicsReady.value = false; }
   }
 }
 async function checkAutomaticVoices() {
   // Voice recordings are optional; a failed bundle must not block the game.
   try { await importBundledWindowsVoices(); } catch { /* Manual voice import remains available. */ }
   try { await importBundledWindowsGraphics(); } catch { /* Original graphics remain available. */ }
+  try { await importBundledWindowsGame(); } catch { /* Manual import remains available. */ }
   await refreshVoices();
 }
 async function onVoicesSelected(event: Event) {
@@ -263,6 +278,11 @@ async function onVoicesSelected(event: Event) {
       try { await importWindowsGraphics(files); voiceMessage.value = 'Windows audio and graphics added to this device.'; }
       catch { if (explicitGraphics) voiceMessage.value = 'Windows audio added, but the graphics could not be imported.'; }
     }
+    const wantsGame = selected.some(file => file.name.toLowerCase().endsWith('.iso') || file.name.toLowerCase().endsWith('.zip') || /^LVL\d{4}\.LVL$/i.test(file.name));
+    if (wantsGame) {
+      try { await importWindowsGame(files); voiceMessage.value = 'Windows audio, graphics and level data added to this device.'; }
+      catch { voiceMessage.value += ' Windows level data could not be imported.'; }
+    }
     await refreshVoices();
   }
   catch (error) { voiceMessage.value = error instanceof Error ? error.message : 'Could not read those audio files. Please try again.'; }
@@ -271,7 +291,7 @@ async function onVoicesSelected(event: Event) {
 async function removeVoices() {
   voiceReadinessGeneration++; voiceBusy.value = true; voiceMessage.value = '';
   try {
-    await clearWindowsVoiceFiles(); await clearWindowsGraphics();
+    await clearWindowsVoiceFiles(); await clearWindowsGraphics(); await clearWindowsGame();
     if (gameMode.value === 'windows' && writeGameMode('dos')) gameMode.value = 'dos';
     await refreshVoices(); voiceMessage.value = 'Windows files removed from this browser.';
   }
@@ -281,7 +301,7 @@ async function removeVoices() {
 function onGameModeChange(event: Event) {
   const select = event.target as HTMLSelectElement;
   const mode = select.value;
-  if ((mode !== 'dos' && mode !== 'windows') || (mode === 'windows' && !windowsReady.value) || !writeGameMode(mode)) {
+  if ((mode !== 'dos' && mode !== 'windows') || (mode === 'windows' && !windowsReady.value) || (mode === 'dos' && !dosReady.value) || !writeGameMode(mode)) {
     select.value = gameMode.value;
     voiceMessage.value = 'Could not select that game mode. Check the game files and browser storage.';
     return;
@@ -311,7 +331,7 @@ async function onBackupSelected(event: Event) {
   try {
     if (file.size > 64 * 1024) throw new Error('This backup file is too large.');
     if (!restoreProgressBackup(await file.text())) throw new Error('Could not save progress on this device. Check browser storage and try again.');
-    progress.value = readProgress();
+    progress.value = readProgress(gameMode.value);
     selectLastLevel();
     backupMessage.value = 'Progress and settings restored. Your game files were not changed.';
   } catch (error) {

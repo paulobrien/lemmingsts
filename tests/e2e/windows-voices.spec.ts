@@ -22,7 +22,7 @@ test('Windows audio plays imported voice samples during a level', async ({ page 
   await page.goto('/')
   await page.locator('input[type=file]').first().setInputFiles(files)
   await page.locator('input[accept*=".iso"]').setInputFiles(process.env.LEMMINGS_WINDOWS_ISO!)
-  await expect(page.getByText('Windows audio and graphics added to this device.')).toBeVisible({ timeout: 30_000 })
+  await expect(page.getByText('Windows audio, graphics and level data added to this device.')).toBeVisible({ timeout: 30_000 })
   await page.getByLabel('Game mode').selectOption('windows')
   await page.getByRole('link', { name: 'Play Lemmings' }).click()
   await page.getByRole('button', { name: 'Music off' }).click()

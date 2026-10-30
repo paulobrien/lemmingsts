@@ -162,7 +162,7 @@ export default defineComponent({
         const musicEnabled = ref(settings.musicEnabled);
         const soundEnabled = ref(settings.soundEnabled);
         const gameType = ref((Number(route.params.gameType) || GameTypes.LEMMINGS) as GameTypes);
-        const factory = new GameFactory(`${import.meta.env.BASE_URL}data`);
+        const factory = new GameFactory(`${import.meta.env.BASE_URL}data`, gameMode.value);
         let resources: GameResources | null = null;
         let game: Game | null = null;
         let stage: Stage | null = null;
@@ -181,7 +181,7 @@ export default defineComponent({
 
         const title = computed(() => level.value?.name || 'Loading level');
         const canPlay = computed(() => !!level.value && !loading.value && !error.value);
-        const availableHints = computed(() => gameType.value === GameTypes.LEMMINGS
+        const availableHints = computed(() => gameMode.value === 'dos' && gameType.value === GameTypes.LEMMINGS
             ? getTestedSolution(groupIndex.value, levelIndex.value)?.hints ?? [] : []);
         const hints = computed(() => hintCompatibility.value === 'verified' ? availableHints.value : []);
         const exampleSkillName = computed(() => skillButtons.find(skill => skill.type === exampleMove.value?.skill)?.name || 'skill');
@@ -296,14 +296,15 @@ export default defineComponent({
                 groupName.value = config.level.groups[requestedGroup] || `Group ${requestedGroup + 1}`;
                 level.value = nextLevel;
                 nextLevelAvailable.value = levelIndex.value + 1 < group.length || groupIndex.value + 1 < config.level.order.length;
-                noteSaveResult(rememberLevel(requestedGame, requestedGroup, requestedLevel));
-                if (requestedGame === GameTypes.LEMMINGS) {
+                noteSaveResult(rememberLevel(requestedGame, requestedGroup, requestedLevel, gameMode.value));
+                if (requestedGame === GameTypes.LEMMINGS && gameMode.value === 'dos') {
                     void verifyHintData().then(result => {
                         if (!disposed && generation === loadGeneration) hintCompatibility.value = result;
                     }).catch(() => {
                         if (!disposed && generation === loadGeneration) hintCompatibility.value = 'unavailable';
                     });
                 }
+                if (gameMode.value === 'windows') hintCompatibility.value = 'unavailable';
                 if (stage) {
                     const display = stage.getGameDisplay();
                     stage.resetFade();
@@ -315,7 +316,7 @@ export default defineComponent({
                         if (prepared.status === 'ready') {
                             nextLevel.setWindowsTerrain(prepared.layer);
                             if (prepared.usesDosBackground) graphicsNotice.value = 'This special level uses its DOS background with Windows characters and objects.';
-                        } else graphicsNotice.value = 'Windows artwork is unavailable. This level uses original DOS graphics.';
+                        } else graphicsNotice.value = 'High-resolution Windows artwork is unavailable. This level uses its original-sized Windows graphics.';
                     }
                     nextLevel.render(display);
                     display.setScreenPosition(nextLevel.screenPositionX, 0);
@@ -363,7 +364,7 @@ export default defineComponent({
                         stage.getGameDisplay().setNativeSprites(sprites);
                     } else if (level.value?.getWindowsTerrain()) {
                         stage.getGameDisplay().setNativeSprites(null);
-                        graphicsNotice.value = 'Windows artwork is unavailable. This level uses original DOS graphics.';
+                        graphicsNotice.value = 'High-resolution Windows artwork is unavailable. This level uses its original-sized Windows graphics.';
                     }
                 }
                 game = nextGame;
@@ -382,7 +383,7 @@ export default defineComponent({
                     }
                 });
                 const activeResources = resources;
-                effects = activeResources ? new SoundEffectsPlayer(index => activeResources.getSoundTrack(index)) : null;
+                effects = activeResources && gameMode.value === 'dos' ? new SoundEffectsPlayer(index => activeResources.getSoundTrack(index)) : null;
                 game.onSoundEffect.on(effect => {
                     if (effect === undefined || !soundEnabled.value || !playing.value || paused.value) return;
                     const generation = ++effectGeneration;
@@ -424,7 +425,7 @@ export default defineComponent({
                         ? `Level complete! You saved ${result.survivorPercentage}%.`
                         : `Try again — you saved ${result.survivorPercentage}%.`;
                     if (result.state === GameStateTypes.SUCCEEDED) {
-                        noteSaveResult(recordCompletion(gameType.value, groupIndex.value, levelIndex.value, result.survivorPercentage));
+                        noteSaveResult(recordCompletion(gameType.value, groupIndex.value, levelIndex.value, result.survivorPercentage, gameMode.value));
                     }
                 });
                 game.start();
@@ -507,7 +508,7 @@ export default defineComponent({
             level.value?.setWindowsTerrain(undefined);
             game?.level.setWindowsTerrain(undefined);
             stage?.getGameDisplay().setNativeSprites(null);
-            graphicsError.value = message || 'Windows artwork is unavailable. DOS graphics have been restored.';
+            graphicsError.value = message || 'High-resolution Windows artwork is unavailable. Original-sized Windows graphics have been restored.';
         }
 
         function setSpeed(value: number) {
@@ -543,6 +544,7 @@ export default defineComponent({
                     }
                     player.stop();
                     music = null;
+                    return;
                 }
                 const player = await resources.getMusicPlayer(levelIndex.value % 20);
                 if (disposed || !musicEnabled.value || generation !== musicGeneration) { player.stop(); return; }
@@ -566,18 +568,7 @@ export default defineComponent({
                     generation !== musicGeneration || music !== current || !resources) return;
                 current.stop();
                 music = null;
-                try {
-                    const fallback = await resources.getMusicPlayer(levelIndex.value % 20);
-                    if (disposed || !musicEnabled.value || generation !== musicGeneration) { fallback.stop(); return; }
-                    music = fallback;
-                    if (paused.value || document.hidden) fallback.suspend();
-                    else fallback.play();
-                } catch {
-                    if (generation === musicGeneration) {
-                        musicEnabled.value = false;
-                        noteSaveResult(saveSettings({ speed: speed.value, musicEnabled: false, soundEnabled: soundEnabled.value }));
-                    }
-                }
+
             });
         }
 

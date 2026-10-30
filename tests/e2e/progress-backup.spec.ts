@@ -33,7 +33,7 @@ test('exports and restores only progress and settings', async ({ page }) => {
   await input.setInputFiles({ name: 'progress.json', mimeType: 'application/json', buffer: Buffer.from(JSON.stringify(replacement)) })
   await expect(page.getByText('Progress and settings restored. Your game files were not changed.')).toBeVisible()
   expect(JSON.parse((await page.evaluate(() => localStorage.getItem('lemmings.restored-state.v1'))) || '')).toEqual(replacement)
-  await expect(page.getByRole('button', { name: 'Add your game files' })).toBeVisible()
+  await expect(page.getByRole('button', { name: 'Add DOS files' })).toBeVisible()
 })
 
 test('selects the remembered level and shows its best score', async ({ page }) => {

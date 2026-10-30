@@ -29,7 +29,7 @@ test('uses locally imported title art and removes it with the files', async ({ p
   await context.setOffline(true)
   await page.reload()
   await expect(logo).toBeVisible()
-  await page.getByRole('button', { name: 'Remove game files' }).click()
+  await page.getByRole('button', { name: 'Remove DOS files' }).click()
   await expect(logo).toBeHidden()
   await expect(page.locator('.fallback-landscape')).toBeVisible()
   await expect.poll(() => logo.evaluate((canvas: HTMLCanvasElement) => [canvas.width, canvas.height])).toEqual([0, 0])

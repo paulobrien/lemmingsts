@@ -1,23 +1,18 @@
-import { readdir } from 'node:fs/promises'
-import { resolve } from 'node:path'
 import { expect, test } from '@playwright/test'
 
 test('plays a complete level using Windows artwork from an ISO', async ({ page }, testInfo) => {
   test.skip(process.env.RUN_PRIVATE_GAME_TESTS !== '1' || !process.env.LEMMINGS_WINDOWS_ISO,
-    'Requires local DOS files and LEMMINGS_WINDOWS_ISO')
+    'Requires LEMMINGS_WINDOWS_ISO')
   test.setTimeout(60_000)
   const errors: string[] = []
   page.on('pageerror', error => errors.push(error.message))
-  const files = (await readdir(resolve('dos/lemmings')))
-    .filter(name => name.toLowerCase().endsWith('.dat'))
-    .map(name => resolve('dos/lemmings', name))
   await page.goto('/')
-  // Import the Windows disc first: it must be stored without claiming the DOS-based engine is ready.
   await page.locator('input[accept*=".iso"]').setInputFiles(process.env.LEMMINGS_WINDOWS_ISO!)
-  await expect(page.getByText('Windows audio and graphics added to this device.')).toBeVisible({ timeout: 30_000 })
-  await expect(page.getByRole('link', { name: 'Play Lemmings' })).toHaveCount(0)
-  await page.locator('input[type=file]').first().setInputFiles(files)
+  await expect(page.getByText('Windows audio, graphics and level data added to this device.')).toBeVisible({ timeout: 30_000 })
+  await expect(page.getByLabel('Game mode')).toHaveValue('windows')
   await expect(page.getByRole('link', { name: 'Play Lemmings' })).toBeVisible()
+  await expect(page.getByLabel('Difficulty').locator('option')).toHaveCount(4)
+  await expect(page.getByLabel('Level').locator('option')).toHaveCount(28)
   await page.getByRole('link', { name: 'Play Lemmings' }).click()
   await expect(page.getByRole('button', { name: 'Start level' })).toBeEnabled()
 
@@ -28,12 +23,7 @@ test('plays a complete level using Windows artwork from an ISO', async ({ page }
     for (let i = 0; i < data.length; i += 16) value = (Math.imul(value, 31) + data[i] + data[i + 1] * 3 + data[i + 2] * 7) >>> 0
     return value
   })
-  const original = await terrainHash()
-  await page.getByRole('link', { name: 'Level selection' }).click()
-  await page.getByLabel('Game mode').selectOption('windows')
-  await page.getByRole('link', { name: 'Play Lemmings' }).click()
-  await expect(page.getByRole('button', { name: 'Start level' })).toBeEnabled({ timeout: 15_000 })
-  expect(await terrainHash()).not.toEqual(original)
+  expect(await terrainHash()).not.toEqual(0)
   await page.getByRole('button', { name: 'Start level' }).click()
   await expect(page.locator('.time')).toHaveText('4-54', { timeout: 15_000 })
   await page.getByRole('button', { name: 'Pause', exact: true }).click()

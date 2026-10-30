@@ -10,12 +10,12 @@ test('explains local setup and rejects an incomplete import', async ({ page }) =
   })
   await page.goto('/')
   await expect(page.getByRole('heading', { name: "Let's get them home." })).toBeVisible()
-  await expect(page.getByRole('button', { name: 'Add your game files' })).toBeEnabled()
+  await expect(page.getByRole('button', { name: 'Add DOS files' })).toBeEnabled()
   await page.locator('input[type=file]').first().setInputFiles({
     name: 'main.dat', mimeType: 'application/octet-stream', buffer: Buffer.from('synthetic'),
   })
   await expect(page.getByRole('status').filter({ hasText: 'Missing files:' })).toBeVisible()
-  await expect(page.getByRole('button', { name: 'Add your game files' })).toBeVisible()
+  await expect(page.getByRole('button', { name: 'Add DOS files' })).toBeVisible()
   expect(outgoingWrites).toEqual([])
 })
 
@@ -41,7 +41,7 @@ test('keeps the offline app shell after visiting the licence notices', async ({ 
   await context.setOffline(true)
   await page.goto('/')
   await expect(page.getByRole('heading', { name: "Let's get them home." })).toBeVisible()
-  await expect(page.getByRole('button', { name: 'Add your game files' })).toBeVisible()
+  await expect(page.getByRole('button', { name: 'Add DOS files' })).toBeVisible()
 
   // A direct navigation to a Vue route still needs the shell when offline.
   await page.goto('/game/0')
@@ -55,7 +55,7 @@ test('imports the local DOS files, plays, and reloads offline', async ({ page, c
     .map(name => resolve(directory, name))
 
   await page.goto('/')
-  await expect(page.getByRole('button', { name: 'Add your game files' })).toBeEnabled()
+  await expect(page.getByRole('button', { name: 'Add DOS files' })).toBeEnabled()
   await page.locator('input[type=file]').first().setInputFiles(files)
   await expect(page.getByRole('link', { name: 'Play Lemmings' })).toBeVisible()
   await page.getByRole('link', { name: 'Play Lemmings' }).click()
@@ -173,7 +173,7 @@ test('imports a ZIP of the local DOS files', async ({ page }) => {
   const entries = await Promise.all(names.map(async name => [`lemmings/${name}`, new Uint8Array(await readFile(resolve(directory, name)))] as const))
   const archive = zipSync(Object.fromEntries(entries))
   await page.goto('/')
-  await expect(page.getByRole('button', { name: 'Add your game files' })).toBeEnabled()
+  await expect(page.getByRole('button', { name: 'Add DOS files' })).toBeEnabled()
   await page.locator('input[type=file]').first().setInputFiles({ name: 'lemmings.zip', mimeType: 'application/zip', buffer: Buffer.from(archive) })
   await expect(page.getByRole('link', { name: 'Play Lemmings' })).toBeVisible()
   await page.getByRole('link', { name: 'Play Lemmings' }).click()

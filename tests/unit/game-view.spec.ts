@@ -46,7 +46,7 @@ const mock = vi.hoisted(() => {
     };
     const midiSynth = { getAudioContext: vi.fn(() => midiContext), setLoop: vi.fn(), loadMIDI: vi.fn(), playMIDI: vi.fn(), stopMIDI: vi.fn() };
     const getWindowsAudioFile = vi.fn(async (_name: string): Promise<ArrayBuffer | undefined> => undefined);
-    const prepareWindowsTerrain = vi.fn(async (_level: unknown): Promise<{ status: 'ready'; layer: object } | { status: 'special' | 'unavailable' }> => ({ status: 'unavailable' }));
+    const prepareWindowsTerrain = vi.fn(async (_level: unknown): Promise<{ status: 'ready'; layer: object; usesDosBackground?: true } | { status: 'unavailable' }> => ({ status: 'unavailable' }));
     const prepareWindowsSprites = vi.fn(async (_sprites: unknown): Promise<Map<object, object> | null> => null);
     const prepareWindowsObjects = vi.fn(async (_level: unknown): Promise<Map<object, object> | null> => null);
     const resources = { getLevel: vi.fn(async () => level), getSoundTrack: vi.fn(), getMusicPlayer: vi.fn(async () => music) };
@@ -164,7 +164,7 @@ describe('game view lifecycle', () => {
     });
 
     it('does not apply a late graphics load to a changed level', async () => {
-        let finish!: (value: { status: 'ready'; layer: object }) => void;
+        let finish!: (value: { status: 'ready'; layer: object; usesDosBackground?: true }) => void;
         mock.prepareWindowsTerrain.mockImplementationOnce(() => new Promise(resolve => { finish = resolve; })).mockResolvedValue({ status: 'ready', layer: { marker: 'special' }, usesDosBackground: true });
         localStorage.setItem('lemmings.game-mode.v1', 'windows');
         const wrapper = mountView(); await flushPromises();
@@ -236,7 +236,7 @@ describe('game view lifecycle', () => {
         expect(mock.resources.getMusicPlayer).not.toHaveBeenCalled();
     });
 
-    it('falls back when a resumed Windows MIDI load finds no track', async () => {
+    it('does not request DOS audio when a resumed Windows MIDI track is unavailable', async () => {
         localStorage.setItem('lemmings.game-mode.v1', 'windows');
         let finish!: (value: ArrayBuffer | undefined) => void;
         mock.getWindowsAudioFile.mockImplementationOnce(() => new Promise(resolve => { finish = resolve; })).mockResolvedValue(undefined);
@@ -253,8 +253,8 @@ describe('game view lifecycle', () => {
         expect(mock.resources.getMusicPlayer).not.toHaveBeenCalled();
         button(wrapper.container, 'Resume').click();
         await flushPromises();
-        expect(mock.resources.getMusicPlayer).toHaveBeenCalledWith(0);
-        expect(mock.music.play).toHaveBeenCalled();
+        expect(mock.resources.getMusicPlayer).not.toHaveBeenCalled();
+        expect(mock.music.play).not.toHaveBeenCalled();
     });
 
     it('does not start a delayed Windows MIDI track after navigating to another level', async () => {
