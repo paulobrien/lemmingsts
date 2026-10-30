@@ -388,6 +388,7 @@ export class DisplayImage {
         const onlyOverwrite = destConfig.onlyOverwrite;
 
         const mask = this.groundMask;
+        const nativeSprite = this.nativeForeground && this.nativeSprites?.get(frame);
 
         for (let srcY = 0; srcY < srcH; srcY++) {
 
@@ -428,7 +429,25 @@ export class DisplayImage {
                 const destIndex = ((destW * outY) + outX);
 
                 destData[destIndex] = srcBuffer[srcIndex];
-                this.setNativePixel(outX, outY, srcBuffer[srcIndex]);
+                if (!nativeSprite) this.setNativePixel(outX, outY, srcBuffer[srcIndex]);
+            }
+        }
+
+        if (nativeSprite && this.nativeForeground) {
+            const output = this.nativeForegroundPixels!;
+            const width = this.nativeForeground.width, height = this.nativeForeground.height;
+            const left = posX * 2 + nativeSprite.offsetX, top = posY * 2 + nativeSprite.offsetY;
+            for (let y = 0; y < nativeSprite.height; y++) {
+                const outY = top + y;
+                if (outY < 0 || outY >= height) continue;
+                const sourceY = upsideDown ? nativeSprite.height - y - 1 : y;
+                for (let x = 0; x < nativeSprite.width; x++) {
+                    const outX = left + x, pixel = nativeSprite.pixels[sourceY * nativeSprite.width + x];
+                    if (outX < 0 || outX >= width || !(pixel >>> 24)) continue;
+                    const solid = mask?.hasGroundAt(Math.floor(outX / 2), Math.floor(outY / 2)) ?? false;
+                    if ((noOverwrite && solid) || (onlyOverwrite && !solid)) continue;
+                    output[outY * width + outX] = pixel;
+                }
             }
         }
 

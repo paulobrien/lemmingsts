@@ -13,7 +13,7 @@ test('composites native terrain and sprites without affecting the DOS comparison
   await page.goto('/')
   const resultPixels = await page.evaluate(async () => {
     const path = '/__windows_graphics_fixture.js'
-    const { Stage, Frame } = await import(path)
+    const { Stage, Frame, DrawProperties, SolidLayer } = await import(path)
     const canvas = document.createElement('canvas'); canvas.width = 8; canvas.height = 108
     const stage = new Stage(canvas, 2)
     const game = stage.getGameDisplay(); game.initSize(4, 4)
@@ -56,8 +56,23 @@ test('composites native terrain and sprites without affecting the DOS comparison
     window.ImageData = originalImageData
     stage.redraw()
     const fallback = { errors, noNative: game.getNativeLayers() === undefined, terrain: pixel(canvas, 0, 0) }
+    game.setNativeBackground(null)
+    game.setNativeBackground(native, 8, 8)
+    const mask = new SolidLayer(4, 4, new Int8Array(16)); mask.setGroundAt(0, 0)
+    const object = new Frame(2, 1); object.setPixel(0, 0, 0xff0000ff); object.setPixel(1, 0, 0xff0000ff)
+    game.setNativeSprites(new Map([[object, { width: 4, height: 2, offsetX: 0, offsetY: 0,
+      pixels: new Uint32Array([0xff0000ff, 0xff0000ff, 0xff00ff00, 0xff00ff00,
+        0xffff0000, 0xffff0000, 0xff00ffff, 0xff00ffff]) }]]))
+    game.setBackground(dos, mask)
+    game.drawFrameFlags(object, 0, 0, new DrawProperties(true, true, false, false))
+    stage.redraw()
+    const noOverwrite = { solid: pixel(canvas, 0, 0), empty: pixel(canvas, 2, 0) }
+    game.setBackground(dos, mask)
+    game.drawFrameFlags(object, 0, 0, new DrawProperties(true, false, true, false))
+    stage.redraw()
+    const onlyOverwrite = { solid: pixel(canvas, 0, 0), empty: pixel(canvas, 2, 0) }
     stage.dispose()
-    return { values, moved, ordered, fallback }
+    return { values, moved, ordered, fallback, noOverwrite, onlyOverwrite }
   })
   expect(resultPixels.values.nativeTerrain).toEqual([0, 0, 80, 255])
   expect(resultPixels.values.nativeSprite).toEqual([0, 255, 0, 255])
@@ -70,4 +85,6 @@ test('composites native terrain and sprites without affecting the DOS comparison
   expect(resultPixels.moved.newOriginal).toEqual([255, 0, 0, 255])
   expect(resultPixels.ordered).toEqual([7, 8, 9, 255])
   expect(resultPixels.fallback).toEqual({ errors: 1, noNative: true, terrain: [0, 0, 0, 255] })
+  expect(resultPixels.noOverwrite).toEqual({ solid: [0, 0, 80, 255], empty: [255, 255, 0, 255] })
+  expect(resultPixels.onlyOverwrite).toEqual({ solid: [0, 0, 255, 255], empty: [0, 0, 80, 255] })
 })

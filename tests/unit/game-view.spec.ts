@@ -48,6 +48,7 @@ const mock = vi.hoisted(() => {
     const getWindowsAudioFile = vi.fn(async (_name: string): Promise<ArrayBuffer | undefined> => undefined);
     const prepareWindowsTerrain = vi.fn(async (_level: unknown): Promise<{ status: 'ready'; layer: object } | { status: 'special' | 'unavailable' }> => ({ status: 'unavailable' }));
     const prepareWindowsSprites = vi.fn(async (_sprites: unknown): Promise<Map<object, object> | null> => null);
+    const prepareWindowsObjects = vi.fn(async (_level: unknown): Promise<Map<object, object> | null> => null);
     const resources = { getLevel: vi.fn(async () => level), getSoundTrack: vi.fn(), getMusicPlayer: vi.fn(async () => music) };
     const config = { level: { groups: ['Fun'], order: [[0, 1]], getGroupLength: () => 2 } };
     const getGame = vi.fn(async () => game);
@@ -55,7 +56,7 @@ const mock = vi.hoisted(() => {
     const route = { params: { gameType: '1' }, query: {} as Record<string, string | number> };
     const verifyHints = vi.fn(async (): Promise<'verified' | 'different' | 'unavailable'> => 'verified');
     const exampleMove = vi.fn(async (): Promise<{ x: number; y: number; skill: number; gameSeconds: number } | null> => ({ x: 100, y: 60, skill: 8, gameSeconds: 5 }));
-    return { timer, level, display, stage, game, skills, resources, music, midiContext, midiSynth, getWindowsAudioFile, prepareWindowsTerrain, prepareWindowsSprites, config, getGame, replace, route, endEvent, soundEvent, effects, assignmentEvent, nukeRequest, verifyHints, exampleMove, graphicsError, zoomChange };
+    return { timer, level, display, stage, game, skills, resources, music, midiContext, midiSynth, getWindowsAudioFile, prepareWindowsTerrain, prepareWindowsSprites, prepareWindowsObjects, config, getGame, replace, route, endEvent, soundEvent, effects, assignmentEvent, nukeRequest, verifyHints, exampleMove, graphicsError, zoomChange };
 });
 
 vi.mock('vue-router', () => ({
@@ -71,6 +72,7 @@ vi.mock('webaudio-tinysynth', () => ({ default: vi.fn(function () { return mock.
 vi.mock('@/game/resources/file/game-file-store', () => ({ getWindowsAudioFile: mock.getWindowsAudioFile }));
 vi.mock('@/game/resources/prepare-windows-terrain', () => ({ prepareWindowsTerrain: mock.prepareWindowsTerrain }));
 vi.mock('@/game/resources/prepare-windows-sprites', () => ({ prepareWindowsSprites: mock.prepareWindowsSprites }));
+vi.mock('@/game/resources/prepare-windows-objects', () => ({ prepareWindowsObjects: mock.prepareWindowsObjects }));
 vi.mock('@/game/game-factory', () => ({ GameFactory: vi.fn(function () {
     return { getConfig: async () => mock.config, getGameResources: async () => mock.resources, getGame: mock.getGame };
 }) }));
@@ -132,6 +134,7 @@ describe('game view lifecycle', () => {
         mock.getWindowsAudioFile.mockReset().mockResolvedValue(undefined);
         mock.prepareWindowsTerrain.mockReset().mockResolvedValue({ status: 'unavailable' });
         mock.prepareWindowsSprites.mockReset().mockResolvedValue(null);
+        mock.prepareWindowsObjects.mockReset().mockResolvedValue(null);
         mock.level.getWindowsTerrain.mockReset().mockReturnValue(undefined);
     });
 
@@ -146,9 +149,10 @@ describe('game view lifecycle', () => {
     });
 
     it('prepares native terrain and sprite mapping before the game clock starts', async () => {
-        const layer = { marker: 'native terrain' }, sprites = new Map();
+        const layer = { marker: 'native terrain' }, sprites = new Map(), objectFrame = {}, objectImage = {};
         mock.prepareWindowsTerrain.mockResolvedValue({ status: 'ready', layer });
         mock.prepareWindowsSprites.mockResolvedValue(sprites);
+        mock.prepareWindowsObjects.mockResolvedValue(new Map([[objectFrame, objectImage]]));
         mock.level.getWindowsTerrain.mockReturnValue(layer as never);
         Object.assign(mock.game, { getLemmingsSprite: vi.fn(() => ({})) });
         const wrapper = mountView(); await flushPromises();
@@ -157,6 +161,7 @@ describe('game view lifecycle', () => {
         expect(mock.level.setWindowsTerrain).toHaveBeenCalledWith(layer);
         button(wrapper.container, 'Start level').click(); await flushPromises();
         expect(mock.display.setNativeSprites).toHaveBeenCalledWith(sprites);
+        expect(sprites.get(objectFrame)).toBe(objectImage);
         expect(mock.level.setWindowsTerrain.mock.invocationCallOrder.at(-1)!).toBeLessThan(mock.game.start.mock.invocationCallOrder[0]);
     });
 

@@ -18,6 +18,7 @@ import { Position2D } from '@/game/utilities/position2d';
 import { Level } from '@/game/resources/level';
 import { prepareWindowsTerrain } from '@/game/resources/prepare-windows-terrain';
 import { prepareWindowsSprites } from '@/game/resources/prepare-windows-sprites';
+import { prepareWindowsObjects } from '@/game/resources/prepare-windows-objects';
 import { AudioPlayer } from '@/game/resources/sound/audio-player';
 import { SoundEffectsPlayer } from '@/game/resources/sound/sound-effects-player';
 import { VoiceEffectsPlayer } from '@/game/resources/sound/voice-effects-player';
@@ -356,12 +357,13 @@ export default defineComponent({
                     return;
                 }
                 if (graphicsMode.value === 'windows' && level.value?.getWindowsTerrain()) {
-                    const [terrain, sprites] = await Promise.all([
-                        prepareWindowsTerrain(nextGame.level), prepareWindowsSprites(nextGame.getLemmingsSprite()),
+                    const [terrain, sprites, objects] = await Promise.all([
+                        prepareWindowsTerrain(nextGame.level), prepareWindowsSprites(nextGame.getLemmingsSprite()), prepareWindowsObjects(nextGame.level),
                     ]);
                     if (disposed || generation !== loadGeneration || !stage) { nextGame.stop(); return; }
                     if (terrain.status === 'ready' && sprites) {
                         nextGame.level.setWindowsTerrain(terrain.layer);
+                        if (objects) for (const [frame, image] of objects) sprites.set(frame, image);
                         stage.getGameDisplay().setNativeSprites(sprites);
                     } else {
                         stage.getGameDisplay().setNativeSprites(null);
