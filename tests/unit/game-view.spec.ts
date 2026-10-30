@@ -16,9 +16,9 @@ const mock = vi.hoisted(() => {
         getGameLeftTimeString: vi.fn(() => '5-00'),
         onGameTick: { on: vi.fn() },
     };
-    const level = { name: 'Just dig!', screenPositionX: 0, needCount: 8, releaseCount: 10, timeLimit: 5, render: vi.fn() };
+    const level = { name: 'Just dig!', screenPositionX: 0, needCount: 8, releaseCount: 10, timeLimit: 5, render: vi.fn(), setWindowsTerrain: vi.fn(), getWindowsTerrain: vi.fn(() => undefined) };
     const event = { on: vi.fn() };
-    const display = { onMouseDown: event, clear: vi.fn(), redraw: vi.fn(), setScreenPosition: vi.fn() };
+    const display = { onMouseDown: event, clear: vi.fn(), redraw: vi.fn(), setScreenPosition: vi.fn(), setNativeSprites: vi.fn() };
     const graphicsError: { handler?: (message?: string) => void } = {};
     const zoomChange: { handler?: (changed?: boolean) => void } = {};
     const stage = { getGameDisplay: vi.fn(() => display), getGuiDisplay: vi.fn(() => display), resetFade: vi.fn(), clearInputBindings: vi.fn(), dispose: vi.fn(), zoomGame: vi.fn(), resetZoom: vi.fn(), onZoomChange: { on: vi.fn((handler: (changed?: boolean) => void) => { zoomChange.handler = handler; }), off: vi.fn() }, setExampleHint: vi.fn(), setGraphicsMode: vi.fn(), setComparisonCanvases: vi.fn(), onGraphicsError: { on: vi.fn((handler: (message?: string) => void) => { graphicsError.handler = handler; }), off: vi.fn() } };
@@ -29,6 +29,7 @@ const mock = vi.hoisted(() => {
     const nukeRequest: { handler?: () => void } = {};
     const effects = { play: vi.fn(async () => undefined), stop: vi.fn() };
     const game = {
+        level,
         getGameTimer: vi.fn(() => timer), getGameSkills: vi.fn(() => skills),
         getVictoryCondition: vi.fn(() => ({ getCurrentReleaseRate: () => 50, getSurvivorsCount: () => 3 })),
         setGameDisplay: vi.fn(), setGuiDisplay: vi.fn(), setNukeRequestHandler: vi.fn((handler: () => void) => { nukeRequest.handler = handler; }), start: vi.fn(() => timer.continue()),
@@ -45,6 +46,8 @@ const mock = vi.hoisted(() => {
     };
     const midiSynth = { getAudioContext: vi.fn(() => midiContext), setLoop: vi.fn(), loadMIDI: vi.fn(), playMIDI: vi.fn(), stopMIDI: vi.fn() };
     const getWindowsAudioFile = vi.fn(async (_name: string): Promise<ArrayBuffer | undefined> => undefined);
+    const prepareWindowsTerrain = vi.fn(async (_level: unknown): Promise<{ status: 'ready'; layer: object } | { status: 'special' | 'unavailable' }> => ({ status: 'unavailable' }));
+    const prepareWindowsSprites = vi.fn(async (_sprites: unknown): Promise<Map<object, object> | null> => null);
     const resources = { getLevel: vi.fn(async () => level), getSoundTrack: vi.fn(), getMusicPlayer: vi.fn(async () => music) };
     const config = { level: { groups: ['Fun'], order: [[0, 1]], getGroupLength: () => 2 } };
     const getGame = vi.fn(async () => game);
@@ -52,7 +55,7 @@ const mock = vi.hoisted(() => {
     const route = { params: { gameType: '1' }, query: {} as Record<string, string | number> };
     const verifyHints = vi.fn(async (): Promise<'verified' | 'different' | 'unavailable'> => 'verified');
     const exampleMove = vi.fn(async (): Promise<{ x: number; y: number; skill: number; gameSeconds: number } | null> => ({ x: 100, y: 60, skill: 8, gameSeconds: 5 }));
-    return { timer, level, stage, game, skills, resources, music, midiContext, midiSynth, getWindowsAudioFile, config, getGame, replace, route, endEvent, soundEvent, effects, assignmentEvent, nukeRequest, verifyHints, exampleMove, graphicsError, zoomChange };
+    return { timer, level, display, stage, game, skills, resources, music, midiContext, midiSynth, getWindowsAudioFile, prepareWindowsTerrain, prepareWindowsSprites, config, getGame, replace, route, endEvent, soundEvent, effects, assignmentEvent, nukeRequest, verifyHints, exampleMove, graphicsError, zoomChange };
 });
 
 vi.mock('vue-router', () => ({
@@ -66,6 +69,8 @@ vi.mock('@/game/solutions/example-first-move', () => ({ getExampleFirstMove: moc
 vi.mock('@/game/resources/sound/sound-effects-player', () => ({ SoundEffectsPlayer: vi.fn(function () { return mock.effects; }) }));
 vi.mock('webaudio-tinysynth', () => ({ default: vi.fn(function () { return mock.midiSynth; }) }));
 vi.mock('@/game/resources/file/game-file-store', () => ({ getWindowsAudioFile: mock.getWindowsAudioFile }));
+vi.mock('@/game/resources/prepare-windows-terrain', () => ({ prepareWindowsTerrain: mock.prepareWindowsTerrain }));
+vi.mock('@/game/resources/prepare-windows-sprites', () => ({ prepareWindowsSprites: mock.prepareWindowsSprites }));
 vi.mock('@/game/game-factory', () => ({ GameFactory: vi.fn(function () {
     return { getConfig: async () => mock.config, getGameResources: async () => mock.resources, getGame: mock.getGame };
 }) }));
@@ -125,6 +130,57 @@ describe('game view lifecycle', () => {
         mock.resources.getMusicPlayer.mockImplementation(async () => mock.music);
         mock.midiContext.state = 'running';
         mock.getWindowsAudioFile.mockReset().mockResolvedValue(undefined);
+        mock.prepareWindowsTerrain.mockReset().mockResolvedValue({ status: 'unavailable' });
+        mock.prepareWindowsSprites.mockReset().mockResolvedValue(null);
+        mock.level.getWindowsTerrain.mockReset().mockReturnValue(undefined);
+    });
+
+    it('explains when Windows art is missing without preventing the level from starting', async () => {
+        const wrapper = mountView(); await flushPromises();
+        const radio = wrapper.container.querySelector<HTMLInputElement>('input[value="windows"]')!;
+        radio.checked = true; radio.dispatchEvent(new Event('change')); await flushPromises();
+        expect(wrapper.container.textContent).toContain('Windows artwork is unavailable. Import the Windows graphics');
+        expect(button(wrapper.container, 'Start level').disabled).toBe(false);
+        button(wrapper.container, 'Start level').click(); await flushPromises();
+        expect(mock.game.start).toHaveBeenCalledOnce();
+    });
+
+    it('prepares native terrain and sprite mapping before the game clock starts', async () => {
+        const layer = { marker: 'native terrain' }, sprites = new Map();
+        mock.prepareWindowsTerrain.mockResolvedValue({ status: 'ready', layer });
+        mock.prepareWindowsSprites.mockResolvedValue(sprites);
+        mock.level.getWindowsTerrain.mockReturnValue(layer as never);
+        Object.assign(mock.game, { getLemmingsSprite: vi.fn(() => ({})) });
+        const wrapper = mountView(); await flushPromises();
+        const radio = wrapper.container.querySelector<HTMLInputElement>('input[value="windows"]')!;
+        radio.checked = true; radio.dispatchEvent(new Event('change')); await flushPromises();
+        expect(mock.level.setWindowsTerrain).toHaveBeenCalledWith(layer);
+        button(wrapper.container, 'Start level').click(); await flushPromises();
+        expect(mock.display.setNativeSprites).toHaveBeenCalledWith(sprites);
+        expect(mock.level.setWindowsTerrain.mock.invocationCallOrder.at(-1)!).toBeLessThan(mock.game.start.mock.invocationCallOrder[0]);
+    });
+
+    it('defers a style change during play until restarting', async () => {
+        const wrapper = mountView(); await flushPromises();
+        button(wrapper.container, 'Start level').click(); await flushPromises();
+        const radio = wrapper.container.querySelector<HTMLInputElement>('input[value="windows"]')!;
+        radio.checked = true; radio.dispatchEvent(new Event('change')); await flushPromises();
+        expect(mock.prepareWindowsTerrain).not.toHaveBeenCalled();
+        expect(wrapper.container.textContent).toContain('will apply when you restart or change levels');
+        button(wrapper.container, 'Restart').click(); await flushPromises();
+        expect(mock.prepareWindowsTerrain).toHaveBeenCalledOnce();
+    });
+
+    it('does not apply a late graphics load to a changed level', async () => {
+        let finish!: (value: { status: 'ready'; layer: object }) => void;
+        mock.prepareWindowsTerrain.mockImplementationOnce(() => new Promise(resolve => { finish = resolve; })).mockResolvedValue({ status: 'special' });
+        const wrapper = mountView(); await flushPromises();
+        const radio = wrapper.container.querySelector<HTMLInputElement>('input[value="windows"]')!;
+        radio.checked = true; radio.dispatchEvent(new Event('change')); await flushPromises();
+        button(wrapper.container, 'Next level').click(); await flushPromises();
+        const stale = { marker: 'stale' }; finish({ status: 'ready', layer: stale }); await flushPromises();
+        expect(mock.level.setWindowsTerrain).not.toHaveBeenCalledWith(stale);
+        expect(wrapper.container.textContent).toContain('This special level uses original DOS graphics.');
     });
 
     it('cancels a pending Windows MIDI track on mute without starting it or falling back', async () => {

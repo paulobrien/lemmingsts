@@ -73,10 +73,14 @@
       <summary>Display settings</summary>
       <fieldset :key="graphicsError">
         <legend>Graphics style</legend>
-        <label><input type="radio" name="graphics-mode" value="original" :checked="graphicsMode === 'original'" @change="setGraphicsMode('original')"> Original</label>
-        <label><input type="radio" name="graphics-mode" value="enhanced" :checked="graphicsMode === 'enhanced'" @change="setGraphicsMode('enhanced')"> Enhanced</label>
+        <label><input type="radio" name="graphics-mode" value="original" :disabled="loading || graphicsBusy" :checked="graphicsMode === 'original'" @change="setGraphicsMode('original')"> Original</label>
+        <label><input type="radio" name="graphics-mode" value="enhanced" :disabled="loading || graphicsBusy" :checked="graphicsMode === 'enhanced'" @change="setGraphicsMode('enhanced')"> Enhanced</label>
+        <label><input type="radio" name="graphics-mode" value="windows" :disabled="loading || graphicsBusy" :checked="graphicsMode === 'windows'" @change="setGraphicsMode('windows')"> Windows artwork (experimental)</label>
       </fieldset>
       <p>Graphics affect appearance only. Level rules and physics stay the same. This device-specific setting is not included in progress backups.</p>
+      <p>Windows artwork uses imported Windows terrain and lemmings; some animations, objects and special levels use DOS graphics. Changes during play apply on restart.</p>
+      <p v-if="graphicsBusy" role="status">Preparing Windows artwork…</p>
+      <p v-else-if="graphicsNotice" role="status">{{ graphicsNotice }}</p>
       <p>Enhanced graphics and live comparison are experimental and may slow play, especially at high speed or on phones.</p>
       <button type="button" :disabled="!canPlay && !comparingGraphics" :aria-expanded="comparingGraphics" aria-controls="graphics-comparison" @click="toggleGraphicsComparison">{{ comparingGraphics ? 'Close comparison' : 'Compare styles' }}</button>
       <section v-if="comparingGraphics" id="graphics-comparison" aria-label="Graphics comparison">

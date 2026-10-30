@@ -10,6 +10,8 @@ describe('device graphics preference', () => {
         expect(readGraphicsMode()).toBe('original');
         expect(saveGraphicsMode('enhanced')).toBe(true);
         expect(readGraphicsMode()).toBe('enhanced');
+        expect(saveGraphicsMode('windows')).toBe(true);
+        expect(readGraphicsMode()).toBe('windows');
     });
     it('keeps original usable when browser storage is unavailable', () => {
         const read = vi.spyOn(Storage.prototype, 'getItem').mockImplementation(() => { throw new Error('unavailable'); });

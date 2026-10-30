@@ -1,9 +1,12 @@
 /** Graphics are a device-local presentation preference; they do not affect play. */
-export type GraphicsMode = 'original' | 'enhanced';
+export type GraphicsMode = 'original' | 'enhanced' | 'windows';
 const GRAPHICS_KEY = 'lemmings.graphics.v1';
 
 export function readGraphicsMode(): GraphicsMode {
-    try { return localStorage.getItem(GRAPHICS_KEY) === 'enhanced' ? 'enhanced' : 'original'; }
+    try {
+        const mode = localStorage.getItem(GRAPHICS_KEY);
+        return mode === 'enhanced' || mode === 'windows' ? mode : 'original';
+    }
     catch { return 'original'; }
 }
 
