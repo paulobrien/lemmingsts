@@ -4,6 +4,18 @@ A modern browser player built on [Lemmings.ts](https://github.com/tomsoftware/Le
 
 Play with a mouse on a computer or with touch on an Android phone or tablet. The app can be installed from the browser and, once the app and your own game files are stored on the device, played offline. This is an early preview: actual Android hardware and some physics details still need further verification.
 
+## Screenshots
+
+The home screen with Windows mode selected:
+
+![Lemmings TS home screen with Windows mode selected](docu/images/windows-home.png)
+
+A level in progress using the Windows artwork and controls:
+
+![Windows-mode game in progress, showing the level and skill panel](docu/images/windows-in-play.png)
+
+These screenshots show artwork from a locally supplied Windows edition. The repository includes the screenshots, but neither the game files needed for play nor the screenshots are included in the downloadable application source archive.
+
 ## What changed
 
 This modernization retains the original engine and game data formats while improving the experience around them:
@@ -26,9 +38,9 @@ The original Lemmings.ts project also described support for other Lemmings editi
 
 ## Bring your own game files
 
-The repository and standard build do not include original DOS or Windows game files. Use your own compatible copy; the expected names are listed in [the original-DOS file list](public/data/lemmings/README.md). The local `dos/` directory is ignored by Git, including `dos/lemmings/` and any ZIP kept there. Never commit original game files or put them in `public/data`: the build rejects unexpected files in that directory.
+The repository and standard build do not include original DOS or Windows game files; the screenshots above show artwork from a locally supplied copy. Use your own compatible copy; the expected names are listed in [the original-DOS file list](public/data/lemmings/README.md). The local `dos/` directory is ignored by Git, including `dos/lemmings/` and any ZIP kept there. Never commit original game files or put them in `public/data`: the build rejects unexpected files in that directory.
 
-Open the app, choose **Add DOS files** or **Or choose a folder**, and select the original files together or an unencrypted ZIP containing them. Names are accepted in upper or lower case. The app checks file structure before storing the files in the browser's local IndexedDB; it does not upload them. An invalid replacement leaves any existing files intact. ZIPs with duplicate game filenames are rejected, including repeated entries at the same path. Structural validation cannot prove that a set is the exact edition used for the tested hints. Import separately on each device. Use **Remove DOS files** or **Remove Windows files** on the home screen to remove the corresponding edition; clearing site storage may also remove files and progress.
+Open the app, choose **Add DOS files** or **Or choose a folder**, and select the original files together or an unencrypted ZIP containing them. Names are accepted in upper or lower case. The app checks file structure before storing the files in the browser's local IndexedDB; it does not upload them. An invalid DOS replacement leaves the existing DOS files intact. Windows audio, graphics and level data are currently imported independently, so a failed Windows replacement may leave a mix of old and new components; reimport the complete Windows disc if this happens. ZIPs with duplicate game filenames are rejected, including repeated entries at the same path. Structural validation cannot prove that a set is the exact edition used for the tested hints. Import separately on each device. Use **Remove DOS files** or **Remove Windows files** on the home screen to remove the corresponding edition; clearing site storage may also remove files and progress.
 
 ### Optional deployment bundle
 
@@ -113,12 +125,12 @@ RUN_PRIVATE_GAME_TESTS=1 LEMMINGS_WINDOWS_ISO=/path/to/windows.iso npx vitest ru
 RUN_PRIVATE_GAME_TESTS=1 npm run test:e2e
 ```
 
-The DOS authored coverage gate requires a solution for every original DOS level and plays each replay through to victory. The optional Windows-only replay check uses the Windows files alone and maps Windows levels to corresponding DOS recordings for comparison; All 114 levels now complete using Windows-only game resources with every recorded command accepted. Three routes have Windows-specific adjustments because the Windows bash mask differs from DOS. [Integration test notes](tests/integration/README.md) describe optional additional checks using separately obtained community recordings. Those recordings and the original DOS files are not in Git or in the standard build. Passing these replays verifies the tested routes in this engine, not complete equivalence with every DOS release.
+The DOS authored coverage gate requires a solution for every original DOS level and plays each replay through to victory. The optional Windows-only replay check uses the Windows files alone and maps Windows levels to corresponding DOS recordings for comparison. All 114 levels now complete using Windows-only game resources with every recorded command accepted. Three routes have Windows-specific adjustments because the Windows bash mask differs from DOS. [Integration test notes](tests/integration/README.md) describe optional additional checks using separately obtained community recordings. Those recordings and the original DOS files are not in Git or in the standard build. Passing these replays verifies the tested routes in this engine, not complete equivalence with every DOS release.
 
 ## Licence and acknowledgements
 
 The repository's [LICENSE](LICENSE) retains Thomas Zeugner's MIT notice and an LGPL notice for Robson Cozendey's historical OPL emulator. That emulator was removed; the active DOSBox-derived [DBOPL source](src/game/resources/sound/DBOPL/db-opl3.ts) instead carries GPL-2.0-or-later notices. Treat a build containing DBOPL on that basis and preserve the individual notices; do not describe the combined application as solely MIT. The site supplies source and licence texts, but complete distribution compliance still needs review. The history and remaining questions are documented in the [licence review](docu/LICENCE_REVIEW.md).
 
-Lemmings and the original game assets belong to their respective rights holders. This project does not claim rights to the original game; its repository and standard build supply no original assets. The optional deployment bundle uses operator-supplied files; neither it nor local import is a guarantee about trademark or other rights.
+Lemmings and the original game assets belong to their respective rights holders. This project does not claim rights to the original game. The repository includes screenshots showing original artwork; the game files and assets needed for play are not included in the repository or standard build. The optional deployment bundle uses operator-supplied files; neither it nor local import is a guarantee about trademark or other rights.
 
 Thomas's original acknowledgements thank DMA for the original game; Volker Oth, ccexplore and Mindless for reverse engineering the level and graphics formats; and the DOSBox project for its OPL emulator. Those contributions remain central to this project.
