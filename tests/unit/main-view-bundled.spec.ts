@@ -168,6 +168,40 @@ describe('home setup', () => {
     view.unmount();
   });
 
+  it('defaults to Windows when both editions become ready and keeps an explicit DOS choice', async () => {
+    mock.hasFiles.mockResolvedValue(true);
+    mock.hasAudio.mockResolvedValue(true);
+    mock.hasWindowsGame.mockResolvedValue(true);
+    mock.hasStandaloneGraphics.mockResolvedValue(true);
+    let view = await mount();
+    let select = view.container.querySelector<HTMLSelectElement>('.game-mode select')!;
+    expect(select.value).toBe('windows');
+    expect(localStorage.getItem('lemmings.game-mode.v1')).toBe('windows');
+    select.value = 'dos';
+    select.dispatchEvent(new Event('change', { bubbles: true }));
+    await nextTick();
+    expect(select.value).toBe('dos');
+    view.unmount();
+    view = await mount();
+    select = view.container.querySelector<HTMLSelectElement>('.game-mode select')!;
+    expect(select.value).toBe('dos');
+    view.unmount();
+  });
+
+  it('temporarily uses Windows when a saved DOS choice is unavailable, then restores DOS', async () => {
+    localStorage.setItem('lemmings.game-mode.v1', 'dos');
+    mock.hasAudio.mockResolvedValue(true);
+    mock.hasWindowsGame.mockResolvedValue(true);
+    mock.hasStandaloneGraphics.mockResolvedValue(true);
+    let view = await mount();
+    expect(view.container.querySelector<HTMLSelectElement>('.game-mode select')!.value).toBe('windows');
+    view.unmount();
+    mock.hasFiles.mockResolvedValue(true);
+    view = await mount();
+    expect(view.container.querySelector<HTMLSelectElement>('.game-mode select')!.value).toBe('dos');
+    view.unmount();
+  });
+
   it('blocks a saved Windows mode when its files disappear until DOS is selected', async () => {
     localStorage.setItem('lemmings.game-mode.v1', 'windows');
     mock.hasFiles.mockResolvedValue(true);

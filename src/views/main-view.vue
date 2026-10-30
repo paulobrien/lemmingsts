@@ -103,7 +103,7 @@ import { clearWindowsGame, hasWindowsGame, importWindowsGame } from '@/game/reso
 import { WINDOWS_GRAPHICS_FILES } from '@/game/resources/file/windows-graphics-names';
 import { GameFactory } from '@/game/game-factory';
 import { GameTypes } from '@/game/game-types';
-import { readGameMode, writeGameMode, type GameMode } from '@/game/game-mode';
+import { readGameMode, readGameModePreference, writeGameMode, type GameMode } from '@/game/game-mode';
 import { exportProgressBackup, readLastLevel, readProgress, restoreProgressBackup } from '@/game/progress';
 import { loadHomeArtwork, paintHomeArtwork } from '@/game/resources/home-artwork';
 import { offlineReadiness } from '@/offline-readiness';
@@ -125,6 +125,7 @@ const windowsReady = computed(() => windowsGameReady.value && audioReady.value &
 const ready = computed(() => dosReady.value || windowsReady.value);
 const voiceBusy = ref(false);
 const gameMode = ref<GameMode>(readGameMode());
+const gameModePreference = ref<GameMode | null>(readGameModePreference());
 const fileInput = ref<HTMLInputElement | null>(null);
 const voiceInput = ref<HTMLInputElement | null>(null);
 const voiceFolderInput = ref<HTMLInputElement | null>(null);
@@ -216,8 +217,14 @@ onMounted(async () => {
 });
 let groupRequest = 0;
 watch([gameMode, windowsReady, dosReady], async ([mode, hasWindows, hasDos]) => {
-  if (!hasDos && hasWindows && mode !== 'windows') {
-    if (writeGameMode('windows')) gameMode.value = 'windows';
+  const defaultWindows = hasWindows && (!hasDos || gameModePreference.value === null);
+  const restoreDos = hasWindows && hasDos && gameModePreference.value === 'dos';
+  if (defaultWindows && mode !== 'windows') {
+    if (writeGameMode('windows', false)) gameMode.value = 'windows';
+    return;
+  }
+  if (restoreDos && mode !== 'dos') {
+    if (writeGameMode('dos', false)) gameMode.value = 'dos';
     return;
   }
   const generation = ++groupRequest;
@@ -292,8 +299,9 @@ async function removeVoices() {
   voiceReadinessGeneration++; voiceBusy.value = true; voiceMessage.value = '';
   try {
     await clearWindowsVoiceFiles(); await clearWindowsGraphics(); await clearWindowsGame();
-    if (gameMode.value === 'windows' && writeGameMode('dos')) gameMode.value = 'dos';
-    await refreshVoices(); voiceMessage.value = 'Windows files removed from this browser.';
+    await refreshVoices();
+    if (gameMode.value === 'windows' && writeGameMode('dos', false)) gameMode.value = 'dos';
+    voiceMessage.value = 'Windows files removed from this browser.';
   }
   catch { voiceMessage.value = 'Could not remove the Windows files. Please try again.'; }
   finally { voiceBusy.value = false; }
@@ -306,6 +314,7 @@ function onGameModeChange(event: Event) {
     voiceMessage.value = 'Could not select that game mode. Check the game files and browser storage.';
     return;
   }
+  gameModePreference.value = mode;
   gameMode.value = mode;
   voiceMessage.value = '';
 }
@@ -363,8 +372,9 @@ h1 { margin: 0 0 1rem; font-size: 2rem; font-weight: 800; line-height: 1.2; text
 .actions { margin-top: 1.5rem; }
 .level-picker { display: flex; flex-wrap: wrap; gap: 1rem; max-width: 28rem; margin-bottom: 1rem; }
 .level-picker label { display: flex; flex: 1 1 120px; min-width: 0; flex-direction: column; gap: .5rem; color: var(--color-ink); font-size: .875rem; font-weight: 600; }
-.level-picker select, .audio-style select { min-width: 0; min-height: 48px; padding: .6rem; border: 2px solid; border-color: var(--color-edge-dark) var(--color-edge) var(--color-edge) var(--color-edge-dark); border-radius: 2px; background: var(--color-panel); color: var(--color-ink); font: inherit; }
-.level-picker select { width: 100%; }
+.level-picker select, .game-mode select { min-width: 0; min-height: 48px; padding: .6rem; border: 2px solid; border-color: var(--color-edge-dark) var(--color-edge) var(--color-edge) var(--color-edge-dark); border-radius: 2px; background: var(--color-panel); color: var(--color-ink); font: inherit; }
+.level-picker select, .game-mode select { width: 100%; }
+.game-mode { display: flex; flex-direction: column; gap: .5rem; max-width: 28rem; margin-bottom: 1rem; color: var(--color-ink); font-size: .875rem; font-weight: 600; }
 .best-score { color: var(--color-muted); font-size: .875rem; margin: 0 0 1rem; }
 .primary-button { display: inline-flex; align-items: center; justify-content: center; min-height: 52px; padding: .75rem 1.5rem; border: 2px solid; border-color: var(--color-edge-light) var(--color-edge-dark) var(--color-edge-dark) var(--color-edge-light); border-radius: 2px; background: var(--color-accent); color: var(--color-accent-ink); font: inherit; font-weight: 700; text-decoration: none; cursor: pointer; white-space: nowrap; }
 .primary-button:hover:not(:disabled) { box-shadow: inset 0 0 0 2px var(--color-accent-ink); }
@@ -395,7 +405,6 @@ h2 { margin: 0; font-size: 1.25rem; font-weight: 700; line-height: 1.4; text-wra
 .setup-detail { color: var(--color-muted); font-size: .875rem; line-height: 1.7; }
 .setup-detail p { margin: 0; }
 .setup-detail p + p { margin-top: .5rem; }
-.audio-style { display: flex; align-items: center; flex-wrap: wrap; gap: .6rem; margin-bottom: .65rem; }
 .text-button { min-height: 44px; margin: .75rem 0 0; padding: .5rem .75rem; border: 2px solid; border-color: var(--color-edge) var(--color-edge-dark) var(--color-edge-dark) var(--color-edge); border-radius: 2px; background: none; color: var(--color-ink); cursor: pointer; font: inherit; text-decoration: none; }
 .text-button:hover:not(:disabled) { background: var(--color-panel-raised); }
 .text-button:active:not(:disabled) { border-color: var(--color-edge-dark) var(--color-edge) var(--color-edge) var(--color-edge-dark); }
@@ -417,5 +426,6 @@ footer a { display: inline-flex; min-height: 44px; align-items: center; color: v
   .setup { grid-template-columns: minmax(0, 1fr); gap: .5rem; }
   .primary-button { width: 100%; }
   .level-picker { max-width: none; gap: .75rem; }
+  .game-mode { max-width: none; }
 }
 </style>
