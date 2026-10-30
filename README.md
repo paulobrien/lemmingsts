@@ -1,6 +1,6 @@
 # Lemmings TS
 
-**No Lemmings game files are included in this repository. To play, you need your own licensed copy of the Windows or DOS game.** The repository does include screenshots showing original game artwork.
+**No Lemmings game files are included in this repository. To play, you need your own licensed copy of the Windows or DOS game.**
 
 A modern browser player built on [Lemmings.ts](https://github.com/tomsoftware/Lemmings.ts), Thomas Zeugner's TypeScript Lemmings clone. The original project supplied the game engine, DOS data readers, rendering and AdLib music playback that this version builds on. Thanks to Thomas for making that work available.
 
