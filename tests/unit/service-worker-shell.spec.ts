@@ -126,6 +126,18 @@ describe('offline shell updates', () => {
         for (const path of paths) expect(await (await app.request(`${origin}${path}`, 'cors')).text()).toBe(`new ${path}`);
     });
 
+    it('keeps the working shell when a new resource body fails after valid headers', async () => {
+        const app = worker();
+        app.network.set(origin, new Response(newHtml));
+        app.network.set(`${origin}assets/new.js`, new Response(new ReadableStream({
+            start(controller) { controller.enqueue(new TextEncoder().encode('partial script')); controller.error(new Error('download interrupted')); },
+        }), { headers: { 'Content-Type': 'text/javascript' } }));
+        app.network.set(`${origin}assets/new.css`, new Response('style', { headers: { 'Content-Type': 'text/css' } }));
+        expect(await (await app.request(origin)).text()).toBe(oldHtml);
+        expect(app.entries.has(`${origin}assets/new.js`)).toBe(false);
+        expect(app.entries.has(`${origin}assets/new.css`)).toBe(false);
+    });
+
     it('rejects an HTTP 200 HTML fallback served for a missing hashed asset', async () => {
         const app = worker();
         app.network.set(origin, new Response(newHtml));

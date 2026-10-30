@@ -33,6 +33,10 @@ async function cacheShell(cache, response, supportingResources = []) {
   const staged = await Promise.all([...new Set([...resources, ...supportingResources])].map(async url => {
     const asset = await fetch(url);
     if (!asset.ok || !isUsableShellResource(url, asset)) throw new Error('App shell asset unavailable or invalid');
+    // Fetch resolves at headers. Drain the body now so connection slots can
+    // serve the remaining assets and a truncated download fails before writes.
+    // Keep the original response (including its URL/headers) for Cache.put.
+    await asset.clone().arrayBuffer();
     return { url, asset };
   }));
   for (const { url, asset } of staged) await cache.put(url, asset);
