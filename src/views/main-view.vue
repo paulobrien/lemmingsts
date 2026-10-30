@@ -59,7 +59,7 @@
           <button v-if="ready" class="text-button" type="button" :disabled="busy || voiceBusy" @click="removeFiles">Remove game files</button>
         </div>
       </section>
-      <section v-if="ready" class="setup" aria-labelledby="voices-title">
+      <section class="setup" aria-labelledby="voices-title">
         <div><h2 id="voices-title">Windows game files</h2></div>
         <div class="setup-detail">
           <p v-if="windowsReady">Your Windows sound and graphics files are ready on this device.</p>
@@ -244,7 +244,7 @@ async function refreshVoices() {
 async function checkAutomaticVoices() {
   // Voice recordings are optional; a failed bundle must not block the game.
   try { await importBundledWindowsVoices(); } catch { /* Manual voice import remains available. */ }
-  try { if (await hasLemmingsFiles()) await importBundledWindowsGraphics(); } catch { /* Original graphics remain available. */ }
+  try { await importBundledWindowsGraphics(); } catch { /* Original graphics remain available. */ }
   await refreshVoices();
 }
 async function onVoicesSelected(event: Event) {
