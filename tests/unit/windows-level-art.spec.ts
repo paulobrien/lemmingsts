@@ -22,7 +22,7 @@ function reader(): LevelReader {
     graphicSet1: 0, graphicSet2: 0, isSuperLemming: false, steel: [],
     terrains: [new LevelElement(2, 3, 0, new DrawProperties(false, false, false, false))],
     objects: [new LevelElement(4, 5, 0, new DrawProperties(false, false, false, false))],
-  } as LevelReader;
+  } as unknown as LevelReader;
 }
 describe('Windows level artwork', () => {
   it('uses low-resolution Windows masks for logical terrain and object frames', () => {
