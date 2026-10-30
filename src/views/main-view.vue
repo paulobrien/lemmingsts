@@ -93,14 +93,14 @@
 
 <script setup lang="ts">
 import { computed, onBeforeUnmount, onMounted, ref, watch } from 'vue';
-import { clearLemmingsFiles, hasLemmingsFiles, importLemmingsFiles, clearWindowsVoiceFiles, hasWindowsVoiceFiles, hasWindowsAudioFiles, importWindowsVoiceFiles } from '@/game/resources/file/game-file-store';
+import { clearLemmingsFiles, hasLemmingsFiles, importLemmingsFiles, hasWindowsVoiceFiles, hasWindowsAudioFiles } from '@/game/resources/file/game-file-store';
 import { importBundledLemmingsFiles } from '@/game/resources/file/bundled-game-import';
 import { importBundledWindowsVoices } from '@/game/resources/file/bundled-voice-import';
 import { importBundledWindowsGraphics } from '@/game/resources/file/bundled-graphics-import';
 import { importBundledWindowsGame } from '@/game/resources/file/bundled-windows-game-import';
-import { clearWindowsGraphics, hasWindowsGraphics, hasStandaloneWindowsGraphics, importWindowsGraphics } from '@/game/resources/file/windows-graphics-store';
-import { clearWindowsGame, hasWindowsGame, importWindowsGame } from '@/game/resources/file/windows-game-store';
-import { WINDOWS_GRAPHICS_FILES } from '@/game/resources/file/windows-graphics-names';
+import { hasWindowsGraphics, hasStandaloneWindowsGraphics } from '@/game/resources/file/windows-graphics-store';
+import { hasWindowsGame } from '@/game/resources/file/windows-game-store';
+import { clearWindowsFiles, importWindowsFiles } from '@/game/resources/file/windows-file-import';
 import { GameFactory } from '@/game/game-factory';
 import { GameTypes } from '@/game/game-types';
 import { readGameMode, readGameModePreference, writeGameMode, type GameMode } from '@/game/game-mode';
@@ -274,31 +274,19 @@ async function onVoicesSelected(event: Event) {
   if (!input.files?.length) return;
   voiceReadinessGeneration++; voiceBusy.value = true; voiceMessage.value = '';
   try {
-    const files = input.files;
-    await importWindowsVoiceFiles(files);
+    const imported = await importWindowsFiles(input.files);
     await refreshVoices();
-    voiceMessage.value = 'Windows audio added to this device.';
-    const selected = Array.from(files);
-    const explicitGraphics = selected.some(file => file.name.toLowerCase().endsWith('.iso') || WINDOWS_GRAPHICS_FILES.includes(file.name.toUpperCase()));
-    const wantsGraphics = explicitGraphics || selected.some(file => file.name.toLowerCase().endsWith('.zip'));
-    if (wantsGraphics) {
-      try { await importWindowsGraphics(files); voiceMessage.value = 'Windows audio and graphics added to this device.'; }
-      catch { if (explicitGraphics) voiceMessage.value = 'Windows audio added, but the graphics could not be imported.'; }
-    }
-    const wantsGame = selected.some(file => file.name.toLowerCase().endsWith('.iso') || file.name.toLowerCase().endsWith('.zip') || /^LVL\d{4}\.LVL$/i.test(file.name));
-    if (wantsGame) {
-      try { await importWindowsGame(files); voiceMessage.value = 'Windows audio, graphics and level data added to this device.'; }
-      catch { voiceMessage.value += ' Windows level data could not be imported.'; }
-    }
-    await refreshVoices();
+    const parts = [imported.audio && 'audio', imported.graphics && 'graphics', imported.game && 'level data'].filter(Boolean);
+    const description = parts.length > 1 ? `${parts.slice(0, -1).join(', ')} and ${parts.at(-1)}` : parts[0];
+    voiceMessage.value = `Windows ${description} added to this device.`;
   }
-  catch (error) { voiceMessage.value = error instanceof Error ? error.message : 'Could not read those audio files. Please try again.'; }
+  catch (error) { voiceMessage.value = `${error instanceof Error ? error.message : 'Could not read those Windows files.'} Your existing Windows files were not changed.`; }
   finally { input.value = ''; voiceBusy.value = false; }
 }
 async function removeVoices() {
   voiceReadinessGeneration++; voiceBusy.value = true; voiceMessage.value = '';
   try {
-    await clearWindowsVoiceFiles(); await clearWindowsGraphics(); await clearWindowsGame();
+    await clearWindowsFiles();
     await refreshVoices();
     if (gameMode.value === 'windows' && writeGameMode('dos', false)) gameMode.value = 'dos';
     voiceMessage.value = 'Windows files removed from this browser.';

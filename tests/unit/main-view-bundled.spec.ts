@@ -10,17 +10,17 @@ const mock = vi.hoisted(() => ({
   clearFiles: vi.fn(async () => undefined),
   hasWindowsGame: vi.fn(async () => false),
   hasStandaloneGraphics: vi.fn(async () => false),
-  importWindowsGame: vi.fn(async () => undefined),
+  importWindowsGame: vi.fn(async (_files: readonly File[]) => undefined),
   clearWindowsGame: vi.fn(async () => undefined),
   bundledWindowsGame: vi.fn(async () => undefined),
   bundledVoices: vi.fn(async () => undefined),
   hasVoices: vi.fn(async () => false),
   hasAudio: vi.fn(async () => false),
   hasGraphics: vi.fn(async () => false),
-  importVoices: vi.fn(async () => undefined),
+  importVoices: vi.fn(async (_files: readonly File[]) => undefined),
   clearVoices: vi.fn(async () => undefined),
   bundledGraphics: vi.fn(async () => undefined),
-  importGraphics: vi.fn(async () => undefined),
+  importGraphics: vi.fn(async (_files: readonly File[]) => undefined),
   clearGraphics: vi.fn(async () => undefined),
 }));
 
@@ -31,6 +31,15 @@ vi.mock('@/game/resources/file/bundled-windows-game-import', () => ({ importBund
 vi.mock('@/game/resources/file/windows-game-store', () => ({ hasWindowsGame: mock.hasWindowsGame, importWindowsGame: mock.importWindowsGame, clearWindowsGame: mock.clearWindowsGame }));
 vi.mock('@/game/resources/file/windows-graphics-store', () => ({ hasWindowsGraphics: mock.hasGraphics, hasStandaloneWindowsGraphics: mock.hasStandaloneGraphics, importWindowsGraphics: mock.importGraphics, clearWindowsGraphics: mock.clearGraphics }));
 vi.mock('@/game/resources/file/game-file-store', () => ({ hasLemmingsFiles: mock.hasFiles, clearLemmingsFiles: mock.clearFiles, importLemmingsFiles: mock.importFiles, hasWindowsVoiceFiles: mock.hasVoices, hasWindowsAudioFiles: mock.hasAudio, importWindowsVoiceFiles: mock.importVoices, clearWindowsVoiceFiles: mock.clearVoices }));
+vi.mock('@/game/resources/file/windows-file-import', () => ({
+  importWindowsFiles: async (files: readonly File[]) => {
+    await mock.importVoices(files);
+    const complete = files.some(file => /\.iso$/i.test(file.name));
+    if (complete) { await mock.importGraphics(files); await mock.importWindowsGame(files); }
+    return { audio: true, graphics: complete, game: complete };
+  },
+  clearWindowsFiles: async () => { await mock.clearVoices(); await mock.clearGraphics(); await mock.clearWindowsGame(); },
+}));
 vi.mock('@/game/game-factory', () => ({ GameFactory: vi.fn(function () {
   return { getConfig: async () => ({ level: { groups: ['Fun'], getGroupLength: () => 30 } }) };
 }) }));
@@ -127,6 +136,19 @@ describe('home setup', () => {
     expect(mock.importGraphics).toHaveBeenCalledWith(files);
     expect(mock.importWindowsGame).toHaveBeenCalledWith(files);
     expect(view.container.textContent).toContain('Windows audio, graphics and level data added to this device.');
+    view.unmount();
+  });
+
+  it('shows a failed Windows replacement without claiming partial success', async () => {
+    mock.hasFiles.mockResolvedValue(true);
+    mock.importGraphics.mockRejectedValue(new Error('The graphics are damaged.'));
+    const view = await mount();
+    const input = view.container.querySelector<HTMLInputElement>('input[accept^=".wav"]')!;
+    Object.defineProperty(input, 'files', { configurable: true, value: [new File(['disc'], 'windows.iso')] });
+    input.dispatchEvent(new Event('change', { bubbles: true }));
+    await vi.waitFor(() => expect(view.container.textContent).toContain('Your existing Windows files were not changed.'));
+    expect(view.container.textContent).toContain('The graphics are damaged.');
+    expect(view.container.textContent).not.toContain('added to this device.');
     view.unmount();
   });
 
