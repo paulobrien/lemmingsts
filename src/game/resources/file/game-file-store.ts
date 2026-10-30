@@ -1,13 +1,17 @@
 import { unzipSync } from 'fflate';
 import { REQUIRED_LEMMINGS_FILES } from './dos-file-names';
 import { validateDosFiles } from './validate-dos-files';
+import { WINDOWS_AUDIO_FILES, WINDOWS_VOICE_FILES, validateWindowsMusicFile, validateWindowsVoiceFile, type WindowsVoiceFile } from './windows-voice-files';
 export { REQUIRED_LEMMINGS_FILES } from './dos-file-names';
+export { WINDOWS_AUDIO_FILES, WINDOWS_MUSIC_FILES, WINDOWS_SOUND_FILES, WINDOWS_VOICE_FILES } from './windows-voice-files';
 
 const DATABASE_NAME = 'lemmings-game-files';
 const STORE_NAME = 'original-lemmings';
 // A deliberate removal must not be undone by automatic deployment imports.
 const AUTO_IMPORT_DISABLED = '__automatic_import_disabled__';
+const VOICE_AUTO_IMPORT_DISABLED = '__automatic_voice_import_disabled__';
 const requiredNames = new Set(REQUIRED_LEMMINGS_FILES);
+const voiceNames = new Set<string>(WINDOWS_AUDIO_FILES);
 const MAX_ARCHIVE_BYTES = 16 * 1024 * 1024;
 const MAX_EXTRACTED_BYTES = 8 * 1024 * 1024;
 
@@ -135,7 +139,9 @@ async function importFiles(files: FileList | readonly File[], onlyIfEmpty: boole
     const store = transaction.objectStore(STORE_NAME);
     let imported = !onlyIfEmpty;
     const write = () => {
-      store.clear();
+      // Replacing the DOS set must not remove separately imported voice files.
+      for (const name of REQUIRED_LEMMINGS_FILES) store.delete(name);
+      store.delete(AUTO_IMPORT_DISABLED);
       for (const file of buffers) store.put(file.data, file.name);
       imported = true;
     };
@@ -211,4 +217,139 @@ export async function getLemmingsFile(filename: string): Promise<ArrayBuffer | u
   } finally {
     database.close();
   }
+}
+
+/** Import the optional three Windows speech samples without replacing DOS data. */
+export async function importWindowsVoiceFiles(files: FileList | readonly File[]): Promise<void> {
+  await importVoiceFiles(files, false);
+}
+
+/** Add bundled speech to existing game files only if none was saved or deliberately removed. */
+export async function importWindowsVoiceFilesIfMissing(files: FileList | readonly File[]): Promise<boolean> {
+  return importVoiceFiles(files, true);
+}
+
+async function importVoiceFiles(files: FileList | readonly File[], onlyIfMissing: boolean): Promise<boolean> {
+  let selected = Array.from(files);
+  const archives = selected.filter(file => file.name.toLowerCase().endsWith('.zip'));
+  if (archives.length) {
+    if (selected.length !== 1) throw new Error('Select one ZIP archive, or select the three voice files together.');
+    if (archives[0].size > MAX_ARCHIVE_BYTES) throw new Error('The ZIP archive is too large.');
+    let total = 0;
+    let validationError: Error | undefined;
+    const names = new Set<string>();
+    try {
+      const entries = unzipSync(new Uint8Array(await archives[0].arrayBuffer()), {
+        filter: entry => {
+          const name = entry.name.split(/[\\/]/).pop()?.toUpperCase() || '';
+          if (!voiceNames.has(name)) return false;
+          if (names.has(name)) {
+            validationError = new Error(`Duplicate voice files: ${name}`);
+            throw validationError;
+          }
+          names.add(name);
+          total += entry.originalSize;
+          if (total > MAX_EXTRACTED_BYTES) {
+            validationError = new Error('The voice files in this ZIP archive are too large.');
+            throw validationError;
+          }
+          return true;
+        },
+      });
+      selected = Object.entries(entries).map(([path, data]) =>
+        new File([Uint8Array.from(data)], path.split(/[\\/]/).pop() || path));
+    } catch {
+      if (validationError) throw validationError;
+      throw new Error('Could not read this ZIP archive. Please use an unencrypted ZIP or select the voice files directly.');
+    }
+  }
+  const selectedByName = new Map<string, File>();
+  for (const file of selected) {
+    const name = file.name.toUpperCase();
+    if (!voiceNames.has(name)) continue;
+    if (selectedByName.has(name)) throw new Error(`Duplicate voice files: ${name}`);
+    selectedByName.set(name, file);
+  }
+  const missing = WINDOWS_VOICE_FILES.filter(name => !selectedByName.has(name));
+  if (missing.length) throw new Error(`Missing voice files: ${missing.join(', ')}`);
+  if (Array.from(selectedByName.values()).reduce((total, file) => total + file.size, 0) > MAX_EXTRACTED_BYTES) {
+    throw new Error('The selected audio files are too large.');
+  }
+  const buffers = await Promise.all(Array.from(selectedByName, async ([name, file]) => {
+    if (file.size > 1024 * 1024) throw new Error(`${name} is too large.`);
+    const data = await file.arrayBuffer();
+    if (name.endsWith('.MID')) validateWindowsMusicFile(name, data);
+    else validateWindowsVoiceFile(name, data);
+    return { name, data };
+  }));
+  const database = await openDatabase();
+  try {
+    const transaction = database.transaction(STORE_NAME, 'readwrite');
+    const done = transactionDone(transaction);
+    const store = transaction.objectStore(STORE_NAME);
+    let imported = false;
+    let missingGame = false;
+    const keys = store.getAllKeys();
+    keys.onsuccess = () => {
+      const saved = new Set(keys.result);
+      if (!REQUIRED_LEMMINGS_FILES.every(name => saved.has(name))) {
+        missingGame = true;
+        return;
+      }
+      if (onlyIfMissing && (saved.has(VOICE_AUTO_IMPORT_DISABLED) || WINDOWS_AUDIO_FILES.some(name => saved.has(name)))) return;
+      store.delete(VOICE_AUTO_IMPORT_DISABLED);
+      for (const name of WINDOWS_AUDIO_FILES) store.delete(name);
+      for (const file of buffers) store.put(file.data, file.name);
+      imported = true;
+    };
+    await done;
+    if (missingGame && !onlyIfMissing) throw new Error('Add the original DOS game files before adding voices.');
+    return imported;
+  } finally { database.close(); }
+}
+
+async function voiceKeys(): Promise<Set<IDBValidKey>> {
+  const database = await openDatabase();
+  try {
+    const request = database.transaction(STORE_NAME, 'readonly').objectStore(STORE_NAME).getAllKeys();
+    return await new Promise((resolve, reject) => {
+      request.onsuccess = () => resolve(new Set(request.result));
+      request.onerror = () => reject(new Error('Could not check local voice files.'));
+    });
+  } finally { database.close(); }
+}
+
+export async function hasWindowsVoiceFiles(): Promise<boolean> {
+  const keys = await voiceKeys();
+  return WINDOWS_VOICE_FILES.every(name => keys.has(name));
+}
+
+/** Check before fetching a deployment bundle; the final write rechecks atomically. */
+export async function canAutoImportWindowsVoiceFiles(): Promise<boolean> {
+  const keys = await voiceKeys();
+  return REQUIRED_LEMMINGS_FILES.every(name => keys.has(name)) && !keys.has(VOICE_AUTO_IMPORT_DISABLED) &&
+    !WINDOWS_AUDIO_FILES.some(name => keys.has(name));
+}
+
+export async function clearWindowsVoiceFiles(): Promise<void> {
+  const database = await openDatabase();
+  try {
+    const transaction = database.transaction(STORE_NAME, 'readwrite');
+    const done = transactionDone(transaction);
+    const store = transaction.objectStore(STORE_NAME);
+    for (const name of WINDOWS_AUDIO_FILES) store.delete(name);
+    store.put(true, VOICE_AUTO_IMPORT_DISABLED);
+    await done;
+  } finally { database.close(); }
+}
+
+export async function getWindowsVoiceFile(filename: WindowsVoiceFile): Promise<ArrayBuffer | undefined> {
+  return getWindowsAudioFile(filename);
+}
+
+/** Read an optional recognized Windows WAV or MIDI file from local storage. */
+export async function getWindowsAudioFile(filename: string): Promise<ArrayBuffer | undefined> {
+  const name = filename.toUpperCase();
+  if (!voiceNames.has(name)) return undefined;
+  return getLemmingsFile(name);
 }
