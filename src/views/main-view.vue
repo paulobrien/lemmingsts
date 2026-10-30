@@ -51,8 +51,8 @@
                 <span class="pixel-platform"></span><span class="pixel-steps"></span>
                 <span class="fallback-caption">A little adventure awaits</span>
               </div>
-              <canvas ref="backgroundCanvas" v-show="artworkReady" class="original-background" data-home-background></canvas>
-              <canvas ref="logoCanvas" v-show="artworkReady" class="original-logo" data-home-logo></canvas>
+              <canvas ref="backgroundCanvas" v-show="artworkReady && !windowsArtwork" class="original-background" data-home-background></canvas>
+              <canvas ref="logoCanvas" v-show="artworkReady" class="original-logo" :class="{ 'windows-logo': windowsArtwork }" data-home-logo></canvas>
             </div>
             <div class="art-bottomline"><span>Your adventure</span><span>Press play</span></div>
           </div>
@@ -97,7 +97,7 @@
           <input ref="backupInput" class="visually-hidden" type="file" accept=".json,application/json" tabindex="-1" aria-hidden="true" @change="onBackupSelected" />
         </div>
       </section>
-      <footer><span>Made for Vanessa ❤️</span><a :href="`${baseUrl}third-party.html`">Source and licences</a></footer>
+      <footer><span>Made for Vanessa ❤️</span><a :href="`${baseUrl}third-party.html`">Source and licences</a><span>Open online and reload for updates.</span><button class="text-button reload-button" type="button" :disabled="busy || voiceBusy || checkingAutomaticFiles || windowsSetup === 'checking'" @click="reloadApp">Reload app</button></footer>
     </div>
   </main>
 </template>
@@ -116,7 +116,7 @@ import { GameFactory } from '@/game/game-factory';
 import { GameTypes } from '@/game/game-types';
 import { readGameMode, readGameModePreference, writeGameMode, type GameMode } from '@/game/game-mode';
 import { exportProgressBackup, readLastLevel, readProgress, restoreProgressBackup, suggestNextLevel } from '@/game/progress';
-import { loadHomeArtwork, paintHomeArtwork } from '@/game/resources/home-artwork';
+import { loadHomeArtwork, loadWindowsHomeArtwork, paintHomeArtwork } from '@/game/resources/home-artwork';
 import { offlineReadiness } from '@/offline-readiness';
 
 const baseUrl = import.meta.env.BASE_URL;
@@ -147,6 +147,8 @@ const backupInput = ref<HTMLInputElement | null>(null);
 const logoCanvas = ref<HTMLCanvasElement | null>(null);
 const backgroundCanvas = ref<HTMLCanvasElement | null>(null);
 const artworkReady = ref(false);
+const windowsArtwork = ref(false);
+const artworkRevision = ref(0);
 let artworkRequest = 0;
 let disposed = false;
 let manualGeneration = 0;
@@ -156,21 +158,30 @@ let voiceManualGeneration = 0;
 let initialWindowsSetup: Promise<void> | undefined;
 let windowsCheck: Promise<void> | undefined;
 
-watch(dosReady, async (hasFiles) => {
+watch([dosReady, graphicsReady, artworkRevision], async ([hasDos, hasWindows]) => {
   const request = ++artworkRequest;
   artworkReady.value = false;
-  if (!hasFiles) {
-    // Discard decoded pixels when the player removes the local files.
-    for (const canvas of [logoCanvas.value, backgroundCanvas.value]) {
-      if (canvas) { canvas.width = 0; canvas.height = 0; }
-    }
-    return;
+  windowsArtwork.value = false;
+  // Discard decoded pixels before loading changed or removed local files.
+  for (const canvas of [logoCanvas.value, backgroundCanvas.value]) {
+    if (canvas) { canvas.width = 0; canvas.height = 0; }
   }
+  if (!hasDos && !hasWindows) return;
   try {
-    const artwork = await loadHomeArtwork();
-    if (request !== artworkRequest || !artwork || !logoCanvas.value || !backgroundCanvas.value) return;
-    artworkReady.value = paintHomeArtwork(logoCanvas.value, artwork.logo)
-      && paintHomeArtwork(backgroundCanvas.value, artwork.background);
+    let artwork: Awaited<ReturnType<typeof loadHomeArtwork>> = null;
+    if (hasDos) {
+      try { artwork = await loadHomeArtwork(); } catch { /* Try the Windows artwork. */ }
+    }
+    if (request !== artworkRequest || !logoCanvas.value || !backgroundCanvas.value) return;
+    if (artwork) {
+      artworkReady.value = paintHomeArtwork(logoCanvas.value, artwork.logo)
+        && paintHomeArtwork(backgroundCanvas.value, artwork.background);
+      if (artworkReady.value) return;
+    }
+    const logo = hasWindows ? await loadWindowsHomeArtwork() : null;
+    if (request !== artworkRequest || !logo || !logoCanvas.value) return;
+    windowsArtwork.value = true;
+    artworkReady.value = paintHomeArtwork(logoCanvas.value, logo);
   } catch {
     // Artwork is optional: keep the accessible home screen usable if an import
     // is incomplete, incompatible, or local storage becomes unavailable.
@@ -259,7 +270,7 @@ async function onFilesSelected(event: Event) {
   if (!input.files?.length) return;
   manualGeneration++; readinessGeneration++;
   busy.value = true; message.value = '';
-  try { await importLemmingsFiles(input.files); dosReady.value = true; message.value = 'Game files added. You’re ready to play!'; void checkAutomaticVoices(); }
+  try { await importLemmingsFiles(input.files); dosReady.value = true; artworkRevision.value++; message.value = 'Game files added. You’re ready to play!'; void checkAutomaticVoices(); }
   catch (error) { message.value = error instanceof Error ? error.message : 'Could not read those files. Please try again.'; }
   finally { input.value = ''; busy.value = false; void refreshReadiness(); }
 }
@@ -289,6 +300,7 @@ async function checkAutomaticVoices() {
       catch (error) { initialWindowsSetup = undefined; throw error; }
       const results = await Promise.allSettled([importBundledWindowsVoices(), importBundledWindowsGraphics(), importBundledWindowsGame()]);
       await refreshVoices();
+      artworkRevision.value++;
       if (!disposed) {
         const values = results.flatMap(result => result.status === 'fulfilled' ? [result.value] : []);
         const incomplete = !windowsReady.value && values.includes('absent') && values.some(value => value === 'imported' || value === 'existing');
@@ -308,6 +320,7 @@ async function onVoicesSelected(event: Event) {
   try {
     const imported = await importWindowsFiles(input.files);
     await refreshVoices();
+    artworkRevision.value++;
     const parts = [imported.audio && 'audio', imported.graphics && 'graphics', imported.game && 'level data'].filter(Boolean);
     const description = parts.length > 1 ? `${parts.slice(0, -1).join(', ')} and ${parts.at(-1)}` : parts[0];
     voiceMessage.value = `Windows ${description} added to this device.`;
@@ -342,6 +355,8 @@ function onGameModeChange(event: Event) {
   gameMode.value = mode;
   voiceMessage.value = '';
 }
+
+function reloadApp() { window.location.reload(); }
 function downloadBackup() {
   backupMessage.value = '';
   try {
@@ -416,6 +431,7 @@ h1 { margin: 0 0 1rem; font-size: 2rem; font-weight: 800; line-height: 1.2; text
 .art-screen { position: relative; min-height: 230px; overflow: hidden; background: var(--color-art-depth); }
 .original-background { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; image-rendering: pixelated; opacity: .8; }
 .original-logo { position: absolute; width: min(94%, 480px); height: auto; left: 50%; top: 50%; transform: translate(-50%, -50%); image-rendering: pixelated; filter: drop-shadow(2px 3px 0 var(--color-art-shadow)); }
+.original-logo.windows-logo { width: auto; height: auto; max-width: 94%; max-height: 96%; }
 .fallback-landscape { position: absolute; inset: 0; background: var(--color-art-sky); }
 .fallback-landscape.is-hidden { display: none; }
 .pixel-sun { position: absolute; top: 15%; right: 16%; width: 32px; height: 32px; background: var(--color-art-sun); box-shadow: 8px 0 var(--color-art-sun), -8px 0 var(--color-art-sun), 0 8px var(--color-art-sun), 0 -8px var(--color-art-sun); }
@@ -437,6 +453,7 @@ h2 { margin: 0; font-size: 1.25rem; font-weight: 700; line-height: 1.4; text-wra
 .backup-actions { display: flex; flex-wrap: wrap; gap: .5rem; }
 footer { display: flex; flex-wrap: wrap; gap: .5rem 1.5rem; align-items: center; padding: 1rem 0; border-top: 1px solid var(--color-edge); color: var(--color-muted); font-size: .875rem; }
 footer a { display: inline-flex; min-height: 44px; align-items: center; color: var(--color-ink); text-underline-offset: .2em; }
+.reload-button { margin: 0; }
 .visually-hidden { position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px; overflow: hidden; clip: rect(0,0,0,0); white-space: nowrap; border: 0; }
 .primary-button:focus-visible, .text-button:focus-visible, .edition-link:focus-visible, select:focus-visible, footer a:focus-visible { outline: 3px solid var(--color-focus); outline-offset: 3px; }
 .is-ready .hero { padding-block: 2rem; }

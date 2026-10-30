@@ -29,6 +29,7 @@ async function expandSelection(input: FileList | readonly File[]): Promise<{ fil
     const entries = unzipSync(new Uint8Array(await archive.arrayBuffer()), { filter: entry => {
       const name = entry.name.split(/[\\/]/).pop()?.toUpperCase() ?? '';
       if (!recognized.has(name)) return false;
+      if (name === 'WLEMLOGO.BMP' && entry.originalSize > 1024 * 1024) return false;
       if (names.has(name)) { validationError = new Error(`Duplicate Windows files: ${name}`); throw validationError; }
       names.add(name);
       total += entry.originalSize;

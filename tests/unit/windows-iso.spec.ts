@@ -1,7 +1,7 @@
 // @vitest-environment node
 import { expect, it, vi } from 'vitest';
 import { indexedDB } from 'fake-indexeddb';
-import { readWindowsAudioIso } from '../../src/game/resources/file/windows-iso';
+import { readWindowsAudioIso, readWindowsGraphicsIso } from '../../src/game/resources/file/windows-iso';
 import { clearLemmingsFiles, getWindowsVoiceFile, importLemmingsFiles, importWindowsVoiceFiles, REQUIRED_LEMMINGS_FILES } from '../../src/game/resources/file/game-file-store';
 import { syntheticDosData } from '../helpers/synthetic-dos';
 
@@ -79,4 +79,25 @@ it('rejects corrupt descriptors and out-of-bounds or inconsistent directory exte
 it('rejects an image without the expected Windows Lemmings folder', async () => {
   const image = testIso(); image.set(new TextEncoder().encode('SOMETHNG'), 20 * BLOCK + 33);
   await expect(readWindowsAudioIso(new File([image], 'other.iso'))).rejects.toThrow('does not contain a LEMMINGS folder');
+});
+
+it('skips an oversized optional title bitmap while keeping other ISO graphics available', async () => {
+  const image = new Uint8Array(600 * BLOCK); image.set(testIso());
+  const view = new DataView(image.buffer);
+  const both32 = (at: number, value: number) => { view.setUint32(at, value, true); view.setUint32(at + 4, value, false); };
+  both32(16 * BLOCK + 80, 600);
+  const record = (at: number, name: string, sector: number, size: number, directory: boolean) => {
+    const encoded = new TextEncoder().encode(name);
+    const length = 33 + encoded.length + (encoded.length % 2 === 0 ? 1 : 0);
+    image[at] = length; both32(at + 2, sector); both32(at + 10, size);
+    image[at + 25] = directory ? 2 : 0; image[at + 32] = encoded.length;
+    image.set(encoded, at + 33);
+    return at + length;
+  };
+  const music = 21 * BLOCK + image[21 * BLOCK];
+  record(music + image[music], 'GFX', 28, BLOCK, true);
+  const next = record(28 * BLOCK, 'WLEMLOGO.BMP;1', 29, 1024 * 1024 + 1, false);
+  record(next, 'FE.PAL;1', 27, 34, false);
+  const files = await readWindowsGraphicsIso(new File([image], 'game.iso'));
+  expect(files.map(file => file.name)).toEqual(['FE.PAL']);
 });

@@ -32,6 +32,12 @@ describe('atomic Windows import', () => {
     await expectVersion(2);
     expect(await getLemmingsFile('GROUND0O.DAT')).toEqual(ground);
   });
+  it('accepts the game when its optional Windows title artwork is malformed', async () => {
+    const files = windowsFiles(1).map(file => file.name === 'WLEMLOGO.BMP' ? new File(['bad'], file.name) : file);
+    await expect(importWindowsFiles(files)).resolves.toEqual({ audio: true, graphics: true, game: true });
+    expect(await hasStandaloneWindowsGraphics()).toBe(true);
+    expect(await getWindowsGraphicsFile('WLEMLOGO.BMP')).toBeUndefined();
+  });
   it('keeps every Windows component when DOS files are removed', async () => {
     await importLemmingsFiles(REQUIRED_LEMMINGS_FILES.map((name, index) => new File([Uint8Array.from(syntheticDosData(name, index + 1))], name)));
     await importWindowsFiles(windowsFiles(1));

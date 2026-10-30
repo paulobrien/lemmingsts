@@ -13,6 +13,7 @@ it('packages only valid supplied graphics and rejects incomplete bundles', () =>
  try {
   const source=join(root,'source'), build=join(root,'dist'); mkdirSync(source); mkdirSync(build); mkdirSync(join(source,'GFX')); mkdirSync(join(source,'STYLES'));
   for (const name of WINDOWS_GRAPHICS_FILES) writeFileSync(join(source,WINDOWS_GRAPHICS_GFX_FILES.includes(name)?'GFX':'STYLES',name),name.endsWith('.PAL')?palette():sprite());
+  writeFileSync(join(source,'GFX','WLEMLOGO.BMP'),'invalid optional bitmap');
   writeFileSync(join(source,'GFX','unrelated.txt'),'excluded');
   const dest=packageWindowsGraphics(source,build);
   expect(readdirSync(dest).sort()).toEqual([...WINDOWS_GRAPHICS_FILES.map(name=>name.toLowerCase()),'manifest.json'].sort());

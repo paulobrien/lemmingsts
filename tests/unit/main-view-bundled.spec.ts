@@ -24,6 +24,9 @@ const mock = vi.hoisted(() => ({
   bundledGraphics: vi.fn(async (): Promise<'existing' | 'imported' | 'absent' | undefined> => undefined),
   importGraphics: vi.fn(async (_files: readonly File[]) => undefined),
   clearGraphics: vi.fn(async () => undefined),
+  homeArtwork: vi.fn(async (): Promise<unknown> => null),
+  windowsHomeArtwork: vi.fn(async (): Promise<unknown> => null),
+  paintArtwork: vi.fn(() => true),
 }));
 
 vi.mock('@/game/resources/file/bundled-game-import', () => ({ importBundledLemmingsFiles: mock.bundled }));
@@ -46,7 +49,7 @@ vi.mock('@/game/resources/file/windows-file-import', () => ({
 vi.mock('@/game/game-factory', () => ({ GameFactory: vi.fn(function () {
   return { getConfig: async () => ({ level: { groups: ['Fun'], getGroupLength: () => 30 } }) };
 }) }));
-vi.mock('@/game/resources/home-artwork', () => ({ loadHomeArtwork: async () => null, paintHomeArtwork: vi.fn() }));
+vi.mock('@/game/resources/home-artwork', () => ({ loadHomeArtwork: mock.homeArtwork, loadWindowsHomeArtwork: mock.windowsHomeArtwork, paintHomeArtwork: mock.paintArtwork }));
 vi.mock('@/offline-readiness', async () => {
   const { ref } = await import('vue');
   return { offlineReadiness: ref('ready') };
@@ -85,6 +88,34 @@ describe('home setup', () => {
     mock.bundledGraphics.mockReset().mockResolvedValue(undefined);
     mock.importGraphics.mockReset().mockResolvedValue(undefined);
     mock.clearGraphics.mockReset().mockResolvedValue(undefined);
+    mock.homeArtwork.mockReset().mockResolvedValue(null);
+    mock.windowsHomeArtwork.mockReset().mockResolvedValue(null);
+    mock.paintArtwork.mockReset().mockReturnValue(true);
+  });
+
+  it('repaints DOS title art after replacing an already-ready installation', async () => {
+    mock.hasFiles.mockResolvedValue(true);
+    mock.homeArtwork.mockResolvedValue({ logo: {}, background: {} });
+    const view = await mount();
+    try {
+      await vi.waitFor(() => expect(mock.homeArtwork).toHaveBeenCalled());
+      const before = mock.homeArtwork.mock.calls.length;
+      const input = view.container.querySelector<HTMLInputElement>('input[type=file]')!;
+      Object.defineProperty(input, 'files', { configurable: true, value: [new File(['data'], 'MAIN.DAT')] });
+      input.dispatchEvent(new Event('change', { bubbles: true }));
+      await vi.waitFor(() => expect(mock.homeArtwork.mock.calls.length).toBeGreaterThan(before));
+    } finally { view.unmount(); }
+  });
+
+  it('falls back to Windows title artwork when DOS artwork is unavailable', async () => {
+    mock.hasFiles.mockResolvedValue(true);
+    mock.hasGraphics.mockResolvedValue(true);
+    mock.windowsHomeArtwork.mockResolvedValue({});
+    const view = await mount();
+    try {
+      await vi.waitFor(() => expect(mock.windowsHomeArtwork).toHaveBeenCalled());
+      await vi.waitFor(() => expect(view.container.querySelector('[data-home-logo]')?.classList.contains('windows-logo')).toBe(true));
+    } finally { view.unmount(); }
   });
 
   it('shows Windows setup failure and allows retry even when DOS is playable', async () => {

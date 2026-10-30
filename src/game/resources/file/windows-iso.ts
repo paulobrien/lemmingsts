@@ -111,6 +111,7 @@ async function readWindowsIsoFiles(image: File, selections: ReadonlyArray<readon
     const allowedNames = new Set(allowed);
     for (const entry of children) {
       if (!allowedNames.has(entry.name)) continue;
+      if (entry.name === 'WLEMLOGO.BMP' && (entry.directory || entry.multiExtent || entry.size > MAX_FILE_BYTES)) continue;
       if (entry.directory || entry.multiExtent || entry.size > MAX_FILE_BYTES || recognized.has(entry.name)) return invalid();
       recognized.set(entry.name, entry);
     }

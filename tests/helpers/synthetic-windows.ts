@@ -16,6 +16,14 @@ export function windowsSprite(marker = 1): Uint8Array<ArrayBuffer> {
   return Uint8Array.from([0x53, 0x52, 0x4c, 0x45, 1, 0, 10, 0, 0, 0,
     0, 0, 0, 0, 1, 0, 1, 0, 1, 0, 1, 0, 0x81, marker, 0x80]);
 }
+export function windowsBitmap(): Uint8Array<ArrayBuffer> {
+  const bytes = new Uint8Array(66), view = new DataView(bytes.buffer);
+  bytes.set([0x42, 0x4d]); view.setUint32(2, bytes.length, true); view.setUint32(10, 62, true);
+  view.setUint32(14, 40, true); view.setInt32(18, 2, true); view.setInt32(22, 1, true);
+  view.setUint16(26, 1, true); view.setUint16(28, 8, true); view.setUint32(46, 2, true);
+  bytes.set([10, 20, 30, 0, 40, 50, 60, 0], 54); bytes.set([0, 1], 62);
+  return bytes;
+}
 export function windowsDatabase(): Uint8Array<ArrayBuffer> {
   const data = new Uint8Array(8 + 9 * 137); const view = new DataView(data.buffer);
   view.setUint32(0, 2, true); view.setUint32(4, 9, true);
@@ -58,6 +66,6 @@ export const windowsFiles = (marker = 1) => [
   ...WINDOWS_AUDIO_FILES.map(name => new File([name.endsWith('.MID') ? windowsMidi() : windowsWav(marker)], name)),
   ...windowsGraphicsFiles(marker),
   ...WINDOWS_GRAPHICS_ALL_FILES.filter(name => !WINDOWS_GRAPHICS_FILES.includes(name))
-    .map(name => new File([name === 'LEMMSMA.SPR' ? windowsMaskSprites(marker) : windowsSprite(marker)], name)),
+    .map(name => new File([name === 'LEMMSMA.SPR' ? windowsMaskSprites(marker) : name.endsWith('.BMP') ? windowsBitmap() : windowsSprite(marker)], name)),
   ...windowsGameFiles(marker),
 ];

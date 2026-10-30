@@ -3,6 +3,8 @@ import { FileContainer } from './file/file-container';
 import { getLemmingsFile } from './file/game-file-store';
 import { Frame } from './frame';
 import { MainImageSprites } from './main-image-sprites';
+import { getWindowsGraphicsFile } from './file/windows-graphics-store';
+import { decodeWindowsBmp } from './windows-bmp';
 
 export interface HomeArtwork {
   logo: Frame;
@@ -24,6 +26,16 @@ export async function loadHomeArtwork(): Promise<HomeArtwork | null> {
   const logo = sprites.getLogo();
   if (!logo.getMask().some(Boolean)) return null;
   return { logo, background: sprites.getBackground() };
+}
+
+/** Windows-only installations can use the splash artwork from their own disc. */
+export async function loadWindowsHomeArtwork(): Promise<Frame | null> {
+  const bytes = await getWindowsGraphicsFile('WLEMLOGO.BMP');
+  if (!bytes) return null;
+  const image = decodeWindowsBmp(new Uint8Array(bytes));
+  const frame = new Frame(image.width, image.height);
+  frame.getData().set(image.data);
+  return frame;
 }
 
 /** Paint without creating a persistent URL or storing a copy of the image. */

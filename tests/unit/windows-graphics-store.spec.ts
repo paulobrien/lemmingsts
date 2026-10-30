@@ -5,6 +5,7 @@ import { zipSync } from 'fflate';
 import { WINDOWS_GRAPHICS_FILES, WINDOWS_UI_GRAPHICS_FILES, WINDOWS_GAME_GRAPHICS_FILES, WINDOWS_EXTRA_UI_GRAPHICS_FILES } from '../../src/game/resources/file/windows-graphics-names';
 import { canAutoImportWindowsGraphics, canAutoImportWindowsUiGraphics, clearWindowsGraphics, getWindowsGraphicsFile, hasWindowsGraphics, hasStandaloneWindowsGraphics,
   importWindowsGraphics, importWindowsGraphicsIfMissing } from '../../src/game/resources/file/windows-graphics-store';
+import { windowsBitmap } from '../helpers/synthetic-windows';
 
 vi.stubGlobal('indexedDB', indexedDB);
 
@@ -65,11 +66,12 @@ describe('optional Windows graphics storage', () => {
   it('adds only missing icons to older matching installations and preserves manual files', async () => {
     await importWindowsGraphics(files());
     expect(await canAutoImportWindowsUiGraphics()).toBe(true);
-    const iconFiles = [...WINDOWS_UI_GRAPHICS_FILES, ...WINDOWS_GAME_GRAPHICS_FILES, ...WINDOWS_EXTRA_UI_GRAPHICS_FILES].map(name => new File([sprite()], name));
+    const iconFiles = [...[...WINDOWS_UI_GRAPHICS_FILES, ...WINDOWS_GAME_GRAPHICS_FILES, ...WINDOWS_EXTRA_UI_GRAPHICS_FILES].map(name => new File([sprite()], name)), new File([windowsBitmap()], 'WLEMLOGO.BMP')];
     expect(await importWindowsGraphicsIfMissing([...files(), ...iconFiles])).toBe(true);
     expect(await getWindowsGraphicsFile('ICO_CLIM.SPR')).toEqual(sprite().buffer);
     expect(await getWindowsGraphicsFile('LEMMSMA.SPR')).toEqual(sprite().buffer);
     expect(await getWindowsGraphicsFile('LEVEL4OS.SPR')).toEqual(sprite().buffer);
+    expect(await getWindowsGraphicsFile('WLEMLOGO.BMP')).toEqual(windowsBitmap().buffer);
     // Valid SRLE framing alone is insufficient: the game needs the named mask frames.
     expect(await hasStandaloneWindowsGraphics()).toBe(false);
     expect(await canAutoImportWindowsUiGraphics()).toBe(false);
@@ -81,6 +83,12 @@ describe('optional Windows graphics storage', () => {
     await clearWindowsGraphics();
     expect(await canAutoImportWindowsUiGraphics()).toBe(false);
     expect(await importWindowsGraphicsIfMissing([...files(), ...iconFiles])).toBe(false);
+  });
+
+  it('skips damaged optional title artwork without rejecting valid game graphics', async () => {
+    await expect(importWindowsGraphics([...files(), new File([new Uint8Array([1, 2, 3])], 'WLEMLOGO.BMP')])).resolves.toBeUndefined();
+    expect(await hasWindowsGraphics()).toBe(true);
+    expect(await getWindowsGraphicsFile('WLEMLOGO.BMP')).toBeUndefined();
   });
 
   it('adds fast-forward art to an older matching graphics set without replacing its icons', async () => {

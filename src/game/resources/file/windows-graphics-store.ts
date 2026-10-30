@@ -1,6 +1,7 @@
 import { openGameDatabase as openDatabase, transactionDone, WINDOWS_GRAPHICS_STORE } from './game-file-database';
 import { unzipSync } from 'fflate';
 import { decodeWindowsPalette, decodeWindowsSprites } from '../windows-graphics';
+import { decodeWindowsBmp } from '../windows-bmp';
 import { createWindowsMaskProvider } from '../windows-mask-provider';
 import { WINDOWS_GRAPHICS_ALL_FILES, WINDOWS_GRAPHICS_FILES, WINDOWS_OPTIONAL_GRAPHICS_FILES, WINDOWS_STANDALONE_GRAPHICS_FILES } from './windows-graphics-names';
 import { readWindowsGraphicsIso } from './windows-iso';
@@ -30,6 +31,7 @@ export async function prepareWindowsGraphics(input: FileList | readonly File[]):
       const entries = unzipSync(new Uint8Array(await archives[0].arrayBuffer()), { filter: entry => {
         const name = entry.name.split(/[\\/]/).pop()?.toUpperCase() ?? '';
         if (!allowed.has(name)) return false;
+        if (name === 'WLEMLOGO.BMP' && entry.originalSize > MAX_FILE) return false;
         if (seen.has(name)) { validationError = new Error(`Duplicate graphics files: ${name}`); throw validationError; }
         seen.add(name);
         total += entry.originalSize;
@@ -46,6 +48,7 @@ export async function prepareWindowsGraphics(input: FileList | readonly File[]):
   for (const file of files) {
     const name = file.name.toUpperCase();
     if (!allowed.has(name)) continue;
+    if (name === 'WLEMLOGO.BMP' && file.size > MAX_FILE) continue;
     if (selected.has(name)) throw new Error(`Duplicate graphics files: ${name}`);
     selected.set(name, file);
   }
@@ -57,11 +60,16 @@ export async function prepareWindowsGraphics(input: FileList | readonly File[]):
   for (const name of selected.keys()) {
     const file = selected.get(name)!;
     if (file.size > MAX_FILE) throw new Error(`${name} is too large.`);
-    const data = await file.arrayBuffer();
+    let data: ArrayBuffer;
     try {
+      data = await file.arrayBuffer();
       if (name.endsWith('.PAL')) decodeWindowsPalette(new Uint8Array(data));
+      else if (name.endsWith('.BMP')) decodeWindowsBmp(new Uint8Array(data));
       else decodeWindowsSprites(new Uint8Array(data));
-    } catch { throw new Error(`${name} is not a supported Windows Lemmings graphics file.`); }
+    } catch {
+      if (name === 'WLEMLOGO.BMP') continue;
+      throw new Error(`${name} is not a supported Windows Lemmings graphics file.`);
+    }
     result.push({ name, data });
   }
   return result;

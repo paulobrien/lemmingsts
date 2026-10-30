@@ -3,6 +3,7 @@ import { join, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { WINDOWS_GRAPHICS_ALL_FILES, WINDOWS_GRAPHICS_FILES } from '../src/game/resources/file/windows-graphics-names.ts';
 import { decodeWindowsPalette, decodeWindowsSprites } from '../src/game/resources/windows-graphics.ts';
+import { decodeWindowsBmp } from '../src/game/resources/windows-bmp.ts';
 
 /** Package only the separately supplied, validated Windows graphics. */
 export function packageWindowsGraphics(source, build) {
@@ -25,9 +26,14 @@ export function packageWindowsGraphics(source, build) {
   const files = [];
   for (const [name, path] of selected) {
     const size = lstatSync(path).size;
+    if (name === 'WLEMLOGO.BMP' && (!size || size > 1024 * 1024)) continue;
     if (!size || size > 1024 * 1024 || (total += size) > 8 * 1024 * 1024) throw new Error('Windows graphics exceed the size limit.');
     const data = Uint8Array.from(readFileSync(path));
-    if (name.endsWith('.PAL')) decodeWindowsPalette(data); else decodeWindowsSprites(data);
+    if (name.endsWith('.PAL')) decodeWindowsPalette(data);
+    else if (name.endsWith('.BMP')) {
+      try { decodeWindowsBmp(data); } catch { total -= size; continue; }
+    }
+    else decodeWindowsSprites(data);
     files.push({ name: name.toLowerCase(), data });
   }
   files.sort((a, b) => a.name.localeCompare(b.name));

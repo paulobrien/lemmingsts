@@ -34,3 +34,23 @@ test('uses locally imported title art and removes it with the files', async ({ p
   await expect(page.locator('.fallback-landscape')).toBeVisible()
   await expect.poll(() => logo.evaluate((canvas: HTMLCanvasElement) => [canvas.width, canvas.height])).toEqual([0, 0])
 })
+
+test('uses Windows-only title artwork offline and the reload control keeps imported files', async ({ page, context }) => {
+  test.skip(process.env.RUN_PRIVATE_GAME_TESTS !== '1' || !process.env.LEMMINGS_WINDOWS_ISO, 'Requires the local Windows ISO')
+  await page.goto('/')
+  await page.locator('input[accept*=".iso"]').setInputFiles(process.env.LEMMINGS_WINDOWS_ISO!)
+  const logo = page.locator('[data-home-logo]')
+  await expect(logo).toBeVisible()
+  await expect(logo).toHaveClass(/windows-logo/)
+  await expect(page.locator('[data-home-background]')).toBeHidden()
+  await expect(page.getByText('Open online and reload for updates.')).toBeVisible()
+  await page.evaluate(() => navigator.serviceWorker.ready)
+  await page.waitForFunction(() => !!navigator.serviceWorker.controller)
+  await context.setOffline(true)
+  const navigation = page.waitForEvent('load')
+  await page.getByRole('button', { name: 'Reload app' }).click()
+  await navigation
+  await expect(logo).toBeVisible()
+  await expect(logo).toHaveClass(/windows-logo/)
+  await expect(page.getByRole('link', { name: 'Play Lemmings' })).toBeVisible()
+})
