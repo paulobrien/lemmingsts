@@ -46,12 +46,16 @@ export class Stage {
     /** True when the playfield is away from its starting scale. */
     public readonly onZoomChange = new EventHandler<boolean>();
     private readonly defaultZoom: number;
+    private fittedZoom: number;
+    private customZoom = false;
+    private fullscreenViewport: { width: number; height: number } | null = null;
     private readonly originalCanvasWidth: number;
     private readonly originalCanvasHeight: number;
 
 
     constructor(canvasForOutput: HTMLCanvasElement, zoom = 2) {
         this.defaultZoom = zoom;
+        this.fittedZoom = zoom;
         this.originalCanvasWidth = canvasForOutput.width;
         this.originalCanvasHeight = canvasForOutput.height;
         this.controller = new UserInputManager(canvasForOutput);
@@ -288,7 +292,10 @@ export class Stage {
             image.viewPoint.y = this.limitValue(0,
                 worldY - (event.center.y - image.y - offset.y) / image.viewPoint.scale,
                 image.display.getHeight() - image.height / image.viewPoint.scale);
-            if (image.viewPoint.scale !== oldScale) this.onZoomChange.trigger(image.viewPoint.scale !== this.defaultZoom);
+            if (image.viewPoint.scale !== oldScale) {
+                this.customZoom = this.isZoomChanged(image.viewPoint.scale);
+                this.onZoomChange.trigger(this.customZoom);
+            }
             this.clear(image);
             const frame = image.display.getImageData();
             if (!frame) return;
@@ -316,7 +323,59 @@ export class Stage {
     /** Restore the level scale without moving its camera more than bounds require. */
     public resetZoom(): void {
         const image = this.gameImgProps;
-        this.updateViewPoint(image, 0, 0, (this.defaultZoom - image.viewPoint.scale) / 0.5);
+        this.updateViewPoint(image, 0, 0, (this.fittedZoom - image.viewPoint.scale) / 0.5);
+        this.customZoom = false;
+    }
+
+    private isZoomChanged(scale: number): boolean {
+        return Math.abs(scale - this.fittedZoom) > 0.000001;
+    }
+
+    /** Resize only the native Windows fullscreen presentation, retaining camera and custom zoom. */
+    public setWindowsFullscreenViewport(width?: number, height?: number): void {
+        if (width === undefined || height === undefined) {
+            if (!this.fullscreenViewport) return;
+            this.fullscreenViewport = null;
+        } else {
+            if (!Number.isFinite(width) || !Number.isFinite(height) || width <= 0 || height <= 0) return;
+            if (this.fullscreenViewport?.width === width && this.fullscreenViewport.height === height) return;
+            this.fullscreenViewport = { width, height };
+        }
+        if (this.minimapLemmings) this.resizeWindowsCanvas();
+    }
+
+    private resizeWindowsCanvas(): void {
+        const image = this.gameImgProps;
+        const oldOffset = this.contentOffset(image);
+        const centerX = image.viewPoint.x + (image.width / 2 - oldOffset.x) / image.viewPoint.scale;
+        const centerY = image.viewPoint.y + (image.height / 2 - oldOffset.y) / image.viewPoint.scale;
+        const targetHeight = this.fullscreenViewport
+            ? this.limitValue(WINDOWS_PANEL_HEIGHT + 1, Math.round(WINDOWS_WIDTH * this.fullscreenViewport.height / this.fullscreenViewport.width), 8192)
+            : WINDOWS_HEIGHT;
+        if (this.stageCav.width !== WINDOWS_WIDTH || this.stageCav.height !== targetHeight) this.controller.cancelActive();
+        // Setting a canvas dimension clears it, so skip unchanged dimensions.
+        if (this.stageCav.width !== WINDOWS_WIDTH) this.stageCav.width = WINDOWS_WIDTH;
+        if (this.stageCav.height !== targetHeight) this.stageCav.height = targetHeight;
+        this.updateStageSize();
+        const levelHeight = image.display?.getHeight() ?? 0;
+        this.fittedZoom = this.fullscreenViewport && levelHeight > 0
+            // Leave room to zoom in further on tall portrait screens; the
+            // player can still zoom manually up to the engine's 10× limit.
+            ? this.limitValue(0.5, image.height / levelHeight, 7.5) : this.defaultZoom;
+        if (!this.customZoom) image.viewPoint.scale = this.fittedZoom;
+        else if (!this.isZoomChanged(image.viewPoint.scale)) this.customZoom = false;
+        if (image.display) {
+            const offset = this.contentOffset(image);
+            image.viewPoint.x = this.limitValue(0,
+                centerX - (image.width / 2 - offset.x) / image.viewPoint.scale,
+                image.display.getWidth() - image.width / image.viewPoint.scale);
+            image.viewPoint.y = this.limitValue(0,
+                centerY - (image.height / 2 - offset.y) / image.viewPoint.scale,
+                image.display.getHeight() - image.height / image.viewPoint.scale);
+        }
+        this.stageCav.style.setProperty('--windows-fullscreen-ratio', String(WINDOWS_WIDTH / targetHeight));
+        this.onZoomChange.trigger(this.isZoomChanged(image.viewPoint.scale));
+        this.redraw();
     }
 
     /** Enable the Windows micro-map for a live game, or remove it on teardown. */
@@ -326,9 +385,22 @@ export class Stage {
         this.minimapDragging = false;
         this.scrollbarDragging = false;
         if (wasWindows !== !!provider) {
-            this.stageCav.width = provider ? WINDOWS_WIDTH : this.originalCanvasWidth;
-            this.stageCav.height = provider ? WINDOWS_HEIGHT : this.originalCanvasHeight;
-            this.updateStageSize();
+            if (provider) {
+                this.resizeWindowsCanvas();
+            } else {
+                this.controller.cancelActive();
+                this.stageCav.width = this.originalCanvasWidth;
+                this.stageCav.height = this.originalCanvasHeight;
+                this.fittedZoom = this.defaultZoom;
+                if (!this.customZoom) this.gameImgProps.viewPoint.scale = this.defaultZoom;
+                this.updateStageSize();
+                const image = this.gameImgProps;
+                if (image.display) {
+                    image.viewPoint.x = this.limitValue(0, image.viewPoint.x, image.display.getWidth() - image.width / image.viewPoint.scale);
+                    image.viewPoint.y = this.limitValue(0, image.viewPoint.y, image.display.getHeight() - image.height / image.viewPoint.scale);
+                }
+                this.onZoomChange.trigger(this.isZoomChanged(this.gameImgProps.viewPoint.scale));
+            }
         }
         this.redraw();
     }
@@ -556,6 +628,7 @@ export class Stage {
         const previousScale = stageImage.viewPoint.scale;
         stageImage.viewPoint.scale += deltaZoom * 0.5;
         stageImage.viewPoint.scale = this.limitValue(0.5, stageImage.viewPoint.scale, 10);
+        if (stageImage === this.gameImgProps && stageImage.viewPoint.scale !== previousScale) this.customZoom = this.isZoomChanged(stageImage.viewPoint.scale);
 
         stageImage.viewPoint.x += deltaX / stageImage.viewPoint.scale;
         stageImage.viewPoint.y += deltaY / stageImage.viewPoint.scale;
@@ -564,7 +637,7 @@ export class Stage {
         stageImage.viewPoint.y = this.limitValue(0, stageImage.viewPoint.y, stageImage.display.getHeight() - stageImage.height / stageImage.viewPoint.scale);
 
         if (stageImage === this.gameImgProps && stageImage.viewPoint.scale !== previousScale) {
-            this.onZoomChange.trigger(this.gameImgProps.viewPoint.scale !== this.defaultZoom);
+            this.onZoomChange.trigger(this.isZoomChanged(this.gameImgProps.viewPoint.scale));
         }
 
 

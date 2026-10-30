@@ -13,7 +13,7 @@ test('Windows button animation preference persists and controls the artwork', as
   const touch = testInfo.project.name !== 'desktop'
   const icon = () => canvas.evaluate((element: HTMLCanvasElement) => {
     // The twelfth cell contains the original multi-frame fast-forward sprite.
-    const pixels = element.getContext('2d')!.getImageData(492, 340, 44, 66).data
+    const pixels = element.getContext('2d')!.getImageData(492, element.height - 100, 44, 66).data
     return Array.from(pixels).join(',')
   })
   await pressGamePanel(canvas, touch, 10, 'windows')

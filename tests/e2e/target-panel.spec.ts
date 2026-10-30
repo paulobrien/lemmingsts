@@ -31,7 +31,7 @@ for (const edition of ['dos', 'windows'] as const) {
     // left-hand status field below the buttons. Exclude changing time/counts.
     const targetPixels = () => canvas.evaluate((element: HTMLCanvasElement, mode: 'dos' | 'windows') => {
       const { data } = mode === 'windows'
-        ? element.getContext('2d')!.getImageData(4, 420, 600, 18)
+        ? element.getContext('2d')!.getImageData(4, element.height - 20, 600, 18)
         : element.getContext('2d')!.getImageData(0, 380, 210, 32)
       const values: number[] = []
       for (let i = 0; i < data.length; i += 4) {

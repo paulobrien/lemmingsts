@@ -30,7 +30,11 @@
 }
 
 .game-screen.is-fullscreen .canvas-frame canvas.windows-panel {
-  width: min(100%, calc(100dvh * 24 / 11));
+  /* The intrinsic canvas height follows the display, so the original-width
+     control bar stays pinned to the bottom without stretching the artwork. */
+  width: min(100%, calc(100dvh * var(--windows-fullscreen-ratio, 24 / 11)));
+  aspect-ratio: auto;
+  align-self: end;
 }
 
 /* Keep the playfield unobstructed until the game is paused. */

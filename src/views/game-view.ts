@@ -163,6 +163,7 @@ export default defineComponent({
         watch(fullscreenActive, active => {
             if (!active) clearCanvasGesture();
             void nextTick(() => {
+                updateFullscreenViewport();
                 if (paused.value) focusPauseMenu();
                 else (active ? playing.value ? gameCanvas.value : startControl.value :
                     nativeWindowsPanel.value && playing.value ? gameCanvas.value : fullscreenEnterButton.value)?.focus();
@@ -175,6 +176,13 @@ export default defineComponent({
         let resources: GameResources | null = null;
         let game: Game | null = null;
         let stage: Stage | null = null;
+        let viewportObserver: ResizeObserver | null = null;
+        function updateFullscreenViewport() {
+            if (!stage) return;
+            if (!fullscreenActive.value) { stage.setWindowsFullscreenViewport(); return; }
+            const bounds = gameScreen.value?.getBoundingClientRect();
+            if (bounds?.width && bounds.height) stage.setWindowsFullscreenViewport(bounds.width, bounds.height);
+        }
         let keyboardTargeting: KeyboardTargeting | null = null;
         let music: Pick<AudioPlayer, 'play' | 'suspend' | 'stop'> | null = null;
         let effects: SoundEffectsPlayer | null = null;
@@ -729,6 +737,12 @@ export default defineComponent({
         onMounted(() => {
             if (!gameCanvas.value) return;
             stage = new Stage(gameCanvas.value);
+            if (typeof ResizeObserver !== 'undefined' && gameScreen.value) {
+                viewportObserver = new ResizeObserver(updateFullscreenViewport);
+                viewportObserver.observe(gameScreen.value);
+            }
+            window.addEventListener('resize', updateFullscreenViewport);
+            updateFullscreenViewport();
             stage.onGraphicsError.on(onGraphicsError);
             stage.onZoomChange.on(onZoomChange);
             keyboardTargeting = new KeyboardTargeting(gameCanvas.value, stage, () => game, assignPlayerSkill, message => { keyboardMessage.value = message; });
@@ -748,6 +762,8 @@ export default defineComponent({
             stage?.onZoomChange.off(onZoomChange);
             keyboardTargeting?.dispose();
             stage?.dispose();
+            viewportObserver?.disconnect();
+            window.removeEventListener('resize', updateFullscreenViewport);
             document.removeEventListener('visibilitychange', onVisibilityChange);
             window.removeEventListener('keydown', onKeyDown);
         });

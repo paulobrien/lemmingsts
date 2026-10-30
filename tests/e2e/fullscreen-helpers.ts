@@ -3,10 +3,9 @@ import { expect, type Locator } from '@playwright/test'
 export async function gamePanelPosition(canvas: Locator, column: number, edition: 'dos' | 'windows' = 'dos') {
   const bounds = await canvas.boundingBox()
   expect(bounds).not.toBeNull()
-  const width = edition === 'windows' ? 960 : 800
-  const height = edition === 'windows' ? 440 : 480
+  const { width, height } = await canvas.evaluate((element: HTMLCanvasElement) => ({ width: element.width, height: element.height }))
   const x = edition === 'windows' ? 8 + (column + .5) * 44 : (column * 16 + 8) * 2
-  const y = edition === 'windows' ? 373 : 440
+  const y = edition === 'windows' ? height - 67 : 440
   return { x: bounds!.x + bounds!.width * x / width, y: bounds!.y + bounds!.height * y / height }
 }
 
@@ -16,7 +15,7 @@ export async function pressGamePanel(canvas: Locator, touch: boolean, column: nu
   // or tapping it. Starting a level and rotating can change canvas geometry.
   if (edition === 'windows') {
     await expect.poll(() => canvas.evaluate((element: HTMLCanvasElement) => {
-      const row = element.getContext('2d')!.getImageData(608, 340, 320, 76).data
+      const row = element.getContext('2d')!.getImageData(608, element.height - 100, 320, 76).data
       for (let i = 0; i < row.length; i += 4) {
         if (row[i] === 255 && row[i + 1] === 255 && row[i + 2] === 0) return true
       }
@@ -26,10 +25,9 @@ export async function pressGamePanel(canvas: Locator, touch: boolean, column: nu
   await canvas.scrollIntoViewIfNeeded()
   const bounds = await canvas.boundingBox()
   expect(bounds).not.toBeNull()
-  const width = edition === 'windows' ? 960 : 800
-  const height = edition === 'windows' ? 440 : 480
+  const { width, height } = await canvas.evaluate((element: HTMLCanvasElement) => ({ width: element.width, height: element.height }))
   const x = edition === 'windows' ? 8 + (column + .5) * 44 : (column * 16 + 8) * 2
-  const y = edition === 'windows' ? 373 : 440
+  const y = edition === 'windows' ? height - 67 : 440
   const position = { x: bounds!.width * x / width, y: bounds!.height * y / height }
   if (touch) await canvas.tap({ position })
   else await canvas.click({ position })

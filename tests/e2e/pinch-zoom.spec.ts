@@ -43,7 +43,8 @@ for (const edition of ['dos', 'windows'] as const) {
       const box = await canvas.boundingBox()
       if (!box) throw new Error('Canvas not visible')
       const centreX = box.x + box.width * .5
-      const playfieldFraction = edition === 'windows' ? 320 / 440 : 380 / 480
+      const dimensions = await canvas.evaluate((element: HTMLCanvasElement) => ({ width: element.width, height: element.height }))
+      const playfieldFraction = edition === 'windows' ? (dimensions.height - 120) / dimensions.height : 380 / 480
       const y = box.y + box.height * playfieldFraction * .4
       const touches = (distance: number) => [
         { x: centreX - box.width * distance, y, id: 1 },
@@ -58,7 +59,7 @@ for (const edition of ['dos', 'windows'] as const) {
     await pinch(.07, .20)
     if (edition === 'windows') {
       const cameraLeft = () => canvas.evaluate((element: HTMLCanvasElement) => {
-        const pixels = element.getContext('2d')!.getImageData(608, 340, 320, 76).data
+        const pixels = element.getContext('2d')!.getImageData(608, element.height - 100, 320, 76).data
         let left = 320
         for (let y = 0; y < 76; y++) for (let x = 0; x < 320; x++) {
           const i = (y * 320 + x) * 4
@@ -86,9 +87,10 @@ for (const edition of ['dos', 'windows'] as const) {
       await pause.getByRole('button', { name: 'Resume', exact: true }).tap()
       const box = await canvas.boundingBox()
       if (!box) throw new Error('Canvas not visible')
-      const point = (x: number, y: number, id: number) => ({ x: box.x + box.width * x / 960, y: box.y + box.height * y / 440, id })
-      await client.send('Input.dispatchTouchEvent', { type: 'touchStart', touchPoints: [point(460, 90, 4), point(760, 380, 5)] })
-      await client.send('Input.dispatchTouchEvent', { type: 'touchMove', touchPoints: [point(420, 90, 4), point(800, 380, 5)] })
+      const height = await canvas.evaluate((element: HTMLCanvasElement) => element.height)
+      const point = (x: number, y: number, id: number) => ({ x: box.x + box.width * x / 960, y: box.y + box.height * y / height, id })
+      await client.send('Input.dispatchTouchEvent', { type: 'touchStart', touchPoints: [point(460, 90, 4), point(760, height - 60, 5)] })
+      await client.send('Input.dispatchTouchEvent', { type: 'touchMove', touchPoints: [point(420, 90, 4), point(800, height - 60, 5)] })
       await client.send('Input.dispatchTouchEvent', { type: 'touchEnd', touchPoints: [] })
       await pressGamePanel(canvas, true, 10, edition)
       await expect(pause).toBeVisible()

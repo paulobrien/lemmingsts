@@ -76,6 +76,17 @@ export class UserInputManager {
         this.pinchZoomAllowed = false;
     }
 
+    /** Abort an in-progress press or pinch when the canvas geometry changes. */
+    public cancelActive(): void {
+        if (this.activePointer === null && this.pinchPointer === null) return;
+        this.activePointer = null;
+        this.pinchPointer = null;
+        this.activePointerType = '';
+        this.pinching = false;
+        this.pinchZoomAllowed = false;
+        this.onCancel.trigger();
+    }
+
     private getRelativePosition(clientX: number, clientY: number): Position2D {
         const rect = this.element.getBoundingClientRect();
         // The drawing buffer stays fixed while CSS makes the canvas responsive.

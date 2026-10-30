@@ -57,7 +57,7 @@ test('animates the player’s actual Windows icon artwork and pauses it with the
   const canvas = page.getByLabel('Lemmings level. Drag to move the view.')
   // Sample the original fast-forward artwork inside its Windows button cell.
   const icon = () => canvas.evaluate((element: HTMLCanvasElement) => {
-    const pixels = element.getContext('2d')!.getImageData(492, 340, 44, 66).data
+    const pixels = element.getContext('2d')!.getImageData(492, element.height - 100, 44, 66).data
     return Array.from(pixels).join(',')
   })
   const initial = await icon()

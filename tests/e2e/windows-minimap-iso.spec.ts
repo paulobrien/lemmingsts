@@ -48,7 +48,7 @@ test('the Windows fullscreen minimap moves the view without activating the toolb
   // The yellow camera outline's top edge provides a stable measure of the
   // viewport location without exposing any production internals to tests.
   const cameraLeft = () => canvas.evaluate((element: HTMLCanvasElement) => {
-    const row = element.getContext('2d')!.getImageData(608, 340, 320, 1).data
+    const row = element.getContext('2d')!.getImageData(608, element.height - 100, 320, 1).data
     for (let x = 0; x < 320; x++) {
       if (row[x * 4] === 255 && row[x * 4 + 1] === 255 && row[x * 4 + 2] === 0) return x
     }
@@ -57,7 +57,8 @@ test('the Windows fullscreen minimap moves the view without activating the toolb
   const position = async (x: number) => {
     const box = await canvas.boundingBox()
     if (!box) throw new Error('Canvas is not visible')
-    return { x: box.x + box.width * x / 960, y: box.y + box.height * 378 / 440 }
+    const height = await canvas.evaluate((element: HTMLCanvasElement) => element.height)
+    return { x: box.x + box.width * x / 960, y: box.y + box.height * (height - 62) / height }
   }
   const selectedBefore = await page.locator('.skill-button[aria-pressed="true"]').allTextContents()
   const left = await position(616), right = await position(920)
@@ -83,7 +84,8 @@ test('the Windows fullscreen minimap moves the view without activating the toolb
   const afterMapDrag = await cameraLeft()
   const box = await canvas.boundingBox()
   if (!box) throw new Error('Canvas is not visible')
-  const trackPoint = (x: number) => ({ x: box.x + box.width * x / 960, y: box.y + box.height * 328 / 440 })
+  const height = await canvas.evaluate((element: HTMLCanvasElement) => element.height)
+  const trackPoint = (x: number) => ({ x: box.x + box.width * x / 960, y: box.y + box.height * (height - 112) / height })
   const trackRight = trackPoint(850), thumbRight = trackPoint(800), thumbLeft = trackPoint(250)
   if (touch) await page.touchscreen.tap(trackRight.x, trackRight.y)
   else await page.mouse.click(trackRight.x, trackRight.y)
@@ -115,7 +117,7 @@ test('the Windows fullscreen minimap moves the view without activating the toolb
   await menu.getByRole('button', { name: 'Move view left' }).click()
   await expect.poll(cameraLeft).toBe(beforeAccessiblePan)
   const cameraWidth = () => canvas.evaluate((element: HTMLCanvasElement) => {
-    const row = element.getContext('2d')!.getImageData(608, 340, 320, 1).data
+    const row = element.getContext('2d')!.getImageData(608, element.height - 100, 320, 1).data
     const positions: number[] = []
     for (let x = 0; x < 320; x++) {
       if (row[x * 4] === 255 && row[x * 4 + 1] === 255 && row[x * 4 + 2] === 0) positions.push(x)
