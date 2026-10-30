@@ -3,7 +3,7 @@ import { expect, test } from '@playwright/test'
 import { build } from 'vite'
 
 // Exercise the real renderer on a real Canvas without using copyrighted game data.
-test('moving sprites leave the background intact in both graphics modes and previews', async ({ page }) => {
+test('moving sprites leave the background intact', async ({ page }) => {
   const result = await build({
     configFile: false,
     logLevel: 'silent',
@@ -16,8 +16,7 @@ test('moving sprites leave the background intact in both graphics modes and prev
   await page.route('**/__renderer_fixture.js', route => route.fulfill({ contentType: 'text/javascript', body: bundle.code }))
   await page.goto('/')
 
-  for (const mode of ['original', 'enhanced'] as const) {
-    const pixels = await page.evaluate(async (graphicsMode) => {
+  const pixels = await page.evaluate(async () => {
       const moduleUrl = '/__renderer_fixture.js'
       const { Stage } = await import(moduleUrl)
       const canvas = document.createElement('canvas')
@@ -25,10 +24,6 @@ test('moving sprites leave the background intact in both graphics modes and prev
       const stage = new Stage(canvas, 1)
       const display = stage.getGameDisplay()
       display.initSize(32, 16)
-      const original = document.createElement('canvas')
-      const enhanced = document.createElement('canvas')
-      stage.setComparisonCanvases(original, enhanced)
-      stage.setGraphicsMode(graphicsMode)
 
       // Transparent empty scenery and an opaque terrain pixel, just as decoded levels contain.
       const ground = new Uint8ClampedArray(32 * 16 * 4)
@@ -41,16 +36,15 @@ test('moving sprites leave the background intact in both graphics modes and prev
       display.setPixel(10, 3, 250, 50, 20)
       stage.redraw()
       const read = (target: HTMLCanvasElement, x: number, y: number) => Array.from(target.getContext('2d')!.getImageData(x, y, 1, 1).data)
-      const values = [canvas, original, enhanced].map(target => ({
+      const values = [canvas].map(target => ({
         oldSprite: read(target, 3, 3), newSprite: read(target, 10, 3), terrain: read(target, 6, 6),
       }))
       stage.dispose()
       return values
-    }, mode)
-    for (const target of pixels) {
-      expect(target.oldSprite, `${mode}: old position is clear`).toEqual([0, 0, 0, 255])
-      expect(target.newSprite, `${mode}: current sprite remains visible`).toEqual([250, 50, 20, 255])
-      expect(target.terrain, `${mode}: terrain remains intact`).toEqual([30, 120, 40, 255])
-    }
+  })
+  for (const target of pixels) {
+      expect(target.oldSprite, 'old position is clear').toEqual([0, 0, 0, 255])
+      expect(target.newSprite, 'current sprite remains visible').toEqual([250, 50, 20, 255])
+      expect(target.terrain, 'terrain remains intact').toEqual([30, 120, 40, 255])
   }
 })

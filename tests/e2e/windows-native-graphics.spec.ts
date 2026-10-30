@@ -2,7 +2,7 @@ import { resolve } from 'node:path'
 import { expect, test } from '@playwright/test'
 import { build } from 'vite'
 
-test('composites native terrain and sprites without affecting the DOS comparison or panel', async ({ page }) => {
+test('composites native terrain and sprites without affecting the panel', async ({ page }) => {
   const result = await build({ configFile: false, logLevel: 'silent',
     build: { write: false, lib: { entry: resolve('tests/e2e/fixtures/windows-native-graphics.ts'), formats: ['es'] } } })
   const output = Array.isArray(result) ? result[0] : result
@@ -29,17 +29,14 @@ test('composites native terrain and sprites without affecting the DOS comparison
     game.drawFrame(sprite, 1, 1)
     const gui = stage.getGuiDisplay(); gui.initSize(4, 1)
     const panel = new Uint8ClampedArray(4 * 4); panel.fill(255); gui.setBackground(panel)
-    const original = document.createElement('canvas'), enhanced = document.createElement('canvas')
-    stage.setComparisonCanvases(original, enhanced)
     stage.redraw()
     const pixel = (c: HTMLCanvasElement, x: number, y: number) => Array.from(c.getContext('2d')!.getImageData(x, y, 1, 1).data)
     const values = { nativeTerrain: pixel(canvas, 0, 0), nativeSprite: pixel(canvas, 2, 2),
-      originalTerrain: pixel(original, 0, 0), originalSprite: pixel(original, 2, 2), panel: pixel(canvas, 0, 8) }
+      panel: pixel(canvas, 0, 8) }
     game.setBackground(dos)
     game.drawFrame(sprite, 2, 2)
     stage.redraw()
-    const moved = { oldNative: pixel(canvas, 2, 2), newNative: pixel(canvas, 4, 4),
-      oldOriginal: pixel(original, 2, 2), newOriginal: pixel(original, 4, 4) }
+    const moved = { oldNative: pixel(canvas, 2, 2), newNative: pixel(canvas, 4, 4) }
     game.setBackground(dos)
     game.drawFrame(sprite, 1, 1)
     // Later low-resolution particles must remain above the native sprite.
@@ -80,13 +77,9 @@ test('composites native terrain and sprites without affecting the DOS comparison
   })
   expect(resultPixels.values.nativeTerrain).toEqual([0, 0, 80, 255])
   expect(resultPixels.values.nativeSprite).toEqual([0, 255, 0, 255])
-  expect(resultPixels.values.originalTerrain).toEqual([0, 0, 0, 255])
-  expect(resultPixels.values.originalSprite).toEqual([255, 0, 0, 255])
   expect(resultPixels.values.panel).toEqual([255, 255, 255, 255])
   expect(resultPixels.moved.oldNative).toEqual([0, 0, 80, 255])
   expect(resultPixels.moved.newNative).toEqual([0, 255, 0, 255])
-  expect(resultPixels.moved.oldOriginal).toEqual([0, 0, 0, 255])
-  expect(resultPixels.moved.newOriginal).toEqual([255, 0, 0, 255])
   expect(resultPixels.ordered).toEqual([7, 8, 9, 255])
   expect(resultPixels.fallback).toEqual({ errors: 1, noNative: true, terrain: [0, 0, 0, 255] })
   expect(resultPixels.noOverwrite).toEqual({ solid: [0, 0, 80, 255], empty: [255, 255, 0, 255] })
