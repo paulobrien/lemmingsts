@@ -28,7 +28,7 @@
           <div v-else class="actions">
             <button class="primary-button" type="button" :disabled="busy" @click="fileInput?.click()">{{ busy ? 'Getting things ready…' : 'Add DOS files' }}</button>
             <button class="text-button folder-button" type="button" :disabled="busy" @click="folderInput?.click()">Or choose a folder</button>
-            <p class="hint">Add DOS files here, or use Windows game files below to import a Windows ISO.</p>
+            <a class="text-button" href="#voices-title">Have the Windows edition?</a>
           </div>
           <p class="offline-note" role="status">{{ offlineReadiness === 'checking' ? 'Preparing offline play…' : offlineReadiness === 'ready' ? (ready ? 'The app shell is ready offline; your game files are stored on this device.' : 'The app shell is ready offline. Add your game files to play.') : 'Offline play may be unavailable. Reconnect and reopen the app.' }}</p>
           <p v-if="checkingAutomaticFiles && !ready" class="offline-note" role="status">Checking for game files supplied by this installation. You can also add your own files now.</p>
@@ -55,20 +55,24 @@
       <section class="setup" aria-labelledby="setup-title">
         <div><h2 id="setup-title">{{ ready ? 'Your game, on this device' : 'Bring your own game' }}</h2></div>
         <div class="setup-detail">
-          <p v-if="ready">Your original files are stored in this browser, ready for your next adventure. They stay on this device.</p>
-          <p v-else>Select the original Lemmings <strong>.dat</strong> files together, or choose a ZIP containing them. They’re stored in this browser, not uploaded. You’ll need to add them separately on each device.</p>
+          <p>Files you add stay in this browser. They aren’t uploaded or synced between devices.</p>
+          <p><strong>DOS:</strong> choose the original <strong>.dat</strong> files together, their folder, or a ZIP containing them.</p>
+          <div v-if="ready" class="backup-actions">
+            <button class="text-button" type="button" :disabled="busy || voiceBusy" @click="fileInput?.click()">{{ dosReady ? 'Replace DOS files' : 'Add DOS files' }}</button>
+            <button class="text-button folder-button" type="button" :disabled="busy || voiceBusy" @click="folderInput?.click()">Or choose a folder</button>
+          </div>
           <button v-if="dosReady" class="text-button" type="button" :disabled="busy || voiceBusy" @click="removeFiles">Remove DOS files</button>
         </div>
       </section>
       <section class="setup" aria-labelledby="voices-title">
         <div><h2 id="voices-title">Windows game files</h2></div>
         <div class="setup-detail">
-          <p v-if="windowsReady">Your Windows sound and graphics files are ready on this device.</p>
-          <p v-else>Add your Windows Lemmings ISO, an extracted game folder, or a ZIP containing its audio and graphics files. They stay in this browser. The Windows ISO contains everything needed for Windows mode.</p>
+          <p v-if="windowsReady">Your Windows levels, graphics and audio are ready. To replace them, choose the ISO, complete game folder or ZIP.</p>
+          <p v-else>Choose a Windows Lemmings <strong>ISO</strong>, or an extracted game folder or ZIP containing its levels, graphics and audio. Windows mode needs no DOS files.</p>
           <div class="backup-actions">
             <button class="text-button" type="button" :disabled="busy || voiceBusy" @click="voiceInput?.click()">{{ voicesReady ? 'Replace Windows files' : 'Add Windows files' }}</button>
             <button class="text-button" type="button" :disabled="busy || voiceBusy" @click="voiceFolderInput?.click()">Choose game folder</button>
-            <button v-if="voicesReady || graphicsReady" class="text-button" type="button" :disabled="busy || voiceBusy" @click="removeVoices">Remove Windows files</button>
+            <button v-if="voicesReady || graphicsReady || windowsGameReady" class="text-button" type="button" :disabled="busy || voiceBusy" @click="removeVoices">Remove Windows files</button>
           </div>
           <p v-if="voiceMessage" class="status-message" role="status">{{ voiceMessage }}</p>
           <input ref="voiceInput" class="visually-hidden" type="file" accept=".wav,.mid,.midi,.zip,.iso,audio/wav,audio/midi,application/zip,application/x-iso9660-image" multiple tabindex="-1" aria-hidden="true" @change="onVoicesSelected" />

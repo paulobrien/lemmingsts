@@ -313,7 +313,21 @@ describe('home setup', () => {
     expect(select.value).toBe('windows');
     expect(select.querySelector<HTMLOptionElement>('option[value=dos]')!.disabled).toBe(true);
     expect(view.container.querySelector('a.primary-button')).not.toBeNull();
+    const addDos = Array.from(view.container.querySelectorAll('button')).find(button => button.textContent === 'Add DOS files');
+    expect(addDos).toBeDefined();
+    expect(addDos!.disabled).toBe(false);
     expect(mock.importFiles).not.toHaveBeenCalled();
+    view.unmount();
+  });
+
+  it('allows removal of Windows level data even without audio or graphics', async () => {
+    mock.hasWindowsGame.mockResolvedValue(true);
+    const view = await mount();
+    const remove = Array.from(view.container.querySelectorAll('button')).find(button => button.textContent === 'Remove Windows files');
+    expect(remove).toBeDefined();
+    remove!.click();
+    await vi.waitFor(() => expect(mock.clearWindowsGame).toHaveBeenCalledOnce());
+    expect(mock.clearFiles).not.toHaveBeenCalled();
     view.unmount();
   });
 
