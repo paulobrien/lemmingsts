@@ -42,6 +42,8 @@ test('suggests the next level after a completed remembered level, including afte
     .filter(name => name.toLowerCase().endsWith('.dat'))
     .map(name => resolve('dos/lemmings', name))
   await page.addInitScript(() => {
+    if (sessionStorage.getItem('progress-test-seeded')) return
+    sessionStorage.setItem('progress-test-seeded', 'yes')
     localStorage.setItem('lemmings.progress.v1', JSON.stringify([{ gameType: 1, groupIndex: 1, levelIndex: 3, bestSavedPercent: 95 }]))
     localStorage.setItem('lemmings.last-level.v1', JSON.stringify({ gameType: 1, groupIndex: 1, levelIndex: 3 }))
   })
