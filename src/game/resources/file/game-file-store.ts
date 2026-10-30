@@ -74,7 +74,7 @@ export async function importLemmingsFiles(files: FileList | readonly File[]): Pr
   await importFiles(files, false);
 }
 
-/** Import only if no data or explicit-removal marker exists, atomically across tabs. */
+/** Import only if no DOS data or explicit-removal marker exists, atomically across tabs. */
 export async function importLemmingsFilesIfEmpty(files: FileList | readonly File[]): Promise<boolean> {
   return importFiles(files, true);
 }
@@ -147,10 +147,13 @@ async function importFiles(files: FileList | readonly File[], onlyIfEmpty: boole
       imported = true;
     };
     if (onlyIfEmpty) {
-      // The count and writes run in one readwrite transaction, preventing a
-      // delayed network fetch from overwriting a concurrent manual import.
-      const count = store.count();
-      count.onsuccess = () => { if (count.result === 0) write(); };
+      // Check DOS keys in the same transaction. Separately imported Windows
+      // files must neither block this import nor be overwritten by it.
+      const keys = store.getAllKeys();
+      keys.onsuccess = () => {
+        const saved = new Set(keys.result);
+        if (!saved.has(AUTO_IMPORT_DISABLED) && !REQUIRED_LEMMINGS_FILES.some(name => saved.has(name))) write();
+      };
     } else write();
     await done;
     return imported;
@@ -164,9 +167,12 @@ export async function canAutoImportLemmingsFiles(): Promise<boolean> {
   const database = await openDatabase();
   try {
     const transaction = database.transaction(STORE_NAME, 'readonly');
-    const request = transaction.objectStore(STORE_NAME).count();
+    const request = transaction.objectStore(STORE_NAME).getAllKeys();
     return await new Promise<boolean>((resolve, reject) => {
-      request.onsuccess = () => resolve(request.result === 0);
+      request.onsuccess = () => {
+        const keys = new Set(request.result);
+        resolve(!keys.has(AUTO_IMPORT_DISABLED) && !REQUIRED_LEMMINGS_FILES.some(name => keys.has(name)));
+      };
       request.onerror = () => reject(new Error('Could not check local game files.'));
     });
   } finally { database.close(); }
@@ -294,22 +300,16 @@ async function importVoiceFiles(files: FileList | readonly File[], onlyIfMissing
     const done = transactionDone(transaction);
     const store = transaction.objectStore(STORE_NAME);
     let imported = false;
-    let missingGame = false;
     const keys = store.getAllKeys();
     keys.onsuccess = () => {
       const saved = new Set(keys.result);
-      if (!REQUIRED_LEMMINGS_FILES.every(name => saved.has(name))) {
-        missingGame = true;
-        return;
-      }
-      if (onlyIfMissing && (saved.has(VOICE_AUTO_IMPORT_DISABLED) || WINDOWS_AUDIO_FILES.some(name => saved.has(name)))) return;
+      if (onlyIfMissing && (saved.has(AUTO_IMPORT_DISABLED) || saved.has(VOICE_AUTO_IMPORT_DISABLED) || WINDOWS_AUDIO_FILES.some(name => saved.has(name)))) return;
       store.delete(VOICE_AUTO_IMPORT_DISABLED);
       for (const name of WINDOWS_AUDIO_FILES) store.delete(name);
       for (const file of buffers) store.put(file.data, file.name);
       imported = true;
     };
     await done;
-    if (missingGame && !onlyIfMissing) throw new Error('Add the original DOS game files before adding voices.');
     return imported;
   } finally { database.close(); }
 }
@@ -339,7 +339,7 @@ export async function hasWindowsAudioFiles(): Promise<boolean> {
 /** Check before fetching a deployment bundle; the final write rechecks atomically. */
 export async function canAutoImportWindowsVoiceFiles(): Promise<boolean> {
   const keys = await voiceKeys();
-  return REQUIRED_LEMMINGS_FILES.every(name => keys.has(name)) && !keys.has(VOICE_AUTO_IMPORT_DISABLED) &&
+  return !keys.has(AUTO_IMPORT_DISABLED) && !keys.has(VOICE_AUTO_IMPORT_DISABLED) &&
     !WINDOWS_AUDIO_FILES.some(name => keys.has(name));
 }
 

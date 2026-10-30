@@ -4,9 +4,9 @@ import { indexedDB } from 'fake-indexeddb';
 import { zipSync } from 'fflate';
 import { syntheticDosData } from '../helpers/synthetic-dos';
 import {
-  canAutoImportWindowsVoiceFiles, clearLemmingsFiles, clearWindowsVoiceFiles,
+  canAutoImportLemmingsFiles, canAutoImportWindowsVoiceFiles, clearLemmingsFiles, clearWindowsVoiceFiles,
   getLemmingsFile, getWindowsAudioFile, getWindowsVoiceFile, hasWindowsVoiceFiles, importLemmingsFiles,
-  importWindowsVoiceFiles, importWindowsVoiceFilesIfMissing, REQUIRED_LEMMINGS_FILES,
+  importWindowsVoiceFiles, importWindowsVoiceFilesIfMissing, importLemmingsFilesIfEmpty, REQUIRED_LEMMINGS_FILES,
   WINDOWS_VOICE_FILES,
 } from '../../src/game/resources/file/game-file-store';
 
@@ -32,7 +32,8 @@ describe('optional Windows voice files', () => {
   beforeEach(async () => { await clearLemmingsFiles(); });
 
   it('imports voices into the existing game without changing the DOS files, and retains them across DOS reimports', async () => {
-    await expect(importWindowsVoiceFiles(voices())).rejects.toThrow('Add the original DOS game files');
+    await importWindowsVoiceFiles(voices());
+    expect(await hasWindowsVoiceFiles()).toBe(true);
     await importLemmingsFiles(game());
     const main = await getLemmingsFile('MAIN.DAT');
     await importWindowsVoiceFiles(voices());
@@ -43,6 +44,18 @@ describe('optional Windows voice files', () => {
     expect(await hasWindowsVoiceFiles()).toBe(true);
     await clearLemmingsFiles();
     expect(await hasWindowsVoiceFiles()).toBe(false);
+  });
+
+  it('accepts Windows files first and keeps them when DOS files are automatically imported later', async () => {
+    await new Promise<void>((resolve, reject) => {
+      const request = indexedDB.deleteDatabase('lemmings-game-files');
+      request.onsuccess = () => resolve(); request.onerror = () => reject(request.error);
+    });
+    await importWindowsVoiceFiles(voices(77));
+    expect(await canAutoImportLemmingsFiles()).toBe(true);
+    expect(await importLemmingsFilesIfEmpty(game())).toBe(true);
+    expect(await getWindowsVoiceFile('LETSGO.WAV')).toEqual(wav(77).buffer);
+    expect(await getLemmingsFile('MAIN.DAT')).toBeDefined();
   });
 
   it('accepts a ZIP with nested voice names and rejects duplicates', async () => {
