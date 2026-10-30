@@ -6,13 +6,13 @@ Create a polished, faithful Lemmings experience for desktop browsers, Android ta
 
 Build an installable progressive web app (PWA) first: one web application can run in a desktop browser and be installed to an Android home screen. Expo is built around React Native; adopting it here would require a separate native layer or substantial UI and browser-API adaptation. Revisit it only if a concrete native feature or distribution requirement warrants that work.
 
-Original game files must never enter Git or the downloadable source archive. The standard build and original import-only preview contain no game files. The owner subsequently chose a second public play deployment with an explicit opt-in game-file bundle; preserve that distinction when deploying both sites. Each browser stores files and progress separately, with no automatic sync. See the [current deployment instructions](README.md#the-two-hosted-sites).
+Original game files must never enter Git or the downloadable source archive. The standard build and original import-only preview contain no game files. The owner subsequently chose a second public play deployment with an explicit opt-in game-file bundle; preserve that distinction when deploying both sites. Each browser stores files and progress separately, with no automatic sync. See the [optional deployment bundle instructions](README.md#optional-deployment-bundle).
 
 ## Current status
 
-The baseline, toolchain migration, 120 authored completion replays, progressive hints, local import and backups, installable/offline app shell, optional graphics enhancement, and both hosted deployments are implemented. Fullscreen play shows the original game and HUD; the original pause button opens the surrounding controls. The stages below retain their acceptance criteria and the rationale behind the work.
+The baseline, toolchain migration, local imports and backups, installable/offline app shell, and both hosted deployments are implemented. All 120 DOS levels and all 114 levels in the supplied Windows disc have tested completion replays and progressive hints. Windows mode runs from the Windows files alone; it uses the Windows disc’s own level order, art, gameplay masks and audio. The experimental graphics enhancement and comparison were removed. Fullscreen play shows the original game and HUD; the original pause button opens the surrounding controls. The stages below retain their acceptance criteria and the rationale behind the work.
 
-Remaining release checks are physical Android phone/tablet installation, offline relaunch, audio output and interruptions, portrait HUD usability, and performance of the optional enhanced filter. Chromium emulation cannot establish those hardware results. DOS physics parity outside the tested routes and the inherited OPL licence questions also remain open; passing the replay gate is not proof of full DOS equivalence.
+Remaining release checks are physical Android phone/tablet installation, offline relaunch, audio output and interruptions, portrait HUD usability, and performance on physical devices. Chromium emulation cannot establish those hardware results. Physics parity outside tested routes and distribution/licence review also remain open; passing the replay gate is not proof of full DOS equivalence.
 
 ## 1. Establish a working baseline
 
@@ -40,7 +40,7 @@ Remaining release checks are physical Android phone/tablet installation, offline
 - Verify every original level with a deterministic recorded solution that meets its rescue target. Track levels with a tested solution separately from levels that have merely loaded. Adapt external walkthroughs or replays only after checking edition, physics, format and reuse rights.
 - Keep optional, progressively revealing hints alongside verified solutions. Never show a hint automatically or imply an unverified level has a tested solution.
 
-**Done when:** key behaviour has regression coverage, the baseline level still plays correctly, and all 120 original levels have individually passing completion replays.
+**Done when:** key behaviour has regression coverage, the baseline level still plays correctly, and all 120 DOS levels and all 114 levels in the supplied Windows disc have individually passing completion replays.
 
 ## 4. Design for desktop and touch
 
@@ -63,7 +63,7 @@ Remaining release checks are physical Android phone/tablet installation, offline
 ## 6. Polish and release
 
 - Improve presentation, level completion feedback, settings and onboarding; address real-device feedback and bugs. Optional AdLib effects cover opening cues, skill selection and assignments, builder warnings, steel, Oh No, exits, splats, explosions, water, fire and triggered traps. Digging, bashing, mining and nuke use synthesized PC-speaker-style approximations; check audio and balance on real devices.
-- Document setup, the private asset workflow, accessibility and known limitations. Production builds include an application source archive and licence notices. The bundled DOSBox-derived DBOPL files carry GPL-2.0-or-later notices that conflict with the root file's LGPL emulator notice; resolve the remaining distribution questions described in [licence review](docu/LICENCE_REVIEW.md), and review game-asset rights before any wider distribution.
+- Document setup, the private asset workflow, accessibility and known limitations. Production builds include an application source archive and licence notices. The active DOSBox-derived DBOPL code carries GPL-2.0-or-later notices; the inherited LGPL notice refers to a different historical emulator. Address the remaining distribution questions described in [licence review](docu/LICENCE_REVIEW.md), and review game-asset rights before any wider distribution.
 - Deploy the app to an appropriate HTTPS host and test the production build. Preserve the owner-authorized distinction between the bundled play site and the game-file-free preview; never include original files in source repositories or source downloads.
 - Consider cross-device progress sync only if desired; it requires a storage and privacy design. If a Play Store listing or Android package becomes a requirement, assess a Trusted Web Activity and Android signing first. Consider Expo or a native rewrite only for specific needs that the web app cannot meet.
 

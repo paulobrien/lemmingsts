@@ -31,3 +31,15 @@ The coverage gate lists missing levels and fails if any lack recorded solutions.
 For strategy research, the [DOS Lemmings walkthrough by Snow Dragon](https://gamefaqs.gamespot.com/pc/564576-lemmings/faqs/18338) distinguishes game editions and covers the original levels. Recorded commands are independently tested here and hint text is written for this project; the walkthrough itself is not redistributed.
 
 The unassisted Fun 13 fall check was cross-checked with the supplied DOS executable in DOSBox: the level requires all 20 lemmings, and some die without intervention. This confirms the outcome for that executable and local data, not for every Lemmings release; other editions can use different fall-distance rules.
+
+## Windows-only verification
+
+The Windows checks import the player's ISO locally into a temporary in-memory browser store; no original game files are checked in. The supplied disc contains 114 original-game levels. Every entry has a verified Windows replay and progressive hints, and the harness checks both victory and that every recorded command was accepted. It also reconstructs the applicable first-move examples from the same Windows replay. Three routes were adjusted for a difference in Windows bash masks. Initial terrain and object masks are compared with the corresponding DOS levels in a separate private comparison; this does not prove equivalence for every action.
+
+Run the Windows-only completion and compatibility checks with a local ISO:
+
+```sh
+RUN_PRIVATE_GAME_TESTS=1 LEMMINGS_WINDOWS_ISO=/path/to/windows.iso npx vitest run tests/integration/windows-only-replays-private.spec.ts tests/integration/windows-hint-compatibility-private.spec.ts
+```
+
+The compatibility test verifies the local fingerprint and confirms that changes to level, mask or artwork data suppress hints. The replay test itself needs no DOS import. For the other optional checks, run `RUN_PRIVATE_GAME_TESTS=1 LEMMINGS_WINDOWS_ISO=/path/to/windows.iso npx vitest run tests/integration/windows*.spec.ts`; comparison tests may additionally need the ignored `dos/lemmings/` files. Optional browser checks can use the same ISO environment variable with `npm run test:e2e`.
