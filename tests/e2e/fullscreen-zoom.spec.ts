@@ -20,10 +20,7 @@ for (const mode of ['native', 'expanded'] as const) {
     await page.locator('input[type=file]').first().setInputFiles(files)
     await page.getByRole('link', { name: 'Play Lemmings' }).tap()
     await page.getByRole('button', { name: 'Start level' }).tap()
-    await page.getByRole('button', { name: 'Fullscreen', exact: true }).tap()
     const game = page.locator('.game-screen')
-    await expect(game).toHaveClass(/is-fullscreen/)
-    if (mode === 'native') await expect.poll(() => page.evaluate(() => !!document.fullscreenElement)).toBe(true)
     const viewport = page.viewportSize()!
     const portrait = { width: Math.min(viewport.width, viewport.height), height: Math.max(viewport.width, viewport.height) }
     const landscape = { width: portrait.height, height: portrait.width }
@@ -32,8 +29,20 @@ for (const mode of ['native', 'expanded'] as const) {
     const reset = page.getByRole('button', { name: 'Reset zoom' })
     const canvas = page.getByLabel('Lemmings level. Drag to move the view.')
 
+    if (mode === 'expanded') {
+      await page.getByRole('button', { name: 'Fullscreen', exact: true }).tap()
+      await expect(game).toHaveClass(/is-fullscreen/)
+    }
     for (const size of [portrait, landscape]) {
+      // Chromium cannot resize its native fullscreen window through Playwright.
+      // Enter native fullscreen separately at each orientation; expanded mode
+      // still exercises live rotation while the game remains fullscreen.
       await page.setViewportSize(size)
+      if (mode === 'native') {
+        await page.getByRole('button', { name: 'Fullscreen', exact: true }).tap()
+        await expect(game).toHaveClass(/is-fullscreen/)
+        await expect.poll(() => page.evaluate(() => !!document.fullscreenElement)).toBe(true)
+      }
       // Active play is just the uncropped game, without floating buttons.
       await expect(game.locator('button:visible:not(.fullscreen-a11y-pause)')).toHaveCount(0)
       const box = await canvas.boundingBox()
@@ -63,6 +72,11 @@ for (const mode of ['native', 'expanded'] as const) {
       await expect(reset).toBeEnabled()
       await reset.tap()
       await expect(reset).toBeDisabled()
+      if (mode === 'native' && size === portrait) {
+        await page.getByRole('button', { name: 'Exit fullscreen', exact: true }).tap()
+        await expect.poll(() => page.evaluate(() => !!document.fullscreenElement)).toBe(false)
+        await expect(game).not.toHaveClass(/is-fullscreen/)
+      }
       await page.getByRole('button', { name: 'Resume', exact: true }).tap()
     }
     await pauseFromGamePanel(canvas, true)
