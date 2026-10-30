@@ -36,3 +36,18 @@ it('treats missing or HTML SPA fallback as no optional bundle', async () => {
  vi.stubGlobal('fetch', vi.fn(async () => new Response('<html/>', {headers: {'content-type': 'text/html'}})));
  expect(await importBundledWindowsVoices('/app/')).toBe('absent');
 });
+it('reports a failed manifest request so the player can retry', async () => {
+ vi.stubGlobal('fetch', vi.fn(async () => { throw new Error('network interrupted'); }));
+ await expect(importBundledWindowsVoices('/app/')).rejects.toThrow('network interrupted');
+});
+it('stops a stalled manifest request after the setup deadline', async () => {
+ vi.useFakeTimers();
+ try {
+  vi.stubGlobal('fetch', vi.fn((_url: URL, options: RequestInit) => new Promise((_resolve, reject) => {
+   options.signal!.addEventListener('abort', () => reject(new Error('timed out')));
+  })));
+  const pending = expect(importBundledWindowsVoices('/app/')).rejects.toThrow('timed out');
+  await vi.advanceTimersByTimeAsync(60_000);
+  await pending;
+ } finally { vi.useRealTimers(); }
+});

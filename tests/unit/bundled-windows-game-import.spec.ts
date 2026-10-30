@@ -46,6 +46,19 @@ it('imports a fixed same-origin bundle into local storage', async () => {
     expect(options).toMatchObject({ redirect: 'error', cache: 'no-store' });
   }
 });
+it('downloads files concurrently with a fixed limit', async () => {
+  let active = 0, highest = 0;
+  vi.stubGlobal('fetch', vi.fn(async (url: URL) => {
+    if (url.pathname.endsWith('/manifest.json')) return manifest();
+    active++; highest = Math.max(highest, active);
+    await Promise.resolve();
+    active--;
+    return new Response(content(url.pathname.split('/').pop()!));
+  }));
+  expect(await importBundledWindowsGame('/app/')).toBe('imported');
+  expect(highest).toBeGreaterThan(1);
+  expect(highest).toBeLessThanOrEqual(6);
+});
 it('does not probe or overwrite manually imported data, or restore data after removal', async () => {
   await importWindowsGame(manualFiles(2));
   const fetcher = vi.fn(); vi.stubGlobal('fetch', fetcher);
