@@ -29,7 +29,12 @@ const midi = () => Uint8Array.from([77, 84, 104, 100, 0, 0, 0, 6, 0, 0, 0, 1, 0,
   77, 84, 114, 107, 0, 0, 0, 12, 0, 144, 60, 100, 48, 128, 60, 0, 0, 255, 47, 0]);
 
 describe('optional Windows voice files', () => {
-  beforeEach(async () => { await clearLemmingsFiles(); });
+  beforeEach(async () => {
+    await new Promise<void>((resolve, reject) => {
+      const request = indexedDB.deleteDatabase('lemmings-game-files');
+      request.onsuccess = () => resolve(); request.onerror = () => reject(request.error);
+    });
+  });
 
   it('imports voices into the existing game without changing the DOS files, and retains them across DOS reimports', async () => {
     await importWindowsVoiceFiles(voices());
@@ -43,7 +48,17 @@ describe('optional Windows voice files', () => {
     await importLemmingsFiles(game());
     expect(await hasWindowsVoiceFiles()).toBe(true);
     await clearLemmingsFiles();
-    expect(await hasWindowsVoiceFiles()).toBe(false);
+    expect(await hasWindowsVoiceFiles()).toBe(true);
+  });
+
+  it('keeps DOS and Windows automatic-removal preferences independent', async () => {
+    await clearLemmingsFiles();
+    expect(await canAutoImportWindowsVoiceFiles()).toBe(true);
+    expect(await importWindowsVoiceFilesIfMissing(voices(77))).toBe(true);
+    await clearWindowsVoiceFiles();
+    await clearLemmingsFiles();
+    expect(await canAutoImportWindowsVoiceFiles()).toBe(false);
+    expect(await importWindowsVoiceFilesIfMissing(voices(88))).toBe(false);
   });
 
   it('accepts Windows files first and keeps them when DOS files are automatically imported later', async () => {

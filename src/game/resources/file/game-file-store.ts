@@ -175,7 +175,7 @@ export async function clearLemmingsFiles(): Promise<void> {
     const transaction = database.transaction(STORE_NAME, 'readwrite');
     const done = transactionDone(transaction);
     const store = transaction.objectStore(STORE_NAME);
-    store.clear();
+    for (const name of REQUIRED_LEMMINGS_FILES) store.delete(name);
     store.put(true, AUTO_IMPORT_DISABLED);
     await done;
   } finally {
@@ -280,7 +280,7 @@ async function importVoiceFiles(files: FileList | readonly File[], onlyIfMissing
     const keys = store.getAllKeys();
     keys.onsuccess = () => {
       const saved = new Set(keys.result);
-      if (onlyIfMissing && (saved.has(AUTO_IMPORT_DISABLED) || saved.has(VOICE_AUTO_IMPORT_DISABLED) || WINDOWS_AUDIO_FILES.some(name => saved.has(name)))) return;
+      if (onlyIfMissing && (saved.has(VOICE_AUTO_IMPORT_DISABLED) || WINDOWS_AUDIO_FILES.some(name => saved.has(name)))) return;
       store.delete(VOICE_AUTO_IMPORT_DISABLED);
       for (const name of WINDOWS_AUDIO_FILES) store.delete(name);
       for (const file of buffers) store.put(file.data, file.name);
@@ -316,7 +316,7 @@ export async function hasWindowsAudioFiles(): Promise<boolean> {
 /** Check before fetching a deployment bundle; the final write rechecks atomically. */
 export async function canAutoImportWindowsVoiceFiles(): Promise<boolean> {
   const keys = await voiceKeys();
-  return !keys.has(AUTO_IMPORT_DISABLED) && !keys.has(VOICE_AUTO_IMPORT_DISABLED) &&
+  return !keys.has(VOICE_AUTO_IMPORT_DISABLED) &&
     !WINDOWS_AUDIO_FILES.some(name => keys.has(name));
 }
 

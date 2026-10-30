@@ -3,7 +3,7 @@ import { IDBFactory, IDBObjectStore } from 'fake-indexeddb';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { zipSync } from 'fflate';
 import { clearWindowsFiles, importWindowsFiles } from '../../src/game/resources/file/windows-file-import';
-import { getLemmingsFile, getWindowsAudioFile, importLemmingsFiles, importWindowsVoiceFilesIfMissing, REQUIRED_LEMMINGS_FILES } from '../../src/game/resources/file/game-file-store';
+import { clearLemmingsFiles, hasLemmingsFiles, getLemmingsFile, getWindowsAudioFile, importLemmingsFiles, importWindowsVoiceFilesIfMissing, REQUIRED_LEMMINGS_FILES } from '../../src/game/resources/file/game-file-store';
 import { getWindowsGraphicsFile, importWindowsGraphicsIfMissing } from '../../src/game/resources/file/windows-graphics-store';
 import { getWindowsGameFile, importWindowsGameIfMissing } from '../../src/game/resources/file/windows-game-store';
 import { WINDOWS_GAME_STORE, WINDOWS_GRAPHICS_STORE } from '../../src/game/resources/file/game-file-database';
@@ -26,6 +26,13 @@ describe('atomic Windows import', () => {
     await importWindowsFiles(windowsFiles(2));
     await expectVersion(2);
     expect(await getLemmingsFile('GROUND0O.DAT')).toEqual(ground);
+  });
+  it('keeps every Windows component when DOS files are removed', async () => {
+    await importLemmingsFiles(REQUIRED_LEMMINGS_FILES.map((name, index) => new File([Uint8Array.from(syntheticDosData(name, index + 1))], name)));
+    await importWindowsFiles(windowsFiles(1));
+    await clearLemmingsFiles();
+    expect(await hasLemmingsFiles()).toBe(false);
+    await expectVersion(1);
   });
   it.each(['graphics', 'game', 'read'])('preserves every previous component when %s validation fails', async kind => {
     await importWindowsFiles(windowsFiles(1));
