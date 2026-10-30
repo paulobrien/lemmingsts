@@ -2,7 +2,9 @@
 // Optional local verification: RUN_PRIVATE_GAME_TESTS=1 npx vitest run tests/integration/windows-masks-private.spec.ts
 // Only the positions and difference counts are compared; no original graphics are retained.
 import { readFile } from 'node:fs/promises';
-import { expect, it } from 'vitest';
+import { expect, it, vi } from 'vitest';
+import { indexedDB } from 'fake-indexeddb';
+import { clearWindowsGraphics, getWindowsGraphicsFile, hasStandaloneWindowsGraphics, importWindowsGraphics } from '../../src/game/resources/file/windows-graphics-store';
 import { BinaryReader } from '../../src/game/resources/file/binary-reader';
 import { FileContainer } from '../../src/game/resources/file/file-container';
 import { MaskProvider } from '../../src/game/resources/mask-provider';
@@ -31,3 +33,17 @@ it.skipIf(process.env.RUN_PRIVATE_GAME_TESTS !== '1')('decodes the actual Window
     }
   }
 });
+
+// Import the actual ISO into an empty store without importing any DOS files.
+it.skipIf(process.env.RUN_PRIVATE_GAME_TESTS !== '1' || !process.env.WINDOWS_LEMMINGS_ISO)(
+  'accepts the Windows disc as a complete standalone graphics and mask set', async () => {
+    vi.stubGlobal('indexedDB', indexedDB);
+    try {
+      const iso = await readFile(process.env.WINDOWS_LEMMINGS_ISO!);
+      await importWindowsGraphics([new File([Uint8Array.from(iso)], 'windows.iso')]);
+      expect(await hasStandaloneWindowsGraphics()).toBe(true);
+      for (const name of ['LEMMSMA.SPR', ...Array.from({length: 5}, (_, i) => [`LEVEL${i}S.SPR`, `LEVEL${i}OS.SPR`]).flat()]) {
+        expect(await getWindowsGraphicsFile(name), name).toBeDefined();
+      }
+    } finally { await clearWindowsGraphics(); vi.unstubAllGlobals(); }
+  }, 30_000);
