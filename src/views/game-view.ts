@@ -373,7 +373,7 @@ export default defineComponent({
                             if (paused.value) {
                                 suspendMusic(); stopEffects();
                                 void nextTick(focusPauseMenu);
-                            } else music?.play();
+                            } else resumeMusic();
                         }
                     }
                 });
@@ -416,7 +416,7 @@ export default defineComponent({
             game.getGameTimer().toggle();
             paused.value = !game.getGameTimer().isRunning();
             if (paused.value) { suspendMusic(); stopEffects(); }
-            else music?.play();
+            else resumeMusic();
         }
 
         function focusPauseMenu() {
@@ -548,6 +548,30 @@ export default defineComponent({
             }
         }
 
+        function resumeMusic() {
+            const current = music;
+            if (!(current instanceof WindowsMidiPlayer)) { current?.play(); return; }
+            const generation = musicGeneration;
+            void current.play().then(async played => {
+                if (played || disposed || !musicEnabled.value || paused.value || document.hidden ||
+                    generation !== musicGeneration || music !== current || !resources) return;
+                current.stop();
+                music = null;
+                try {
+                    const fallback = await resources.getMusicPlayer(levelIndex.value % 20);
+                    if (disposed || !musicEnabled.value || generation !== musicGeneration) { fallback.stop(); return; }
+                    music = fallback;
+                    if (paused.value || document.hidden) fallback.suspend();
+                    else fallback.play();
+                } catch {
+                    if (generation === musicGeneration) {
+                        musicEnabled.value = false;
+                        noteSaveResult(saveSettings({ speed: speed.value, musicEnabled: false, soundEnabled: soundEnabled.value }));
+                    }
+                }
+            });
+        }
+
         function toggleMusic() {
             musicEnabled.value = !musicEnabled.value;
             noteSaveResult(saveSettings({ speed: speed.value, musicEnabled: musicEnabled.value, soundEnabled: soundEnabled.value }));
@@ -583,7 +607,7 @@ export default defineComponent({
             } else if (!playing.value && musicEnabled.value) {
                 // The music toggle also previews the soundtrack before play.
                 // Resume that preview, but leave a backgrounded game paused.
-                music?.play();
+                resumeMusic();
             }
         }
 
