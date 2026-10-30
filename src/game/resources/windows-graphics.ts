@@ -70,7 +70,7 @@ export function decodeWindowsSprites(input: Uint8Array): WindowsSpriteFrame[] {
   });
 }
 
-/** Decode a PAL file into 24-bit RGB values; caller chooses the palette's index base. */
+/** Decode a PAL file's RGB byte entries into 0xRRGGBB values; caller chooses the index base. */
 export function decodeWindowsPalette(input: Uint8Array): Uint32Array {
   const fail = (): never => { throw new Error('Invalid Windows Lemmings palette data.'); };
   if (input.length < 10 || input[0] !== 0x20 || input[1] !== 0x4c || input[2] !== 0x41 || input[3] !== 0x50) return fail();
@@ -78,6 +78,9 @@ export function decodeWindowsPalette(input: Uint8Array): Uint32Array {
   const count = view.getUint16(4, true);
   if (!count || count > 256 || input.length !== 6 + count * 4) return fail();
   const colors = new Uint32Array(count);
-  for (let i = 0; i < count; i++) colors[i] = view.getUint32(6 + i * 4, true) & 0xffffff;
+  for (let i = 0; i < count; i++) {
+    const offset = 6 + i * 4;
+    colors[i] = (input[offset] << 16) | (input[offset + 1] << 8) | input[offset + 2];
+  }
   return colors;
 }

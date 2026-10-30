@@ -59,9 +59,9 @@ describe('Windows Lemmings SRLE graphics', () => {
     expect(() => decodeWindowsSprites(impossibleHeader)).toThrow('Invalid Windows Lemmings SRLE');
   });
 
-  it('reads a bounded PAL palette in little-endian RGB', () => {
+  it('reads bounded PAL entries in RGB byte order', () => {
     const input = Uint8Array.from([0x20, 0x4c, 0x41, 0x50, 2, 0, 0, 0, 0, 0, 0x11, 0x22, 0x33, 0]);
-    expect(Array.from(decodeWindowsPalette(input))).toEqual([0, 0x332211]);
+    expect(Array.from(decodeWindowsPalette(input))).toEqual([0, 0x112233]);
     expect(() => decodeWindowsPalette(input.slice(0, -1))).toThrow('Invalid Windows Lemmings palette');
   });
 });
