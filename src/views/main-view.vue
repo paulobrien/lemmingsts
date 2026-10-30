@@ -28,7 +28,7 @@
           <div v-else class="actions">
             <button class="primary-button" type="button" :disabled="busy" @click="fileInput?.click()">{{ busy ? 'Getting things ready…' : 'Add DOS files' }}</button>
             <button class="text-button folder-button" type="button" :disabled="busy" @click="folderInput?.click()">Or choose a folder</button>
-            <a class="text-button" href="#voices-title">Have the Windows edition?</a>
+            <a class="edition-link" href="#voices-title">Have the Windows edition?</a>
           </div>
           <p class="offline-note" role="status">{{ offlineReadiness === 'checking' ? 'Preparing offline play…' : offlineReadiness === 'ready' ? (ready ? 'The app shell is ready offline; your game files are stored on this device.' : 'The app shell is ready offline. Add your game files to play.') : 'Offline play may be unavailable. Reconnect and reopen the app.' }}</p>
           <p v-if="checkingAutomaticFiles && !ready" class="offline-note" role="status">Checking for game files supplied by this installation. You can also add your own files now.</p>
@@ -369,6 +369,7 @@ h1 { margin: 0 0 1rem; font-size: 2rem; font-weight: 800; line-height: 1.2; text
 .intro { color: var(--color-muted); max-width: 34rem; margin: 0 0 .75rem; font-size: 1rem; line-height: 1.6; }
 .preview-note { color: var(--color-muted); font-size: .875rem; line-height: 1.5; margin: .75rem 0; }
 .actions { margin-top: 1.5rem; }
+.edition-link { display: flex; align-items: center; width: fit-content; min-height: 44px; margin-top: .5rem; color: var(--color-muted); font-size: .875rem; text-underline-offset: .2em; }
 .level-picker { display: flex; flex-wrap: wrap; gap: 1rem; max-width: 28rem; margin-bottom: 1rem; }
 .level-picker label { display: flex; flex: 1 1 120px; min-width: 0; flex-direction: column; gap: .5rem; color: var(--color-ink); font-size: .875rem; font-weight: 600; }
 .level-picker select, .game-mode select { min-width: 0; min-height: 48px; padding: .6rem; border: 2px solid; border-color: var(--color-edge-dark) var(--color-edge) var(--color-edge) var(--color-edge-dark); border-radius: 2px; background: var(--color-panel); color: var(--color-ink); font: inherit; }
@@ -412,7 +413,7 @@ h2 { margin: 0; font-size: 1.25rem; font-weight: 700; line-height: 1.4; text-wra
 footer { display: flex; flex-wrap: wrap; gap: .5rem 1.5rem; align-items: center; padding: 1rem 0; border-top: 1px solid var(--color-edge); color: var(--color-muted); font-size: .875rem; }
 footer a { display: inline-flex; min-height: 44px; align-items: center; color: var(--color-ink); text-underline-offset: .2em; }
 .visually-hidden { position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px; overflow: hidden; clip: rect(0,0,0,0); white-space: nowrap; border: 0; }
-.primary-button:focus-visible, .text-button:focus-visible, select:focus-visible, footer a:focus-visible { outline: 3px solid var(--color-focus); outline-offset: 3px; }
+.primary-button:focus-visible, .text-button:focus-visible, .edition-link:focus-visible, select:focus-visible, footer a:focus-visible { outline: 3px solid var(--color-focus); outline-offset: 3px; }
 .is-ready .hero { padding-block: 2rem; }
 @media (max-width: 720px) {
   .home-inner { padding-inline: 1rem; }
