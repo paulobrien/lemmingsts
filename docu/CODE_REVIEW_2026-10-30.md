@@ -11,7 +11,7 @@ regression tests.
 | Area | Finding and correction |
 | --- | --- |
 | Windows replacement | Audio, graphics and levels were stored separately. All selected components are now prepared before a single IndexedDB transaction; a read, validation or write failure preserves the previous installation. Removal also uses a single transaction. |
-| Existing installations | Windows stores migrate into the shared database before use. Failed migration retains the legacy copies for retry. Old copies are deleted only after a successful migration, and removal markers prevent automatic re-import. An older tab blocking the upgrade produces an actionable error. |
+| Existing installations | Windows stores migrate into the shared database before use. Failed migration retains the legacy copies for retry. Old copies are deleted only after a successful migration, and removal markers prevent in-flight automatic imports from undoing a removal. A later home-page visit can restore a deployment's Windows bundle. An older tab blocking the upgrade produces an actionable error. |
 | Complete Windows imports | ISO and combined audio/art/level imports now require the complete standalone resource set, and supplied simulation sprites must contain compatible gameplay masks. Intentional component-only selections remain supported. |
 | Edition removal | Removing DOS previously cleared Windows audio too. DOS and Windows removal and automatic-import preferences are now independent. |
 | MIDI validation | Import accepted some tracks that the playback parser rejected. Import, playback and deployment packaging now use the same bounded event validation. Invalid replacement music leaves saved audio intact. |
