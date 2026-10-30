@@ -188,6 +188,14 @@ export class GameGui {
 
         /////////
         /// green text
+        // IN uses the floor of saved / total, so display the target using
+        // the same percentage convention while victory uses exact counts.
+        const total = this.gameVictoryCondition.getReleaseCount();
+        const needed = this.gameVictoryCondition.getNeedCount();
+        // Above 100 lemmings, adjacent counts can have the same displayed
+        // percentage. Show the exact count instead of implying an early win.
+        const target = total > 100 ? String(needed) : `${this.stringPad(String(total > 0 ? Math.floor(needed / total * 100) : 0), 3)}%`;
+        this.drawGreenString(display, `Need ${target}`, 0, 0);
         this.drawGreenString(display, 'Out ' + this.gameVictoryCondition.getOutCount() + '  ', 112, 0);
         this.drawGreenString(display, 'In' + this.stringPad(this.gameVictoryCondition.getSurvivorPercentage() + '', 3) + '%', 186, 0);
 

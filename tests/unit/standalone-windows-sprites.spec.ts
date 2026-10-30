@@ -46,7 +46,7 @@ describe('Windows-only gameplay artwork', () => {
   it('provides a complete legible standalone HUD without DOS resources', () => {
     const panel = new SkillPanelSprites(null, null, new ColorPalette());
     expect(panel.getPanelSprite()).toMatchObject({ width: 320, height: 40 });
-    for (const character of 'OUT IN TIME0123456789%-') expect(panel.getLetterSprite(character)).toBeDefined();
+    for (const character of 'NEED OUT IN TIME0123456789%-') expect(panel.getLetterSprite(character)).toBeDefined();
     for (let digit = 0; digit < 10; digit++) {
       expect(panel.getNumberSpriteLeft(digit).getMask().some(Boolean)).toBe(true);
       expect(panel.getNumberSpriteRight(digit).getMask().some(Boolean)).toBe(true);
