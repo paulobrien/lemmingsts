@@ -82,6 +82,25 @@ describe('Windows original toolbar', () => {
     expect(display.drawFrameCovered).toHaveBeenCalledWith(icons[0], 0, 20, 192, 192, 192);
   });
 
+  it('returns animated icons to their first frame when disabled and resumes only after re-enabling', () => {
+    const { gui, display, timer } = fixture();
+    const icons = Array.from({ length: 13 }, () => new Frame(16, 20));
+    const native = Array.from({ length: 13 }, () => new Frame(32, 40));
+    const next = new Frame(16, 20), nextNative = new Frame(32, 40);
+    gui.setWindowsPanel(icons, native, icons.map((frame, i) => i === 0 ? [frame, next] : [frame]),
+      native.map((frame, i) => i === 0 ? [frame, nextNative] : [frame]));
+    gui.render(); timer.onGameTick.trigger(); gui.render();
+    expect(display.drawFrameCovered).toHaveBeenCalledWith(next, 0, 20, 192, 192, 192);
+    display.drawFrameCovered.mockClear();
+    gui.setWindowsIconAnimationsEnabled(false); gui.render();
+    expect(display.drawFrameCovered).toHaveBeenCalledWith(icons[0], 0, 20, 192, 192, 192);
+    display.drawFrameCovered.mockClear();
+    timer.onGameTick.trigger(); timer.onGameTick.trigger(); gui.render();
+    expect(display.drawFrameCovered).not.toHaveBeenCalledWith(next, 0, 20, 192, 192, 192);
+    gui.setWindowsIconAnimationsEnabled(true); timer.onGameTick.trigger(); gui.render();
+    expect(display.drawFrameCovered).toHaveBeenCalledWith(next, 0, 20, 192, 192, 192);
+  });
+
   it('keeps DOS controls and legacy 12-icon Windows installations on the original mapping', () => {
     for (const icons of [null, Array.from({ length: 12 }, () => new Frame(16, 20))]) {
       const { gui, game, press } = fixture(); gui.setWindowsPanel(icons);

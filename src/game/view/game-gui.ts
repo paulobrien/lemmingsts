@@ -31,6 +31,15 @@ export class GameGui {
     private windowsNativeAnimations: readonly (readonly Frame[])[] | null = null;
     private iconAnimationTick = 0;
     private iconAnimationChanged = false;
+    private iconAnimationsEnabled = true;
+
+    /** Use the original first frame when animation is turned off. */
+    public setWindowsIconAnimationsEnabled(enabled: boolean) {
+        if (this.iconAnimationsEnabled === enabled) return;
+        this.iconAnimationsEnabled = enabled;
+        this.iconAnimationTick = 0;
+        this.iconAnimationChanged = true;
+    }
 
     /** New Windows art uses its original 13-button layout; older sets use DOS positions. */
     public setWindowsPanel(icons: readonly Frame[] | null, nativeIcons?: readonly Frame[] | null,
@@ -77,7 +86,7 @@ export class GameGui {
             this.doReleaseRateChanges();
             // Advance the supplied Win95 sprite sequences with simulation
             // ticks: pause freezes them and the speed control scales them.
-            if (this.windowsAnimations?.some(frames => frames.length > 1)) {
+            if (this.iconAnimationsEnabled && this.windowsAnimations?.some(frames => frames.length > 1)) {
                 this.iconAnimationTick++;
                 this.iconAnimationChanged = true;
             }
@@ -323,6 +332,12 @@ export class GameGui {
         for (let y = 0; y < image.height; y++) for (let x = 0; x < image.width; x++) {
             const color = original[y * image.width + x], at = y * 2 * width + x * 2;
             out[at] = out[at + 1] = out[at + width] = out[at + width + 1] = color;
+        }
+        // The shared DOS panel has a black strip above its icon row. Windows
+        // uses the normal grey toolbar here; the live counts and selection
+        // border are drawn separately on top of this background.
+        if (this.isWindowsLayout) {
+            for (let y = 32; y < 40; y++) for (let x = 0; x < 13 * 32; x++) out[y * width + x] = 0xffc0c0c0;
         }
         this.paintNativeWindowsIcons(out, width, height);
         display.setNativeBackground(pixels, width, height);
