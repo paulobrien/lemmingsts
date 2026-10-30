@@ -10,6 +10,8 @@ import { GameTypes } from '../../src/game/game-types';
 import { clearLemmingsFiles, importLemmingsFiles } from '../../src/game/resources/file/game-file-store';
 import { clearWindowsGraphics, getWindowsGraphicsFile, importWindowsGraphics } from '../../src/game/resources/file/windows-graphics-store';
 import { prepareWindowsTerrain } from '../../src/game/resources/prepare-windows-terrain';
+import { prepareWindowsSprites } from '../../src/game/resources/prepare-windows-sprites';
+import { SpriteTypes } from '../../src/game/resources/sprite-types';
 import { decodeWindowsPalette, decodeWindowsSprites } from '../../src/game/resources/windows-graphics';
 import { mapWindowsObjectSprites } from '../../src/game/resources/windows-object-sprites';
 
@@ -29,6 +31,17 @@ it.skipIf(process.env.RUN_PRIVATE_GAME_TESTS !== '1' || !process.env.WINDOWS_LEM
       const configuration = await readFile('public/data/config.json', 'utf8');
       vi.stubGlobal('fetch', async () => new Response(configuration));
       const resources = (await new GameFactory('/data').getGameResources(GameTypes.LEMMINGS))!;
+      const first = (await resources.getLevel(0, 0))!;
+      const animations = await resources.getLemmingsSprite(first.colorPalette);
+      const lemmingSprites = await prepareWindowsSprites(animations);
+      expect(lemmingSprites).not.toBeNull();
+      for (const type of [SpriteTypes.POSTCLIMBING, SpriteTypes.SHRUGGING]) {
+        for (const right of [false, true]) {
+          for (const frame of animations.getAnimation(type, right).frames) {
+            expect(lemmingSprites!.has(frame)).toBe(true);
+          }
+        }
+      }
       const styles = await Promise.all(Array.from({ length: 5 }, async (_, index) => ({
         objects: decodeWindowsSprites(new Uint8Array((await getWindowsGraphicsFile(`LEVEL${index}OB.SPR`))!)),
         palette: decodeWindowsPalette(new Uint8Array((await getWindowsGraphicsFile(`LEVEL${index}.PAL`))!)),
