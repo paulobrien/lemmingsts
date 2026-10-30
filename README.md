@@ -2,7 +2,7 @@
 
 A modern browser player built on [Lemmings.ts](https://github.com/tomsoftware/Lemmings.ts), Thomas Zeugner's TypeScript Lemmings clone. The original project supplied the game engine, DOS data readers, rendering and AdLib music playback that this version builds on. Thanks to Thomas for making that work available.
 
-Play with a mouse on a computer or with touch on an Android phone or tablet. The app can be installed from the browser and, once the app and your own game files are stored on the device, played offline. This is an early preview: actual Android hardware and some DOS physics details still need further verification.
+Play with a mouse on a computer or with touch on an Android phone or tablet. The app can be installed from the browser and, once the app and your own game files are stored on the device, played offline. This is an early preview: actual Android hardware and some physics details still need further verification.
 
 ## What changed
 
@@ -19,16 +19,16 @@ This modernization retains the original engine and game data formats while impro
 - Improved game-data decoding, DOS simulation behaviour and audio handling, with focused regression tests and optional tests using locally supplied original files. Builder terrain and explosion particles are clipped at map edges and rendered opaquely, legacy click/debug artifacts are removed, and malformed audio programs are bounded so they cannot hang the game.
 - Added independently authored completion replays and progressive, optional hints for all 120 levels of the original DOS game. Each replay has been tested against the supplied local files; loading a level alone is not treated as proof that it can be completed.
 - Added optional original AdLib music and effects, plus synthesized PC-speaker-style digging, bashing, mining and nuke cues. The synthesized sounds are approximations, not original samples.
-- Added a DOS/Windows presentation selector. Windows mode uses locally imported Windows terrain, lemming and object artwork, toolbar icons, sound effects and MIDI music where available, while retaining the DOS-based simulation.
+- Added separate DOS and Windows modes. Windows mode can run directly from a compatible Windows ISO, deriving its level list, terrain, characters, objects, gameplay masks, toolbar, effects and music from the player’s files.
 - Added an application source archive and licence notices to production builds. The original game files are not included.
 
-The original Lemmings.ts project also described support for other Lemmings editions. Their historical configuration and parsers remain in the repository, but this version uses **original DOS Lemmings** game data and has optional Windows Lemmings presentation support; other editions should not be assumed to work.
+The original Lemmings.ts project also described support for other Lemmings editions. Their historical configuration and parsers remain in the repository, but this version supports original DOS Lemmings and the supplied Windows Lemmings edition; other editions should not be assumed to work.
 
 ## Bring your own game files
 
-The repository and standard build do not include the original DOS files. Use your own compatible copy; the expected names are listed in [the original-DOS file list](public/data/lemmings/README.md). The local `dos/` directory is ignored by Git, including `dos/lemmings/` and any ZIP kept there. Never commit original game files or put them in `public/data`: the build rejects unexpected files in that directory.
+The repository and standard build do not include original DOS or Windows game files. Use your own compatible copy; the expected names are listed in [the original-DOS file list](public/data/lemmings/README.md). The local `dos/` directory is ignored by Git, including `dos/lemmings/` and any ZIP kept there. Never commit original game files or put them in `public/data`: the build rejects unexpected files in that directory.
 
-Open the app, choose **Add your game files** or **Or choose a folder**, and select the original files together or an unencrypted ZIP containing them. Names are accepted in upper or lower case. The app checks file structure before storing the files in the browser's local IndexedDB; it does not upload them. An invalid replacement leaves any existing files intact. ZIPs with duplicate game filenames are rejected, including repeated entries at the same path. Structural validation cannot prove that a set is the exact edition used for the tested hints. Import separately on each device. Use **Remove game files** on the home screen to remove them; clearing site storage may also remove files and progress.
+Open the app, choose **Add DOS files** or **Or choose a folder**, and select the original files together or an unencrypted ZIP containing them. Names are accepted in upper or lower case. The app checks file structure before storing the files in the browser's local IndexedDB; it does not upload them. An invalid replacement leaves any existing files intact. ZIPs with duplicate game filenames are rejected, including repeated entries at the same path. Structural validation cannot prove that a set is the exact edition used for the tested hints. Import separately on each device. Use **Remove DOS files** or **Remove Windows files** on the home screen to remove the corresponding edition; clearing site storage may also remove files and progress.
 
 ### Optional deployment bundle
 
@@ -47,9 +47,17 @@ On first visit, the app checks for the same-origin manifest, downloads and valid
 
 To bundle Windows audio as well, place the Windows `SOUND` and `MUSIC` folders in the ignored `dos/windows-audio/` directory before running `npm run build:local`, or set `LEMMINGS_WINDOWS_AUDIO_DIR` to a directory containing those folders. The bundle is separate from the DOS bundle and is imported without overwriting audio already saved or deliberately removed on a device. Anyone who can access the deployment can download the bundled audio. The standard build and source archive contain no game audio.
 
+To bundle only the Windows edition, extract the disc's `LEMMINGS` directory to the ignored `dos/windows-game/` directory. Put its `SOUND` and `MUSIC` directories in `dos/windows-audio/`, and its `GFX` and `STYLES` directories in `dos/windows-graphics/`, then run:
+
+```sh
+npm run build:windows-local
+```
+
+You can set `LEMMINGS_WINDOWS_GAME_DIR`, `LEMMINGS_WINDOWS_AUDIO_DIR` and `LEMMINGS_WINDOWS_GRAPHICS_DIR` to alternative directories. This build requires no DOS data. To include both editions, use `build:local`; it includes Windows level data from `dos/windows-game/` when present. The same public-access warning applies to all bundles.
+
 For Windows artwork, place the Windows `GFX` and `STYLES` folders in the ignored `dos/windows-graphics/` directory or set `LEMMINGS_WINDOWS_GRAPHICS_DIR`. `build:local` packages the required graphics separately when the directory exists. The same access and exclusion rules apply to those graphics.
 
-Select **Add Windows files** to import a Windows ISO, or choose an extracted Windows game folder or ZIP containing both audio and graphics. The Windows files can be imported before or after the DOS files, but both are currently required to play in Windows mode. The Windows ISO contains matching base level records, but it does not contain all of the DOS-format resources used by the current engine; an ISO alone cannot yet run the game. Use a single Windows game directory to avoid duplicate filenames from multiple disc copies.
+Select **Add Windows files** to import a compatible Windows ISO, or choose an extracted Windows game folder or ZIP containing its level data, audio and graphics. Windows mode works independently of DOS files. Use a single Windows game directory to avoid duplicate filenames from multiple disc copies. The supplied Windows disc lists 114 original-game levels (28 Fun, 28 Tricky, 29 Taxing and 29 Mayhem), six fewer than the 120 DOS levels. Its level ordering also differs.
 
 ## Play and install
 
@@ -59,15 +67,15 @@ Choose a difficulty and level, then start the level. The target and time are sho
 
 Choose **Fullscreen** to fit the game screen to the display. During fullscreen play, only the game canvas is visible. Press the pause button on the game's original bottom panel (the hourglass immediately left of the red nuke button) to reveal the pause menu and the skill, zoom, audio and other controls. If the browser doesn't allow native fullscreen, the game expands within the available browser window instead. The pause menu offers resume, restart, level selection and fullscreen controls while keeping skill selection available. Speed and release-rate controls are available during a level. Both nuke controls use the same confirmation. Switching apps or hiding the tab pauses a running level, including a start that finishes loading in the background; resume explicitly when you return. On a portrait phone, the original panel buttons are small; landscape gives them more space. No level is cropped to fill a screen with a different aspect ratio.
 
-Hints are optional and reveal one step at a time. A local fingerprint of the imported level, terrain and physics files is checked against the data used for the tested solutions; hints are unavailable for a different or unverifiable set, but the game remains playable. Nothing is uploaded for this check. After revealing a hint, **Show example first move** marks where the tested route begins. It is an illustration from a separate replay, not advice adapted to the current attempt; its position and timing can differ if you play another route.
+DOS hints are optional and reveal one step at a time. A local fingerprint of the imported level, terrain and physics files is checked against the data used for the tested solutions; hints are unavailable for a different or unverifiable set, but the game remains playable. Nothing is uploaded for this check. After revealing a hint, **Show example first move** marks where the tested route begins. It is an illustration from a separate replay, not advice adapted to the current attempt; its position and timing can differ if you play another route.
 
 On Android Chrome, open the HTTPS site and use **Install app** or **Add to Home screen**. Load the app while online and import your files on that device before trying it offline; the home screen reports when the app shell is ready. Browser-managed storage can be cleared or evicted. Progress, settings and imported files do not sync between devices. **Export backup** on the home screen saves progress, settings and the last level, but never the game files; **Restore backup** replaces those settings and progress on the device. Keep your own game-file copy separately. For checks on the actual phone and tablet, see [Android device check](docu/ANDROID_DEVICE_CHECK.md).
 
-Choose **DOS** or **Windows** under **Game mode** on the home screen. DOS is the default and uses the DOS artwork and audio. Windows becomes available when the required Windows audio and graphics have been imported as well as the DOS data. It uses Windows terrain, characters, level objects and toolbar icons, and Windows audio where supported. Four special levels retain their DOS backgrounds because full-size Windows versions have not been found on the disc; a message identifies those levels. If optional artwork cannot be decoded, the game falls back to DOS artwork. Older Windows imports that lack the optional toolbar files use DOS toolbar icons until those files are imported. The interface is adapted for browsers and touch rather than a complete reproduction of the Windows application's menus and minimap. The game rules and tested replays still use the DOS engine. The mode is saved locally on each device and is not included in progress backups.
+Choose **DOS** or **Windows** under **Game mode** on the home screen. Each mode is available when its own complete game files have been imported; Windows alone is enough to play Windows mode. Windows uses the disc's own level order, terrain, characters, objects, gameplay masks, toolbar icons, effects and MIDI music. The interface is adapted for browsers and touch rather than a complete reproduction of the Windows application's menus and minimap. DOS and Windows level progress are stored separately. DOS replay-based hints are unavailable in Windows mode until Windows-specific hints have been verified. The mode is saved locally on each device and is not included in progress backups.
 
 Music and sound effects have separate switches and start off by default. Music can be previewed before starting a level; that preview suspends while the tab is hidden. The AdLib effects include opening cues, skill selection and assignments, builder warnings, steel, Oh No, exits, splats, explosions, drowning, fire and triggered traps. Each effects channel is monophonic; the short nuke alert takes priority over other speaker cues. The AdLib interpreter uses a legacy Web Audio processor, and browsers may require user interaction before audio can play.
 
-The original DOS AdLib effects are synthesized cues, not the recorded lemming voices heard in some other editions. Windows mode includes the Windows WAV effects, including “Let's go”, “Oh no” and “Yippee”, when Sound is enabled. Unmapped or unavailable effects fall back to DOS audio. Windows MIDI music uses an offline General MIDI synthesizer with approximate instrument sounds; its track sequence is not guaranteed to match the Windows game. The files remain on the device and are not included in progress backups.
+The original DOS AdLib effects are synthesized cues, not the recorded lemming voices heard in some other editions. Windows mode includes the Windows WAV effects, including “Let's go”, “Oh no” and “Yippee”, when Sound is enabled. Unmapped or unavailable Windows effects are silent. Windows MIDI music uses an offline General MIDI synthesizer with approximate instrument sounds; its track sequence is not guaranteed to match the Windows game. The files remain on the device and are not included in progress backups.
 
 After an update, reopen the home page online to refresh the cached app; close and reopen any older tabs if they still show the previous version. Avoid clearing site data as an update fix: it removes imported files and progress.
 
@@ -89,7 +97,7 @@ npm run build
 npm run preview
 ```
 
-The production build is in `dist/`. A static host must serve `index.html` as a fallback for app routes such as `/game/1`. The standard build checks the public data directory and creates `source-code.zip` with application source and build inputs, excluding the player's DOS files. See the deployment-bundle instructions above for the separate opt-in build.
+The production build is in `dist/`. A static host must serve `index.html` as a fallback for app routes such as `/game/1`. The standard build checks the public data directory and creates `source-code.zip` with application source and build inputs, excluding the player's DOS and Windows files. See the deployment-bundle instructions above for the separate opt-in build.
 
 ## Tests and level verification
 
@@ -101,10 +109,11 @@ With the original files privately present in `dos/lemmings/`, run the stricter o
 RUN_PRIVATE_GAME_TESTS=1 REQUIRE_ALL_LEVEL_SOLUTIONS=1 npx vitest run tests/integration/local-game-files.spec.ts
 RUN_PRIVATE_GAME_TESTS=1 npx vitest run tests/integration/import-validation-private.spec.ts
 RUN_PRIVATE_GAME_TESTS=1 npx vitest run tests/integration/sound-effects-private.spec.ts
+RUN_PRIVATE_GAME_TESTS=1 LEMMINGS_WINDOWS_ISO=/path/to/windows.iso npx vitest run tests/integration/windows-only-replays-private.spec.ts
 RUN_PRIVATE_GAME_TESTS=1 npm run test:e2e
 ```
 
-The authored coverage gate requires a solution for every original level and plays each replay through to victory. [Integration test notes](tests/integration/README.md) describe optional additional checks using separately obtained community recordings. Those recordings and the original DOS files are not in Git or in the standard build. Passing these replays verifies the tested routes in this engine, not complete equivalence with every DOS release.
+The DOS authored coverage gate requires a solution for every original DOS level and plays each replay through to victory. The optional Windows-only replay check uses the Windows files alone and maps Windows levels to corresponding DOS recordings for comparison; All 114 levels now complete using Windows-only game resources with every recorded command accepted. Three routes have Windows-specific adjustments because the Windows bash mask differs from DOS. [Integration test notes](tests/integration/README.md) describe optional additional checks using separately obtained community recordings. Those recordings and the original DOS files are not in Git or in the standard build. Passing these replays verifies the tested routes in this engine, not complete equivalence with every DOS release.
 
 ## Licence and acknowledgements
 
