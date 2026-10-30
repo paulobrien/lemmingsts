@@ -71,12 +71,14 @@ export default defineComponent({
         let canvasGestureSequence = 0;
         let canvasGestureTimer: ReturnType<typeof setTimeout> | null = null;
         function clearCanvasGesture() {
+            const wasDeferred = deferFullscreenControls.value;
             canvasGestureSequence++;
             if (canvasGestureTimer !== null) clearTimeout(canvasGestureTimer);
             canvasGestureTimer = null;
             canvasGestureId = null;
             canvasGesturePointerDown = false;
             deferFullscreenControls.value = false;
+            if (wasDeferred && paused.value) void nextTick(focusPauseMenu);
         }
         function scheduleCanvasGestureEnd(delay: number) {
             if (canvasGestureTimer !== null) clearTimeout(canvasGestureTimer);
@@ -86,7 +88,7 @@ export default defineComponent({
             }, delay);
         }
         function beginCanvasGesture(event: PointerEvent) {
-            if (!fullscreenActive.value || !playing.value || paused.value || fullscreenControlsOpen.value || canvasGesturePointerDown) return;
+            if ((!fullscreenActive.value && !nativeWindowsPanel.value) || !playing.value || paused.value || fullscreenControlsOpen.value || canvasGesturePointerDown) return;
             clearCanvasGesture();
             canvasGestureId = event.pointerId;
             canvasGesturePointerDown = true;
@@ -262,6 +264,7 @@ export default defineComponent({
             windowsEffects.stop();
             effects?.stop();
             effects = null;
+            stage?.setMinimapProvider(null);
             game?.stop();
             game = null;
             stage?.clearInputBindings();
@@ -366,7 +369,7 @@ export default defineComponent({
                     ]);
                     if (disposed || generation !== loadGeneration || !stage) { nextGame.stop(); return; }
                     if (panel) {
-                        nextGame.setWindowsPanel(panel.panel, panel.nativePanel);
+                        nextGame.setWindowsPanel(panel.panel, panel.nativePanel, panel.animations, panel.nativeAnimations);
                         nativeWindowsPanel.value = panel.panel.length === 13;
                         windowsSkillIcons.value = panel.skillIcons;
                     }
@@ -413,6 +416,10 @@ export default defineComponent({
                 stage.clearInputBindings();
                 game.setGameDisplay(stage.getGameDisplay());
                 game.setGuiDisplay(stage.getGuiDisplay());
+                if (gameMode.value === 'windows' && nativeWindowsPanel.value) {
+                    const activeGame = game;
+                    stage.setMinimapProvider(() => activeGame.getLemmingManager().getSelectableLemmings());
+                }
                 stage.getGuiDisplay().onMouseDown.on(() => {
                     if (game && !finished.value) {
                         const wasPaused = paused.value;
@@ -629,6 +636,7 @@ export default defineComponent({
 
         function zoom(delta: number) { stage?.zoomGame(delta); }
         function resetZoom() { stage?.resetZoom(); }
+        function panLevel(direction: number) { stage?.panGameBy(direction * 200); }
         function onZoomChange(changed?: boolean) { zoomChanged.value = !!changed; }
 
         function onVisibilityChange() {
@@ -728,10 +736,10 @@ export default defineComponent({
             window.removeEventListener('keydown', onKeyDown);
         });
 
-        return { gameScreen, fullscreenEnterButton, startControl, gameCanvas, beginCanvasGesture, finishCanvasGesture, cancelCanvasGesture, loseCanvasCapture, finishCanvasGestureFromClick, gameMode, nativeWindowsPanel, graphicsError, graphicsNotice, windowsSkillIcons, pauseControl, pauseHeading, fullscreenActive, fullscreenControlsOpen, fullscreenMode, toggleFullscreen,
+        return { gameScreen, fullscreenEnterButton, startControl, gameCanvas, beginCanvasGesture, finishCanvasGesture, cancelCanvasGesture, loseCanvasCapture, finishCanvasGestureFromClick, gameMode, nativeWindowsPanel, deferFullscreenControls, graphicsError, graphicsNotice, windowsSkillIcons, pauseControl, pauseHeading, fullscreenActive, fullscreenControlsOpen, fullscreenMode, toggleFullscreen,
             level, levelIndex, groupName, title, error, loading, playing, paused,
             finished, levelSucceeded, nextLevelAvailable, savedCount, saveWarning, assignmentMessage, keyboardMessage, resultMessage, hints, availableHints, hintCompatibility, visibleHintCount, exampleMove, exampleBusy, exampleError, exampleSkillName, exampleClock, hideHints, showExample, clearExample, nukeArmed, nukeExecuted, selectedSkill, skillCounts, releaseRate, gameTime, speed,
             musicEnabled, soundEnabled, skillButtons, canPlay, start, openPauseMenu, resumeFromMenu, restartFromMenu, selectSkill, changeReleaseRate,
-            setSpeed, onSpeedChange, toggleMusic, toggleSound, zoom, zoomChanged, resetZoom, changeLevel, loadLevel, confirmNuke, cancelNuke };
+            setSpeed, onSpeedChange, toggleMusic, toggleSound, zoom, zoomChanged, resetZoom, panLevel, changeLevel, loadLevel, confirmNuke, cancelNuke };
     },
 });

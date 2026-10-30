@@ -21,6 +21,8 @@ export class Stage {
     private nativeForegroundCanvas: HTMLCanvasElement | null = null;
     private nativeGuiCanvas: HTMLCanvasElement | null = null;
     private nativeGuiForegroundCanvas: HTMLCanvasElement | null = null;
+    private minimapLemmings: (() => readonly { x: number; y: number }[]) | null = null;
+    private minimapDragging = false;
     public readonly onGraphicsError = new EventHandler<string>();
     /** True when the playfield is away from its starting scale. */
     public readonly onZoomChange = new EventHandler<boolean>();
@@ -51,7 +53,11 @@ export class Stage {
 
     /** Centre a playfield that does not fill the viewport; the panel stays fixed. */
     private contentOffset(stageImage: StageImageProperties): Position2D {
-        if (stageImage !== this.gameImgProps || !stageImage.display) return new Position2D(0, 0);
+        if (!stageImage.display) return new Position2D(0, 0);
+        if (stageImage === this.guiImgProps && this.minimapLemmings) {
+            return new Position2D(Math.max(0, Math.floor((stageImage.width - stageImage.display.getWidth() * stageImage.viewPoint.scale) / 2)), 0);
+        }
+        if (stageImage !== this.gameImgProps) return new Position2D(0, 0);
         const width = stageImage.display.getWidth(), height = stageImage.display.getHeight();
         if (!width || !height) return new Position2D(0, 0);
         const scale = stageImage.viewPoint.scale;
@@ -72,7 +78,7 @@ export class Stage {
 
     /** Do not target the edge of a level by tapping its empty margins. */
     private isInContent(stageImage: StageImageProperties, e: Position2D): boolean {
-        if (stageImage !== this.gameImgProps || !stageImage.display) return true;
+        if (!stageImage.display || (stageImage !== this.gameImgProps && !(stageImage === this.guiImgProps && this.minimapLemmings))) return true;
         const width = stageImage.display.getWidth(), height = stageImage.display.getHeight();
         if (!width || !height) return true;
         const offset = this.contentOffset(stageImage), scale = stageImage.viewPoint.scale;
@@ -87,6 +93,8 @@ export class Stage {
             if (!e) {
                 return;
             }
+
+            if (this.isOnMinimap(e)) return;
 
             const stageImage = this.getStageImageAt(e.x, e.y);
             if ((stageImage == null) || (stageImage.display == null) || !this.isInContent(stageImage, e)) return;
@@ -103,8 +111,14 @@ export class Stage {
                 return;
             }
 
+            if (this.isOnMinimap(e)) {
+                this.minimapDragging = true;
+                this.navigateMinimap(e);
+                return;
+            }
+
             const stageImage = this.getStageImageAt(e.x, e.y);
-            if ((stageImage == null) || (stageImage.display == null)) {
+            if ((stageImage == null) || (stageImage.display == null) || !this.isInContent(stageImage, e)) {
                 return;
             }
 
@@ -124,6 +138,11 @@ export class Stage {
 
         this.controller.onMouseUp.on((e) => {
             if (!e) {
+                return;
+            }
+
+            if (this.minimapDragging) {
+                this.minimapDragging = false;
                 return;
             }
 
@@ -150,6 +169,11 @@ export class Stage {
                 return;
             }
 
+            if (this.minimapDragging && e.button) {
+                this.navigateMinimap(e);
+                return;
+            }
+
             if (e.button) {
                 const stageImage = this.pressedImage;
                 if (stageImage == null) {
@@ -168,7 +192,7 @@ export class Stage {
             }
             else {
                 const stageImage = this.getStageImageAt(e.x, e.y);
-                if ((stageImage == null) || (stageImage.display == null)) {
+                if ((stageImage == null) || (stageImage.display == null) || !this.isInContent(stageImage, e)) {
                     return;
                 }
 
@@ -198,6 +222,7 @@ export class Stage {
     }
 
     private cancelPress(): void {
+        this.minimapDragging = false;
         if (this.pressedImage && this.pressedImage.display && this.pressPosition) {
             this.pressedImage.display.onMouseUp.trigger(this.calcPosition2D(this.pressedImage, this.pressPosition));
         }
@@ -214,6 +239,113 @@ export class Stage {
     public resetZoom(): void {
         const image = this.gameImgProps;
         this.updateViewPoint(image, 0, 0, (this.defaultZoom - image.viewPoint.scale) / 0.5);
+    }
+
+    /** Enable the Windows micro-map for a live game, or remove it on teardown. */
+    public setMinimapProvider(provider: (() => readonly { x: number; y: number }[]) | null): void {
+        this.minimapLemmings = provider;
+        this.minimapDragging = false;
+        this.updateWindowsPanelScale();
+        // Clear both margins when switching between centred Windows and DOS panels.
+        this.clear(this.guiImgProps);
+        this.redraw();
+    }
+
+    /** Fill more of the stage with the Windows panel while preserving its proportions. */
+    private updateWindowsPanelScale(): void {
+        if (!this.minimapLemmings) {
+            this.guiImgProps.viewPoint.scale = this.defaultZoom;
+            return;
+        }
+        const width = this.guiImgProps.display?.getWidth() || 320;
+        const height = this.guiImgProps.display?.getHeight() || 40;
+        this.guiImgProps.viewPoint.scale = Math.min(this.defaultZoom * 1.15,
+            this.guiImgProps.width / width, this.guiImgProps.height / height);
+    }
+
+    /** Move the camera by logical world pixels (also available to keyboard controls). */
+    public panGameBy(x: number, y = 0): void {
+        const scale = this.gameImgProps.viewPoint.scale;
+        this.updateViewPoint(this.gameImgProps, x * scale, y * scale, 0);
+    }
+
+    /** The map occupies the free part of the Windows bar, to the right of its icons. */
+    private minimapBounds(): { x: number; y: number; width: number; height: number } | null {
+        if (!this.minimapLemmings || !this.gameImgProps.display?.getWidth() || !this.gameImgProps.display.getHeight()) return null;
+        const panelX = this.guiImgProps.x + this.contentOffset(this.guiImgProps).x;
+        const x = panelX + 13 * 16 * this.guiImgProps.viewPoint.scale + 8;
+        const y = this.guiImgProps.y + 20 * this.guiImgProps.viewPoint.scale;
+        const panelWidth = Math.min(this.guiImgProps.width,
+            (this.guiImgProps.display?.getWidth() ?? 0) * this.guiImgProps.viewPoint.scale);
+        const width = panelWidth - (x - panelX) - 8;
+        const height = Math.min(20 * this.guiImgProps.viewPoint.scale, this.guiImgProps.height - (y - this.guiImgProps.y));
+        return width > 4 && height > 4 ? { x, y, width, height } : null;
+    }
+
+    private isOnMinimap(point: Position2D): boolean {
+        const bounds = this.minimapBounds();
+        return !!bounds && point.x >= bounds.x && point.x < bounds.x + bounds.width &&
+            point.y >= bounds.y && point.y < bounds.y + bounds.height;
+    }
+
+    private navigateMinimap(point: Position2D): void {
+        const bounds = this.minimapBounds();
+        const display = this.gameImgProps.display;
+        if (!bounds || !display) return;
+        const clamp = (value: number) => Math.max(0, Math.min(1, value));
+        this.revealGamePosition(clamp((point.x - bounds.x) / bounds.width) * display.getWidth(),
+            clamp((point.y - bounds.y) / bounds.height) * display.getHeight());
+    }
+
+    /** Paint the current scene, live lemmings and the yellow camera rectangle. */
+    private drawMinimap(): void {
+        const bounds = this.minimapBounds();
+        const image = this.gameImgProps;
+        if (!bounds || !image.cav || !image.display || !this.minimapLemmings) return;
+        const ctx = this.stageCav.getContext('2d');
+        if (!ctx) return;
+        const width = image.display.getWidth(), height = image.display.getHeight();
+        ctx.save();
+        ctx.beginPath();
+        ctx.rect(bounds.x, bounds.y, bounds.width, bounds.height);
+        ctx.clip();
+        ctx.fillStyle = '#000';
+        ctx.fillRect(bounds.x, bounds.y, bounds.width, bounds.height);
+        ctx.imageSmoothingEnabled = false;
+        // The already-composited Windows layer preserves the player's native
+        // terrain and animated objects; logical art remains a safe fallback.
+        const source = image.display.getNativeLayers() && this.nativeCanvas ? this.nativeCanvas : image.cav;
+        // The original micro-map renders the terrain in grey, with coloured
+        // lemmings and viewport drawn over it. Keep this processing local.
+        const supportsFilter = typeof ctx.filter === 'string';
+        if (supportsFilter) ctx.filter = 'grayscale(1)';
+        ctx.drawImage(source, 0, 0, source.width, source.height, bounds.x, bounds.y, bounds.width, bounds.height);
+        if (supportsFilter) {
+            ctx.filter = 'none';
+        } else {
+            ctx.globalCompositeOperation = 'saturation';
+            ctx.fillStyle = '#808080';
+            ctx.fillRect(bounds.x, bounds.y, bounds.width, bounds.height);
+            ctx.globalCompositeOperation = 'source-over';
+        }
+        ctx.fillStyle = '#00ff00';
+        for (const lemming of this.minimapLemmings()) {
+            if (lemming.x >= 0 && lemming.x < width && lemming.y >= 0 && lemming.y < height) {
+                ctx.fillRect(bounds.x + Math.floor(lemming.x / width * bounds.width),
+                    bounds.y + Math.floor(lemming.y / height * bounds.height), 2, 2);
+            }
+        }
+        const viewWidth = Math.min(width, image.width / image.viewPoint.scale);
+        const viewHeight = Math.min(height, image.height / image.viewPoint.scale);
+        const left = bounds.x + image.viewPoint.x / width * bounds.width;
+        const top = bounds.y + image.viewPoint.y / height * bounds.height;
+        const right = Math.min(bounds.x + bounds.width - 1, left + viewWidth / width * bounds.width);
+        const bottom = Math.min(bounds.y + bounds.height - 1, top + viewHeight / height * bounds.height);
+        ctx.strokeStyle = '#ffff00';
+        ctx.lineWidth = 1;
+        ctx.strokeRect(Math.floor(left) + .5, Math.floor(top) + .5,
+            Math.max(0, Math.floor(right - left) - 1), Math.max(0, Math.floor(bottom - top) - 1));
+        ctx.restore();
     }
 
     /** Follow and outline a keyboard-selected lemming without changing terrain. */
@@ -253,6 +385,8 @@ export class Stage {
         this.cancelPress();
         this.keyboardTarget = null;
         this.exampleHint = null;
+        this.minimapLemmings = null;
+        this.minimapDragging = false;
         this.nativeCanvas = null;
         this.nativeForegroundCanvas = null;
         this.nativeGuiCanvas = null;
@@ -294,6 +428,8 @@ export class Stage {
 
         this.draw(stageImage, gameImg);
 
+        if (stageImage === this.gameImgProps) this.drawMinimap();
+
     }
 
     private limitValue(minLimit: number, value: number, maxLimit: number): number {
@@ -320,6 +456,7 @@ export class Stage {
         this.guiImgProps.y = stageHeight - 100;
         this.guiImgProps.height = 100;
         this.guiImgProps.width = stageWidth;
+        this.updateWindowsPanelScale();
 
     }
 
@@ -354,7 +491,6 @@ export class Stage {
         if (this.guiImgProps.display) {
             return this.guiImgProps.display;
         }
-
         this.guiImgProps.display = new DisplayImage(this);
 
         return this.guiImgProps.display;
@@ -385,6 +521,7 @@ export class Stage {
                 this.draw(this.guiImgProps, guiImg);
             }
         }
+        this.drawMinimap();
     }
 
 

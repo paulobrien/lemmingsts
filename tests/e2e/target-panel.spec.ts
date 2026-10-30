@@ -20,6 +20,7 @@ for (const edition of ['dos', 'windows'] as const) {
     }
     await page.getByRole('link', { name: 'Play Lemmings' }).click()
     await page.getByRole('button', { name: 'Start level' }).click()
+    if (edition === 'windows') await expect(page.locator('.game-screen')).toHaveClass(/native-windows-playing/)
     const canvas = page.getByLabel('Lemmings level. Drag to move the view.')
     await expect(canvas).toHaveAttribute('aria-describedby', /game-objective/)
     const objective = page.locator('#game-objective')
@@ -28,20 +29,20 @@ for (const edition of ['dos', 'windows'] as const) {
     const objectiveText = await objective.textContent()
     // The left side of the original status row was blank before the target
     // was added. Check for green glyph pixels in that area of the canvas.
-    const targetPixels = () => canvas.evaluate((element: HTMLCanvasElement) => {
-      const { data } = element.getContext('2d')!.getImageData(0, 380, 210, 32)
+    const targetPixels = () => canvas.evaluate((element: HTMLCanvasElement, offset: number) => {
+      const { data } = element.getContext('2d')!.getImageData(offset, 380, 210, 32)
       const values: number[] = []
       for (let i = 0; i < data.length; i += 4) {
         const green = data[i + 1] > 100 && data[i + 1] > data[i] * 1.5 && data[i + 1] > data[i + 2] * 1.5
         values.push(green ? 1 : 0)
       }
       return values
-    })
+    }, edition === 'windows' ? 32 : 0)
     await expect.poll(async () => (await targetPixels()).reduce((sum, value) => sum + value, 0)).toBeGreaterThan(50)
     const initial = await targetPixels()
     const enterFullscreen = async () => {
       if (edition === 'windows') {
-        await pressGamePanel(canvas, testInfo.project.name !== 'desktop', 10)
+        await pressGamePanel(canvas, testInfo.project.name !== 'desktop', 10, 'windows')
         await expect(page.getByRole('region', { name: 'Paused' })).toBeVisible()
       }
       await page.getByRole('button', { name: 'Fullscreen', exact: true }).click()

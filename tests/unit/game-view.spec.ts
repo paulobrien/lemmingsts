@@ -22,7 +22,7 @@ const mock = vi.hoisted(() => {
     const display = { onMouseDown: event, clear: vi.fn(), redraw: vi.fn(), setScreenPosition: vi.fn(), setNativeSprites: vi.fn() };
     const graphicsError: { handler?: (message?: string) => void } = {};
     const zoomChange: { handler?: (changed?: boolean) => void } = {};
-    const stage = { getGameDisplay: vi.fn(() => display), getGuiDisplay: vi.fn(() => display), resetFade: vi.fn(), clearInputBindings: vi.fn(), dispose: vi.fn(), zoomGame: vi.fn(), resetZoom: vi.fn(), onZoomChange: { on: vi.fn((handler: (changed?: boolean) => void) => { zoomChange.handler = handler; }), off: vi.fn() }, setExampleHint: vi.fn(), setGraphicsMode: vi.fn(), setComparisonCanvases: vi.fn(), onGraphicsError: { on: vi.fn((handler: (message?: string) => void) => { graphicsError.handler = handler; }), off: vi.fn() } };
+    const stage = { setMinimapProvider: vi.fn(), panGameBy: vi.fn(), getGameDisplay: vi.fn(() => display), getGuiDisplay: vi.fn(() => display), resetFade: vi.fn(), clearInputBindings: vi.fn(), dispose: vi.fn(), zoomGame: vi.fn(), resetZoom: vi.fn(), onZoomChange: { on: vi.fn((handler: (changed?: boolean) => void) => { zoomChange.handler = handler; }), off: vi.fn() }, setExampleHint: vi.fn(), setGraphicsMode: vi.fn(), setComparisonCanvases: vi.fn(), onGraphicsError: { on: vi.fn((handler: (message?: string) => void) => { graphicsError.handler = handler; }), off: vi.fn() } };
     const skills = { getSkill: vi.fn((_type: number) => 10), getSelectedSkill: vi.fn(() => 1) };
     const endEvent: { handler?: (result: { state: number; survivorPercentage: number }) => void } = {};
     const soundEvent: { handler?: (effect: number) => void } = {};
@@ -231,6 +231,11 @@ describe('game view lifecycle', () => {
         expect(hints.classList.contains('windows-hidden-controls')).toBe(false);
         expect(screen.classList.contains('native-windows-playing')).toBe(false);
         expect(button(wrapper.container, 'Resume')).toBeDefined();
+        expect(mock.stage.setMinimapProvider).toHaveBeenCalledWith(expect.any(Function));
+        button(wrapper.container, 'Move view left').click();
+        button(wrapper.container, 'Move view right').click();
+        expect(mock.stage.panGameBy).toHaveBeenNthCalledWith(1, -200);
+        expect(mock.stage.panGameBy).toHaveBeenNthCalledWith(2, 200);
         wrapper.unmount();
     });
 
@@ -275,6 +280,7 @@ describe('game view lifecycle', () => {
             expect(wrapper.container.querySelector('.skill-section')!.classList.contains('windows-hidden-controls')).toBe(false);
             expect(wrapper.container.textContent).toContain('reimport your Windows ISO');
             expect(button(wrapper.container, 'Pause')).toBeDefined();
+            expect(mock.stage.setMinimapProvider).not.toHaveBeenCalledWith(expect.any(Function));
             wrapper.unmount();
         });
 

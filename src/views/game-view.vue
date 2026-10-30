@@ -36,12 +36,12 @@
       </canvas>
     </div>
     <p id="game-objective" class="visually-hidden" v-if="level && !loading && !error">Saved {{ savedCount }}. Save at least {{ level.needCount }} of {{ level.releaseCount }} lemmings.</p>
-    <p id="keyboard-instructions" class="visually-hidden">Use left and right arrows to choose a lemming, Enter to assign the selected skill, and Space to pause.</p>
+    <p id="keyboard-instructions" class="visually-hidden">Use left and right arrows to choose a lemming, Enter to assign the selected skill, and Space to pause. In Windows mode, use the pause-menu buttons to move the level view.</p>
     <p class="visually-hidden" role="status" aria-live="polite">{{ keyboardMessage }}</p>
 
     <button v-if="(fullscreenActive || nativeWindowsPanel) && playing && !paused" class="visually-hidden fullscreen-a11y-pause" type="button" aria-controls="pause-menu" @click="openPauseMenu">Pause game</button>
     <div id="game-controls" class="game-controls" :class="{ 'controls-open': fullscreenControlsOpen }">
-    <section v-if="playing && paused" id="pause-menu" class="pause-menu" role="region" aria-labelledby="pause-menu-heading">
+    <section v-if="playing && paused && !deferFullscreenControls" id="pause-menu" class="pause-menu" role="region" aria-labelledby="pause-menu-heading">
       <h2 id="pause-menu-heading" ref="pauseHeading" tabindex="-1">Paused</h2>
       <p>The game is paused. You can still select skills and inspect the level.</p>
       <div class="pause-actions">
@@ -49,6 +49,10 @@
         <button type="button" @click="restartFromMenu">Restart level</button>
         <router-link class="pause-link" to="/">Level selection</router-link>
         <button type="button" :aria-pressed="fullscreenActive" @click="toggleFullscreen">{{ fullscreenActive ? 'Exit fullscreen' : 'Fullscreen' }}</button>
+      </div>
+      <div v-if="nativeWindowsPanel" class="pause-actions" role="group" aria-label="Move the level view">
+        <button type="button" @click="panLevel(-1)">Move view left</button>
+        <button type="button" @click="panLevel(1)">Move view right</button>
       </div>
     </section>
     <div class="game-toolbar" :class="{ 'windows-hidden-controls': nativeWindowsPanel && playing && !paused }" aria-label="Level controls">

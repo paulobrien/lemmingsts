@@ -65,6 +65,7 @@ test('a failed Windows replacement preserves the installed files and remains pla
   await page.getByRole('link', { name: 'Play Lemmings' }).click()
   await expect(page.getByRole('button', { name: 'Start level' })).toBeEnabled()
   await page.getByRole('button', { name: 'Start level' }).click()
-  await pressGamePanel(page.getByLabel('Lemmings level. Drag to move the view.'), testInfo.project.name.startsWith('android-'), 10)
+  await expect(page.locator('.game-screen')).toHaveClass(/native-windows-playing/)
+  await pressGamePanel(page.getByLabel('Lemmings level. Drag to move the view.'), testInfo.project.name.startsWith('android-'), 10, 'windows')
   await expect(page.getByRole('region', { name: 'Paused' })).toBeVisible()
 })
