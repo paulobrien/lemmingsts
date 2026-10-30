@@ -1,5 +1,5 @@
 // @vitest-environment node
-// RUN_PRIVATE_GAME_TESTS=1 WINDOWS_LEMMINGS_ISO=/path/to/disc.iso npx vitest run tests/integration/windows-standalone-sprites-private.spec.ts
+// RUN_PRIVATE_GAME_TESTS=1 LEMMINGS_WINDOWS_ISO=/path/to/disc.iso npx vitest run tests/integration/windows-standalone-sprites-private.spec.ts
 // Tests read the player's local assets only; no game content is recorded.
 import { readFile } from 'node:fs/promises';
 import { indexedDB } from 'fake-indexeddb';
@@ -9,11 +9,11 @@ import { prepareStandaloneWindowsSprites } from '../../src/game/resources/standa
 import { prepareWindowsSprites } from '../../src/game/resources/prepare-windows-sprites';
 import { SpriteTypes } from '../../src/game/resources/sprite-types';
 
-it.skipIf(process.env.RUN_PRIVATE_GAME_TESTS !== '1' || !process.env.WINDOWS_LEMMINGS_ISO)(
+it.skipIf(process.env.RUN_PRIVATE_GAME_TESTS !== '1' || !process.env.LEMMINGS_WINDOWS_ISO)(
   'prepares game animation frames using only Windows ISO artwork', async () => {
     vi.stubGlobal('indexedDB', indexedDB);
     try {
-      const iso = await readFile(process.env.WINDOWS_LEMMINGS_ISO!);
+      const iso = await readFile(process.env.LEMMINGS_WINDOWS_ISO!);
       await importWindowsGraphics([new File([Uint8Array.from(iso)], 'windows.iso')]);
       const sprites = await prepareStandaloneWindowsSprites();
       const native = await prepareWindowsSprites(sprites);

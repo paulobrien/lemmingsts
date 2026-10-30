@@ -1,5 +1,5 @@
 // @vitest-environment node
-// Opt in with RUN_PRIVATE_GAME_TESTS=1 WINDOWS_LEMMINGS_ISO=/path/to/Windows.iso.
+// Opt in with RUN_PRIVATE_GAME_TESTS=1 LEMMINGS_WINDOWS_ISO=/path/to/Windows.iso.
 // Player-owned files are inspected locally and are never committed.
 import { readFile } from 'node:fs/promises';
 import { expect, it, vi } from 'vitest';
@@ -10,12 +10,12 @@ import { LevelReader } from '../../src/game/resources/lemmings/level-reader';
 import { OddTableReader } from '../../src/game/resources/lemmings/odd-table-reader';
 import { parseWindowsLevelDatabase, readWindowsLevelRecord } from '../../src/game/resources/windows-level-database';
 
-it.skipIf(process.env.RUN_PRIVATE_GAME_TESTS !== '1' || !process.env.WINDOWS_LEMMINGS_ISO)(
+it.skipIf(process.env.RUN_PRIVATE_GAME_TESTS !== '1' || !process.env.LEMMINGS_WINDOWS_ISO)(
   'reads the complete Windows original-game hierarchy and matches the DOS level records and starting conditions', async () => {
     vi.spyOn(console, 'log').mockImplementation(() => undefined);
     vi.spyOn(console, 'dir').mockImplementation(() => undefined);
     try {
-      const disc = await readFile(process.env.WINDOWS_LEMMINGS_ISO!);
+      const disc = await readFile(process.env.LEMMINGS_WINDOWS_ISO!);
       const selected = await readWindowsGameIso(new File([Uint8Array.from(disc)], 'disc.iso'));
       const files = new Map(await Promise.all(selected.map(async file => [file.name, await file.arrayBuffer()] as const)));
       const groups = parseWindowsLevelDatabase(files.get('LEMMINGS.DB')!);

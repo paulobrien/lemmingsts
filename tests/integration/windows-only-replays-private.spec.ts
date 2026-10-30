@@ -1,5 +1,5 @@
 // @vitest-environment node
-// Opt in: RUN_PRIVATE_GAME_TESTS=1 WINDOWS_LEMMINGS_ISO=/path/to/Windows.iso
+// Opt in: RUN_PRIVATE_GAME_TESTS=1 LEMMINGS_WINDOWS_ISO=/path/to/Windows.iso
 // The only imported game data is the user-supplied Windows ISO.
 import { readFile } from 'node:fs/promises';
 import { indexedDB } from 'fake-indexeddb';
@@ -22,14 +22,14 @@ function windowsReplay(group: number, dosIndex: number, replay: string): string 
   return replay;
 }
 
-it.skipIf(process.env.RUN_PRIVATE_GAME_TESTS !== '1' || !process.env.WINDOWS_LEMMINGS_ISO)(
+it.skipIf(process.env.RUN_PRIVATE_GAME_TESTS !== '1' || !process.env.LEMMINGS_WINDOWS_ISO)(
   'runs the existing recorded solutions on every corresponding Windows-only level', async () => {
     vi.stubGlobal('indexedDB', indexedDB);
     vi.stubGlobal('window', { atob });
     vi.spyOn(console, 'log').mockImplementation(() => undefined);
     vi.spyOn(console, 'dir').mockImplementation(() => undefined);
     try {
-      const data = await readFile(process.env.WINDOWS_LEMMINGS_ISO!);
+      const data = await readFile(process.env.LEMMINGS_WINDOWS_ISO!);
       const iso = new File([Uint8Array.from(data)], 'windows.iso');
       await importWindowsGame([iso]);
       await importWindowsGraphics([iso]);

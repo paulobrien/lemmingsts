@@ -1,5 +1,5 @@
 // @vitest-environment node
-// RUN_PRIVATE_GAME_TESTS=1 WINDOWS_LEMMINGS_ISO=/path/to/disc.iso npx vitest run tests/integration/windows-level-art-private.spec.ts
+// RUN_PRIVATE_GAME_TESTS=1 LEMMINGS_WINDOWS_ISO=/path/to/disc.iso npx vitest run tests/integration/windows-level-art-private.spec.ts
 // Player-owned game data is used locally; no original files are committed.
 import { readFile, readdir } from 'node:fs/promises';
 import { indexedDB } from 'fake-indexeddb';
@@ -11,7 +11,7 @@ import { readWindowsGameIso, readWindowsGraphicsIso } from '../../src/game/resou
 import { parseWindowsLevelDatabase, readWindowsLevelRecord } from '../../src/game/resources/windows-level-database';
 import { createWindowsLevel } from '../../src/game/resources/windows-level-art';
 
-it.skipIf(process.env.RUN_PRIVATE_GAME_TESTS !== '1' || !process.env.WINDOWS_LEMMINGS_ISO)(
+it.skipIf(process.env.RUN_PRIVATE_GAME_TESTS !== '1' || !process.env.LEMMINGS_WINDOWS_ISO)(
   'constructs all Windows levels with the same logical terrain and object masks as matching DOS levels', async () => {
     vi.spyOn(console, 'log').mockImplementation(() => undefined);
     vi.spyOn(console, 'dir').mockImplementation(() => undefined);
@@ -20,7 +20,7 @@ it.skipIf(process.env.RUN_PRIVATE_GAME_TESTS !== '1' || !process.env.WINDOWS_LEM
       const names = await readdir('dos/lemmings');
       await importLemmingsFiles(await Promise.all(names.map(async name =>
         new File([Uint8Array.from(await readFile(`dos/lemmings/${name}`))], name))));
-      const disc = await readFile(process.env.WINDOWS_LEMMINGS_ISO!);
+      const disc = await readFile(process.env.LEMMINGS_WINDOWS_ISO!);
       const image = new File([Uint8Array.from(disc)], 'disc.iso');
       const selection = [...await readWindowsGameIso(image), ...await readWindowsGraphicsIso(image)];
       const files = new Map(await Promise.all(selection.map(async file => [file.name, await file.arrayBuffer()] as const)));

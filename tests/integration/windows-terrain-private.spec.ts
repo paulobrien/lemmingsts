@@ -1,5 +1,5 @@
 // @vitest-environment node
-// Opt-in only: RUN_PRIVATE_GAME_TESTS=1 WINDOWS_LEMMINGS_ISO=/path/to/Windows.iso npx vitest run tests/integration/windows-terrain-private.spec.ts
+// Opt-in only: RUN_PRIVATE_GAME_TESTS=1 LEMMINGS_WINDOWS_ISO=/path/to/Windows.iso npx vitest run tests/integration/windows-terrain-private.spec.ts
 // Original game data is read locally and is never committed or uploaded.
 import { readFile, readdir } from 'node:fs/promises';
 import { resolve } from 'node:path';
@@ -15,7 +15,7 @@ import { SpriteTypes } from '../../src/game/resources/sprite-types';
 import { decodeWindowsPalette, decodeWindowsSprites } from '../../src/game/resources/windows-graphics';
 import { mapWindowsObjectSprites } from '../../src/game/resources/windows-object-sprites';
 
-it.skipIf(process.env.RUN_PRIVATE_GAME_TESTS !== '1' || !process.env.WINDOWS_LEMMINGS_ISO)(
+it.skipIf(process.env.RUN_PRIVATE_GAME_TESTS !== '1' || !process.env.LEMMINGS_WINDOWS_ISO)(
   'prepares every compatible original level from local Windows and DOS files', async () => {
     vi.stubGlobal('indexedDB', indexedDB);
     vi.stubGlobal('window', { atob });
@@ -26,7 +26,7 @@ it.skipIf(process.env.RUN_PRIVATE_GAME_TESTS !== '1' || !process.env.WINDOWS_LEM
       const names = await readdir(directory);
       await importLemmingsFiles(await Promise.all(names.map(async name =>
         new File([Uint8Array.from(await readFile(resolve(directory, name)))], name))));
-      const iso = await readFile(process.env.WINDOWS_LEMMINGS_ISO!);
+      const iso = await readFile(process.env.LEMMINGS_WINDOWS_ISO!);
       await importWindowsGraphics([new File([Uint8Array.from(iso)], 'windows-lemmings.iso')]);
       const configuration = await readFile('public/data/config.json', 'utf8');
       vi.stubGlobal('fetch', async () => new Response(configuration));

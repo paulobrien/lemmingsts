@@ -1,5 +1,5 @@
 // @vitest-environment jsdom
-// RUN_PRIVATE_GAME_TESTS=1 WINDOWS_LEMMINGS_ISO=/path/to/disc.iso npx vitest run tests/integration/windows-only-home-private.spec.ts
+// RUN_PRIVATE_GAME_TESTS=1 LEMMINGS_WINDOWS_ISO=/path/to/disc.iso npx vitest run tests/integration/windows-only-home-private.spec.ts
 // Player-owned files are imported into an in-memory browser database only.
 import { readFile } from 'node:fs/promises';
 import { File as NodeFile } from 'node:buffer';
@@ -17,7 +17,7 @@ vi.mock('@/offline-readiness', async () => {
   const { ref } = await import('vue'); return { offlineReadiness: ref('ready') };
 });
 
-it.skipIf(process.env.RUN_PRIVATE_GAME_TESTS !== '1' || !process.env.WINDOWS_LEMMINGS_ISO)(
+it.skipIf(process.env.RUN_PRIVATE_GAME_TESTS !== '1' || !process.env.LEMMINGS_WINDOWS_ISO)(
   'enables Windows play after importing only a Windows ISO in a fresh browser', async () => {
     localStorage.clear();
     vi.stubGlobal('indexedDB', indexedDB); vi.stubGlobal('File', NodeFile);
@@ -33,7 +33,7 @@ it.skipIf(process.env.RUN_PRIVATE_GAME_TESTS !== '1' || !process.env.WINDOWS_LEM
     app.component('RouterLink', defineComponent({ setup: (_props, { slots }) => () => h('a', slots.default?.()) }));
     try {
       app.mount(container);
-      const disc = await readFile(process.env.WINDOWS_LEMMINGS_ISO!);
+      const disc = await readFile(process.env.LEMMINGS_WINDOWS_ISO!);
       const input = container.querySelector<HTMLInputElement>('input[accept*=".iso"]')!;
       Object.defineProperty(input, 'files', { configurable: true, value: [new NodeFile([disc], 'windows.iso')] });
       input.dispatchEvent(new Event('change', { bubbles: true }));
