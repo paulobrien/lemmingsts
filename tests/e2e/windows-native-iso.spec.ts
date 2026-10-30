@@ -52,3 +52,20 @@ test('plays a complete level using Windows artwork from an ISO', async ({ page }
   await expect(page.getByRole('status').filter({ hasText: 'Level complete!' })).toBeVisible({ timeout: 30_000 })
   expect(errors).toEqual([])
 })
+
+test('reopens and starts the Windows game offline after importing only the ISO', async ({ page }, testInfo) => {
+  test.skip(testInfo.project.name !== 'desktop' || process.env.RUN_PRIVATE_GAME_TESTS !== '1' || !process.env.LEMMINGS_WINDOWS_ISO,
+    'Requires desktop, local Windows ISO and private game tests')
+  await page.goto('/')
+  await page.locator('input[accept*=".iso"]').setInputFiles(process.env.LEMMINGS_WINDOWS_ISO!)
+  await expect(page.getByText('Windows audio, graphics and level data added to this device.')).toBeVisible({ timeout: 30_000 })
+  await expect(page.getByText(/The app shell is ready offline/)).toBeVisible()
+  await page.evaluate(() => navigator.serviceWorker.ready)
+  await page.context().setOffline(true)
+  await page.reload()
+  await expect(page.getByLabel('Game mode')).toHaveValue('windows')
+  await page.getByRole('link', { name: 'Play Lemmings' }).click()
+  await expect(page.getByRole('button', { name: 'Start level' })).toBeEnabled()
+  await page.getByRole('button', { name: 'Start level' }).click()
+  await expect(page.getByRole('button', { name: 'Pause', exact: true })).toBeVisible()
+})
