@@ -19,17 +19,17 @@ import { Level } from '@/game/resources/level';
 import { prepareWindowsTerrain } from '@/game/resources/prepare-windows-terrain';
 import { prepareWindowsSprites } from '@/game/resources/prepare-windows-sprites';
 import { prepareWindowsObjects } from '@/game/resources/prepare-windows-objects';
+import { prepareWindowsPanel } from '@/game/resources/windows-panel';
 import { AudioPlayer } from '@/game/resources/sound/audio-player';
 import { SoundEffectsPlayer } from '@/game/resources/sound/sound-effects-player';
 import { VoiceEffectsPlayer } from '@/game/resources/sound/voice-effects-player';
 import { WindowsMidiPlayer, WINDOWS_MIDI_TRACKS } from '@/game/resources/sound/windows-midi-player';
 import { getWindowsAudioFile } from '@/game/resources/file/game-file-store';
-import { readAudioStyle } from '@/game/audio-style';
+import { readGameMode } from '@/game/game-mode';
 import { Stage } from '@/game/view/stage';
 import { KeyboardTargeting } from '@/game/view/keyboard-targeting';
 import { assignPlayerSkill } from '@/game/view/player-assignment';
 import { useGameFullscreen } from './use-game-fullscreen';
-import { readGraphicsMode, saveGraphicsMode, type GraphicsMode } from './graphics-preference';
 import './game-fullscreen.css';
 
 const skillButtons = [
@@ -54,13 +54,10 @@ export default defineComponent({
         const pauseControl = ref<HTMLButtonElement | null>(null);
         const pauseHeading = ref<HTMLElement | null>(null);
         const gameCanvas = ref<HTMLCanvasElement | null>(null);
-        const originalPreview = ref<HTMLCanvasElement | null>(null);
-        const enhancedPreview = ref<HTMLCanvasElement | null>(null);
-        const graphicsMode = ref<GraphicsMode>(readGraphicsMode());
-        const comparingGraphics = ref(false);
+        const gameMode = ref(readGameMode());
         const graphicsError = ref('');
         const graphicsNotice = ref('');
-        const graphicsBusy = ref(false);
+        const windowsSkillIcons = ref<string[]>([]);
         const zoomChanged = ref(false);
         const { fullscreenActive, fullscreenMode, toggleFullscreen } = useGameFullscreen(gameScreen);
         const fullscreenControlsOpen = ref(false);
@@ -179,13 +176,11 @@ export default defineComponent({
         let effectGeneration = 0;
         let disposed = false;
         let loadGeneration = 0;
-        let graphicsGeneration = 0;
-        let appliedGraphicsMode: GraphicsMode = 'original';
         let musicGeneration = 0;
         let exampleGeneration = 0;
 
         const title = computed(() => level.value?.name || 'Loading level');
-        const canPlay = computed(() => !!level.value && !loading.value && !graphicsBusy.value && !error.value);
+        const canPlay = computed(() => !!level.value && !loading.value && !error.value);
         const availableHints = computed(() => gameType.value === GameTypes.LEMMINGS
             ? getTestedSolution(groupIndex.value, levelIndex.value)?.hints ?? [] : []);
         const hints = computed(() => hintCompatibility.value === 'verified' ? availableHints.value : []);
@@ -254,8 +249,7 @@ export default defineComponent({
         }
 
         function disposeGame() {
-            graphicsGeneration++;
-            graphicsBusy.value = false;
+            windowsSkillIcons.value = [];
             keyboardTargeting?.reset();
             effectGeneration++;
             windowsEffects.stop();
@@ -314,16 +308,14 @@ export default defineComponent({
                     const display = stage.getGameDisplay();
                     stage.resetFade();
                     display.clear();
-                    stage.setGraphicsMode(graphicsMode.value === 'windows' ? 'original' : graphicsMode.value);
-                    appliedGraphicsMode = graphicsMode.value;
                     graphicsNotice.value = '';
-                    if (graphicsMode.value === 'windows') {
+                    if (gameMode.value === 'windows') {
                         const prepared = await prepareWindowsTerrain(nextLevel);
-                        if (disposed || generation !== loadGeneration || graphicsMode.value !== 'windows') return;
-                        if (prepared.status === 'ready') nextLevel.setWindowsTerrain(prepared.layer);
-                        else graphicsNotice.value = prepared.status === 'special'
-                            ? 'This special level uses original DOS graphics.'
-                            : 'Windows artwork is unavailable. This level uses original DOS graphics.';
+                        if (disposed || generation !== loadGeneration || gameMode.value !== 'windows') return;
+                        if (prepared.status === 'ready') {
+                            nextLevel.setWindowsTerrain(prepared.layer);
+                            if (prepared.usesDosBackground) graphicsNotice.value = 'This special level uses its DOS background with Windows characters and objects.';
+                        } else graphicsNotice.value = 'Windows artwork is unavailable. This level uses original DOS graphics.';
                     }
                     nextLevel.render(display);
                     display.setScreenPosition(nextLevel.screenPositionX, 0);
@@ -338,7 +330,7 @@ export default defineComponent({
 
         async function start() {
             if (!canPlay.value || !stage || loading.value) return;
-            if (soundEnabled.value && readAudioStyle() === 'windows') windowsEffects.prime();
+            if (soundEnabled.value && gameMode.value === 'windows') windowsEffects.prime();
             if (game) {
                 if (!finished.value) {
                     game.getGameTimer().continue();
@@ -356,16 +348,20 @@ export default defineComponent({
                     nextGame.stop();
                     return;
                 }
-                if (graphicsMode.value === 'windows' && level.value?.getWindowsTerrain()) {
-                    const [terrain, sprites, objects] = await Promise.all([
-                        prepareWindowsTerrain(nextGame.level), prepareWindowsSprites(nextGame.getLemmingsSprite()), prepareWindowsObjects(nextGame.level),
+                if (gameMode.value === 'windows') {
+                    const [terrain, sprites, objects, panel] = await Promise.all([
+                        level.value?.getWindowsTerrain() ? prepareWindowsTerrain(nextGame.level) : Promise.resolve(null),
+                        level.value?.getWindowsTerrain() ? prepareWindowsSprites(nextGame.getLemmingsSprite()) : Promise.resolve(null),
+                        level.value?.getWindowsTerrain() ? prepareWindowsObjects(nextGame.level) : Promise.resolve(null),
+                        prepareWindowsPanel(),
                     ]);
                     if (disposed || generation !== loadGeneration || !stage) { nextGame.stop(); return; }
-                    if (terrain.status === 'ready' && sprites) {
+                    if (panel) { nextGame.setWindowsPanel(panel.panel); windowsSkillIcons.value = panel.skillIcons; }
+                    if (terrain?.status === 'ready' && sprites) {
                         nextGame.level.setWindowsTerrain(terrain.layer);
                         if (objects) for (const [frame, image] of objects) sprites.set(frame, image);
                         stage.getGameDisplay().setNativeSprites(sprites);
-                    } else {
+                    } else if (level.value?.getWindowsTerrain()) {
                         stage.getGameDisplay().setNativeSprites(null);
                         graphicsNotice.value = 'Windows artwork is unavailable. This level uses original DOS graphics.';
                     }
@@ -390,7 +386,7 @@ export default defineComponent({
                 game.onSoundEffect.on(effect => {
                     if (effect === undefined || !soundEnabled.value || !playing.value || paused.value) return;
                     const generation = ++effectGeneration;
-                    if (readAudioStyle() !== 'windows') { windowsEffects.cancel(); void effects?.play(effect); return; }
+                    if (gameMode.value !== 'windows') { windowsEffects.cancel(); void effects?.play(effect); return; }
                     effects?.stop();
                     windowsEffects.cancel();
                     void windowsEffects.play(effect).then(played => {
@@ -507,73 +503,11 @@ export default defineComponent({
             if (!saved) saveWarning.value = 'Progress or preferences could not be saved on this device.';
         }
 
-        function setGraphicsMode(mode: GraphicsMode) {
-            if (loading.value || graphicsBusy.value) return;
-            graphicsMode.value = mode;
-            graphicsError.value = '';
-            noteSaveResult(saveGraphicsMode(mode));
-            if (playing.value || finished.value) {
-                graphicsNotice.value = mode === appliedGraphicsMode ? '' : 'The new graphics style will apply when you restart or change levels.';
-                return;
-            }
-            const generation = ++graphicsGeneration;
-            const currentLevel = level.value as Level | null;
-            if (!currentLevel || !stage) return;
-            graphicsNotice.value = '';
-            stage.getGameDisplay().setNativeSprites(null);
-            if (mode !== 'windows') {
-                currentLevel.setWindowsTerrain(undefined);
-                appliedGraphicsMode = mode;
-                stage.setGraphicsMode(mode);
-                currentLevel.render(stage.getGameDisplay());
-                stage.getGameDisplay().redraw();
-                return;
-            }
-            graphicsBusy.value = true;
-            void prepareWindowsTerrain(currentLevel).then(prepared => {
-                if (disposed || generation !== graphicsGeneration || level.value !== currentLevel || graphicsMode.value !== 'windows' || !stage) return;
-                if (prepared.status === 'ready') currentLevel.setWindowsTerrain(prepared.layer);
-                else {
-                    currentLevel.setWindowsTerrain(undefined);
-                    graphicsNotice.value = prepared.status === 'special'
-                        ? 'This special level uses original DOS graphics.'
-                        : 'Windows artwork is unavailable. Import the Windows graphics on the home screen.';
-                }
-                appliedGraphicsMode = 'windows';
-                stage.setGraphicsMode('original');
-                currentLevel.render(stage.getGameDisplay());
-                stage.getGameDisplay().redraw();
-            }).catch(() => {
-                if (!disposed && generation === graphicsGeneration) graphicsNotice.value = 'Windows artwork could not be loaded. Original graphics remain available.';
-            }).finally(() => { if (generation === graphicsGeneration) graphicsBusy.value = false; });
-        }
-
         function onGraphicsError(message?: string) {
-            graphicsGeneration++;
-            graphicsBusy.value = false;
-            graphicsMode.value = 'original';
-            appliedGraphicsMode = 'original';
             level.value?.setWindowsTerrain(undefined);
             game?.level.setWindowsTerrain(undefined);
             stage?.getGameDisplay().setNativeSprites(null);
-            graphicsError.value = message || 'Enhanced graphics are unavailable. Original graphics have been restored.';
-            noteSaveResult(saveGraphicsMode('original'));
-            // Stage has already disconnected failed previews before emitting this event.
-            comparingGraphics.value = false;
-        }
-
-        async function toggleGraphicsComparison() {
-            comparingGraphics.value = !comparingGraphics.value;
-            if (!comparingGraphics.value) {
-                stage?.setComparisonCanvases(null, null);
-                return;
-            }
-            await nextTick();
-            if (!disposed && comparingGraphics.value) stage?.setComparisonCanvases(originalPreview.value, enhancedPreview.value);
-        }
-
-        function onDisplaySettingsToggle(event: Event) {
-            if (!(event.target as HTMLDetailsElement).open && comparingGraphics.value) void toggleGraphicsComparison();
+            graphicsError.value = message || 'Windows artwork is unavailable. DOS graphics have been restored.';
         }
 
         function setSpeed(value: number) {
@@ -591,7 +525,7 @@ export default defineComponent({
             stopMusic();
             const generation = musicGeneration;
             try {
-                if (readAudioStyle() === 'windows') {
+                if (gameMode.value === 'windows') {
                     const name = WINDOWS_MIDI_TRACKS[levelIndex.value % WINDOWS_MIDI_TRACKS.length];
                     const player = new WindowsMidiPlayer(async () => (await getWindowsAudioFile(name)) ?? null);
                     player.prime();
@@ -658,7 +592,7 @@ export default defineComponent({
             soundEnabled.value = !soundEnabled.value;
             noteSaveResult(saveSettings({ speed: speed.value, musicEnabled: musicEnabled.value, soundEnabled: soundEnabled.value }));
             if (!soundEnabled.value) stopEffects();
-            else if (readAudioStyle() === 'windows') windowsEffects.prime();
+            else if (gameMode.value === 'windows') windowsEffects.prime();
         }
 
         function stopEffects() {
@@ -742,7 +676,6 @@ export default defineComponent({
             stage = new Stage(gameCanvas.value);
             stage.onGraphicsError.on(onGraphicsError);
             stage.onZoomChange.on(onZoomChange);
-            stage.setGraphicsMode(graphicsMode.value === 'windows' ? 'original' : graphicsMode.value);
             keyboardTargeting = new KeyboardTargeting(gameCanvas.value, stage, () => game, assignPlayerSkill, message => { keyboardMessage.value = message; });
             document.addEventListener('visibilitychange', onVisibilityChange);
             window.addEventListener('keydown', onKeyDown);
@@ -755,7 +688,6 @@ export default defineComponent({
             clearExample();
             disposeGame();
             stopMusic();
-            stage?.setComparisonCanvases(null, null);
             stage?.onGraphicsError.off(onGraphicsError);
             stage?.onZoomChange.off(onZoomChange);
             keyboardTargeting?.dispose();
@@ -764,7 +696,7 @@ export default defineComponent({
             window.removeEventListener('keydown', onKeyDown);
         });
 
-        return { gameScreen, fullscreenEnterButton, startControl, gameCanvas, beginCanvasGesture, finishCanvasGesture, cancelCanvasGesture, loseCanvasCapture, finishCanvasGestureFromClick, originalPreview, enhancedPreview, graphicsMode, comparingGraphics, graphicsError, graphicsNotice, graphicsBusy, setGraphicsMode, toggleGraphicsComparison, onDisplaySettingsToggle, pauseControl, pauseHeading, fullscreenActive, fullscreenControlsOpen, fullscreenMode, toggleFullscreen,
+        return { gameScreen, fullscreenEnterButton, startControl, gameCanvas, beginCanvasGesture, finishCanvasGesture, cancelCanvasGesture, loseCanvasCapture, finishCanvasGestureFromClick, gameMode, graphicsError, graphicsNotice, windowsSkillIcons, pauseControl, pauseHeading, fullscreenActive, fullscreenControlsOpen, fullscreenMode, toggleFullscreen,
             level, levelIndex, groupName, title, error, loading, playing, paused,
             finished, levelSucceeded, nextLevelAvailable, savedCount, saveWarning, assignmentMessage, keyboardMessage, resultMessage, hints, availableHints, hintCompatibility, visibleHintCount, exampleMove, exampleBusy, exampleError, exampleSkillName, exampleClock, hideHints, showExample, clearExample, nukeArmed, nukeExecuted, selectedSkill, skillCounts, releaseRate, gameTime, speed,
             musicEnabled, soundEnabled, skillButtons, canPlay, start, openPauseMenu, resumeFromMenu, restartFromMenu, selectSkill, changeReleaseRate,

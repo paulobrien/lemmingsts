@@ -1,5 +1,5 @@
 <template>
-  <main class="game-page">
+  <main class="game-page" :class="{ 'windows-mode': gameMode === 'windows' }">
     <header class="game-header" :inert="fullscreenActive">
       <div class="level-heading">
         <p class="level-context">{{ groupName }} <span>Level {{ levelIndex + 1 }}</span></p>
@@ -26,6 +26,7 @@
     <p v-else class="hint">Tap a skill, then tap a lemming. Drag the level to look around.</p>
     <p v-if="saveWarning" class="notice error" role="status">{{ saveWarning }}</p>
     <p v-if="graphicsError" class="notice error" role="status">{{ graphicsError }}</p>
+    <p v-else-if="graphicsNotice" class="notice" role="status">{{ graphicsNotice }}</p>
 
     <div class="canvas-frame">
       <canvas ref="gameCanvas" width="800" height="480" tabindex="0" aria-label="Lemmings level. Drag to move the view." aria-describedby="keyboard-instructions" @pointerdown.capture="beginCanvasGesture" @pointerup.capture="finishCanvasGesture" @pointercancel.capture="cancelCanvasGesture" @lostpointercapture="loseCanvasCapture" @click.capture="finishCanvasGestureFromClick">
@@ -69,34 +70,12 @@
 
     <p v-if="fullscreenMode === 'expanded'" class="fullscreen-status" role="status">Expanded view (browser fullscreen unavailable)</p>
 
-    <details class="display-settings" @toggle="onDisplaySettingsToggle">
-      <summary>Display settings</summary>
-      <fieldset :key="graphicsError">
-        <legend>Graphics style</legend>
-        <label><input type="radio" name="graphics-mode" value="original" :disabled="loading || graphicsBusy" :checked="graphicsMode === 'original'" @change="setGraphicsMode('original')"> Original</label>
-        <label><input type="radio" name="graphics-mode" value="enhanced" :disabled="loading || graphicsBusy" :checked="graphicsMode === 'enhanced'" @change="setGraphicsMode('enhanced')"> Enhanced</label>
-        <label><input type="radio" name="graphics-mode" value="windows" :disabled="loading || graphicsBusy" :checked="graphicsMode === 'windows'" @change="setGraphicsMode('windows')"> Windows artwork (experimental)</label>
-      </fieldset>
-      <p>Graphics affect appearance only. Level rules and physics stay the same. This device-specific setting is not included in progress backups.</p>
-      <p>Windows artwork uses imported Windows terrain and lemmings; some animations, objects and special levels use DOS graphics. Changes during play apply on restart.</p>
-      <p v-if="graphicsBusy" role="status">Preparing Windows artwork…</p>
-      <p v-else-if="graphicsNotice" role="status">{{ graphicsNotice }}</p>
-      <p>Enhanced graphics and live comparison are experimental and may slow play, especially at high speed or on phones.</p>
-      <button type="button" :disabled="!canPlay && !comparingGraphics" :aria-expanded="comparingGraphics" aria-controls="graphics-comparison" @click="toggleGraphicsComparison">{{ comparingGraphics ? 'Close comparison' : 'Compare styles' }}</button>
-      <section v-if="comparingGraphics" id="graphics-comparison" aria-label="Graphics comparison">
-        <p>Both previews show the same moment and view. Scroll sideways on a small screen. Play using the main game above.</p>
-        <div class="comparison-grid" role="region" aria-label="Scrollable graphics previews" tabindex="0" data-game-shortcuts-ignore>
-          <figure><figcaption>Original</figcaption><canvas ref="originalPreview" width="800" height="480" aria-hidden="true"></canvas></figure>
-          <figure><figcaption>Enhanced</figcaption><canvas ref="enhancedPreview" width="800" height="480" aria-hidden="true"></canvas></figure>
-        </div>
-      </section>
-    </details>
-
     <section v-if="playing || finished" class="skill-section" aria-label="Lemming skills">
       <div class="skill-grid">
-        <button v-for="skill in skillButtons" :key="skill.type" type="button" class="skill-button"
+        <button v-for="(skill, index) in skillButtons" :key="skill.type" type="button" class="skill-button"
           :class="{ selected: selectedSkill === skill.type }" :aria-pressed="selectedSkill === skill.type"
           :disabled="finished || !skillCounts[skill.type]" @click="selectSkill(skill.type)">
+          <img v-if="gameMode === 'windows' && windowsSkillIcons[index]" class="windows-skill-icon" :src="windowsSkillIcons[index]" alt="" aria-hidden="true">
           <span>{{ skill.name }}</span><strong>{{ skillCounts[skill.type] ?? 0 }}</strong>
         </button>
       </div>
@@ -173,24 +152,12 @@ button.quiet[aria-pressed="true"] { border-color: var(--color-accent); color: va
 .pause-link { display: inline-flex; align-items: center; min-height: 44px; box-sizing: border-box; padding: .55rem .8rem; border: 2px solid; border-color: var(--color-edge-light) var(--color-edge-dark) var(--color-edge-dark) var(--color-edge-light); border-radius: 2px; color: var(--color-ink); background: var(--color-panel-raised); text-decoration: none; }
 .pause-link:hover { background: var(--color-panel-raised); box-shadow: inset 0 0 0 1px var(--color-edge-light); }.pause-link:focus-visible { outline: 2px solid var(--color-focus); outline-offset: 2px; }
 .fullscreen-status { color: var(--color-muted); font-size: .85rem; }
-.display-settings { margin-top: .75rem; padding: .6rem; border: 2px solid; border-color: var(--color-edge) var(--color-edge-dark) var(--color-edge-dark) var(--color-edge); background: var(--color-panel); }
-.display-settings summary { cursor: pointer; min-height: 44px; display: flex; align-items: center; font-weight: 600; }
-.display-settings summary::before { content: '▸'; margin-right: .5rem; }.display-settings[open] summary::before { content: '▾'; }
-.display-settings summary:focus-visible, .display-settings input:focus-visible { outline: 2px solid var(--color-focus); outline-offset: 2px; }
-.display-settings fieldset { display: flex; flex-wrap: wrap; gap: .5rem; border: 0; margin: .3rem 0; padding: 0; }
-.display-settings legend { padding: 0; font-weight: 600; }
-.display-settings label { display: inline-flex; align-items: center; gap: .45rem; min-height: 44px; padding: 0 .5rem; }
-.display-settings input { width: 1.1rem; height: 1.1rem; accent-color: var(--color-accent); }
-.display-settings p { margin: .4rem 0 .6rem; color: var(--color-muted); }
-.comparison-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: .5rem; overflow-x: auto; }
-.comparison-grid:focus-visible { outline: 2px solid var(--color-focus); outline-offset: 2px; }
-.comparison-grid figure { margin: 0; min-width: 0; }.comparison-grid figcaption { margin-bottom: .3rem; font-weight: 600; }
-.comparison-grid canvas { background: var(--color-black); border: 2px solid var(--color-edge); box-sizing: border-box; touch-action: auto; }
 .speed { display: flex; align-items: center; gap: .4rem; }
 .time { margin-left: auto; padding: .3rem .45rem; color: var(--color-accent); background: var(--color-edge-dark); font-family: var(--font-body); font-variant-numeric: tabular-nums; }
 .skill-section { margin-top: .75rem; padding: .6rem 0; border: 0; border-bottom: 1px solid var(--color-edge-dark); background: var(--color-clear); }
 .skill-grid { display: grid; grid-template-columns: repeat(8, minmax(0, 1fr)); gap: .4rem; }
 .skill-button { display: flex; flex-direction: column; align-items: center; gap: .15rem; padding: .4rem .15rem; min-width: 0; font-size: .8rem; }
+.windows-skill-icon { width: 32px; height: 40px; image-rendering: pixelated; }
 .skill-button strong { font-family: var(--font-body); font-size: 1rem; }
 .skill-button.selected { color: var(--color-accent-ink); background: var(--color-accent); border-color: var(--color-accent) var(--color-edge-dark) var(--color-edge-dark) var(--color-accent); box-shadow: inset 0 0 0 1px var(--color-edge-dark); }
 button.skill-button.selected:hover:not(:disabled) { background: var(--color-accent); box-shadow: inset 0 0 0 2px var(--color-accent-ink); }
@@ -200,10 +167,24 @@ button.skill-button.selected:hover:not(:disabled) { background: var(--color-acce
 .level-selection { margin-right: auto; }
 button, select, .pause-link { white-space: nowrap; }
 button:active:not(:disabled), .pause-link:active { border-color: var(--color-edge-dark) var(--color-edge-light) var(--color-edge-light) var(--color-edge-dark); }
-.display-settings { border: 0; border-top: 1px solid var(--color-edge); background: var(--color-clear); padding: .35rem 0; }
 .skill-section { border: 0; padding: 0; background: var(--color-clear); }
 .hints { border-top: 1px solid var(--color-edge); padding: 1rem 0 .25rem; line-height: 1.6; }
 .game-controls { padding-top: .25rem; }
+/* Windows controls echo the original desktop edition while the canvas remains uncluttered. */
+.windows-mode .game-toolbar, .windows-mode .skill-section, .windows-mode .pause-menu {
+  padding: .6rem; background: #c0c0c0; color: #202020; border: 2px solid;
+  border-color: #eeeeee #555555 #555555 #eeeeee;
+}
+.windows-mode .release-controls { border-color: #858585; }
+.windows-mode .game-controls button, .windows-mode .game-controls select, .windows-mode .game-controls .pause-link {
+  color: #202020; background: #c0c0c0; border-color: #eeeeee #555555 #555555 #eeeeee;
+}
+.windows-mode .game-controls button:hover:not(:disabled), .windows-mode .game-controls .pause-link:hover { background: #d8d8d8; }
+.windows-mode .game-controls button.primary, .windows-mode .game-controls button.skill-button.selected {
+  color: #f5f5f5; background: #174b91; border-color: #8cabd5 #18345d #18345d #8cabd5;
+}
+.windows-mode .game-controls button.primary:hover:not(:disabled), .windows-mode .game-controls button.skill-button.selected:hover:not(:disabled) { background: #245caa; }
+.windows-mode .pause-menu p { color: #363636; }
 @media (min-width: 900px) {
   /* Keep the canvas and the first control row together on shorter desktop screens. */
   .game-page { max-width: min(var(--content-width), max(50rem, calc((100dvh - 17rem) * 5 / 3 + 4rem))); }
@@ -219,6 +200,5 @@ button:active:not(:disabled), .pause-link:active { border-color: var(--color-edg
   .level-heading { flex-basis: 100%; }
   .skill-grid { grid-template-columns: repeat(4, minmax(0, 1fr)); }
   .skill-button { min-height: 48px; }
-  .comparison-grid { grid-template-columns: repeat(2, minmax(260px, 1fr)); }
 }
 </style>

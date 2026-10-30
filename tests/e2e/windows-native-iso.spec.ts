@@ -27,8 +27,9 @@ test('plays a complete level using Windows artwork from an ISO', async ({ page }
     return value
   })
   const original = await terrainHash()
-  await page.getByText('Display settings', { exact: true }).click()
-  await page.getByRole('radio', { name: 'Windows artwork (experimental)' }).check()
+  await page.getByRole('link', { name: 'Level selection' }).click()
+  await page.getByLabel('Game mode').selectOption('windows')
+  await page.getByRole('link', { name: 'Play Lemmings' }).click()
   await expect(page.getByRole('button', { name: 'Start level' })).toBeEnabled({ timeout: 15_000 })
   expect(await terrainHash()).not.toEqual(original)
   await page.getByRole('button', { name: 'Start level' }).click()

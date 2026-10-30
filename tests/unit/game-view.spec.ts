@@ -139,10 +139,9 @@ describe('game view lifecycle', () => {
     });
 
     it('explains when Windows art is missing without preventing the level from starting', async () => {
+        localStorage.setItem('lemmings.game-mode.v1', 'windows');
         const wrapper = mountView(); await flushPromises();
-        const radio = wrapper.container.querySelector<HTMLInputElement>('input[value="windows"]')!;
-        radio.checked = true; radio.dispatchEvent(new Event('change')); await flushPromises();
-        expect(wrapper.container.textContent).toContain('Windows artwork is unavailable. Import the Windows graphics');
+        expect(wrapper.container.textContent).toContain('Windows artwork is unavailable.');
         expect(button(wrapper.container, 'Start level').disabled).toBe(false);
         button(wrapper.container, 'Start level').click(); await flushPromises();
         expect(mock.game.start).toHaveBeenCalledOnce();
@@ -155,9 +154,8 @@ describe('game view lifecycle', () => {
         mock.prepareWindowsObjects.mockResolvedValue(new Map([[objectFrame, objectImage]]));
         mock.level.getWindowsTerrain.mockReturnValue(layer as never);
         Object.assign(mock.game, { getLemmingsSprite: vi.fn(() => ({})) });
+        localStorage.setItem('lemmings.game-mode.v1', 'windows');
         const wrapper = mountView(); await flushPromises();
-        const radio = wrapper.container.querySelector<HTMLInputElement>('input[value="windows"]')!;
-        radio.checked = true; radio.dispatchEvent(new Event('change')); await flushPromises();
         expect(mock.level.setWindowsTerrain).toHaveBeenCalledWith(layer);
         button(wrapper.container, 'Start level').click(); await flushPromises();
         expect(mock.display.setNativeSprites).toHaveBeenCalledWith(sprites);
@@ -165,31 +163,19 @@ describe('game view lifecycle', () => {
         expect(mock.level.setWindowsTerrain.mock.invocationCallOrder.at(-1)!).toBeLessThan(mock.game.start.mock.invocationCallOrder[0]);
     });
 
-    it('defers a style change during play until restarting', async () => {
-        const wrapper = mountView(); await flushPromises();
-        button(wrapper.container, 'Start level').click(); await flushPromises();
-        const radio = wrapper.container.querySelector<HTMLInputElement>('input[value="windows"]')!;
-        radio.checked = true; radio.dispatchEvent(new Event('change')); await flushPromises();
-        expect(mock.prepareWindowsTerrain).not.toHaveBeenCalled();
-        expect(wrapper.container.textContent).toContain('will apply when you restart or change levels');
-        button(wrapper.container, 'Restart').click(); await flushPromises();
-        expect(mock.prepareWindowsTerrain).toHaveBeenCalledOnce();
-    });
-
     it('does not apply a late graphics load to a changed level', async () => {
         let finish!: (value: { status: 'ready'; layer: object }) => void;
-        mock.prepareWindowsTerrain.mockImplementationOnce(() => new Promise(resolve => { finish = resolve; })).mockResolvedValue({ status: 'special' });
+        mock.prepareWindowsTerrain.mockImplementationOnce(() => new Promise(resolve => { finish = resolve; })).mockResolvedValue({ status: 'ready', layer: { marker: 'special' }, usesDosBackground: true });
+        localStorage.setItem('lemmings.game-mode.v1', 'windows');
         const wrapper = mountView(); await flushPromises();
-        const radio = wrapper.container.querySelector<HTMLInputElement>('input[value="windows"]')!;
-        radio.checked = true; radio.dispatchEvent(new Event('change')); await flushPromises();
-        button(wrapper.container, 'Next level').click(); await flushPromises();
+        reactive(mock.route).query = { group: 0, level: 1 }; await flushPromises();
         const stale = { marker: 'stale' }; finish({ status: 'ready', layer: stale }); await flushPromises();
         expect(mock.level.setWindowsTerrain).not.toHaveBeenCalledWith(stale);
-        expect(wrapper.container.textContent).toContain('This special level uses original DOS graphics.');
+        expect(wrapper.container.textContent).toContain('This special level uses its DOS background with Windows characters and objects.');
     });
 
     it('cancels a pending Windows MIDI track on mute without starting it or falling back', async () => {
-        localStorage.setItem('lemmings.audio-style.v1', 'windows');
+        localStorage.setItem('lemmings.game-mode.v1', 'windows');
         let finish!: (value: ArrayBuffer | undefined) => void;
         mock.getWindowsAudioFile.mockImplementationOnce(() => new Promise(resolve => { finish = resolve; }));
         const wrapper = mountView();
@@ -205,7 +191,7 @@ describe('game view lifecycle', () => {
     });
 
     it('keeps pending Windows MIDI silent while paused and resumes it on request', async () => {
-        localStorage.setItem('lemmings.audio-style.v1', 'windows');
+        localStorage.setItem('lemmings.game-mode.v1', 'windows');
         let finish!: (value: ArrayBuffer | undefined) => void;
         mock.getWindowsAudioFile.mockImplementationOnce(() => new Promise(resolve => { finish = resolve; })).mockResolvedValue(midiFixture());
         const wrapper = mountView();
@@ -227,7 +213,7 @@ describe('game view lifecycle', () => {
     });
 
     it('does not let an older MIDI load cancel a resume that is still loading', async () => {
-        localStorage.setItem('lemmings.audio-style.v1', 'windows');
+        localStorage.setItem('lemmings.game-mode.v1', 'windows');
         const finish: Array<(value: ArrayBuffer | undefined) => void> = [];
         mock.getWindowsAudioFile.mockImplementation(() => new Promise(resolve => { finish.push(resolve); }));
         const wrapper = mountView();
@@ -251,7 +237,7 @@ describe('game view lifecycle', () => {
     });
 
     it('falls back when a resumed Windows MIDI load finds no track', async () => {
-        localStorage.setItem('lemmings.audio-style.v1', 'windows');
+        localStorage.setItem('lemmings.game-mode.v1', 'windows');
         let finish!: (value: ArrayBuffer | undefined) => void;
         mock.getWindowsAudioFile.mockImplementationOnce(() => new Promise(resolve => { finish = resolve; })).mockResolvedValue(undefined);
         const wrapper = mountView();
@@ -272,7 +258,7 @@ describe('game view lifecycle', () => {
     });
 
     it('does not start a delayed Windows MIDI track after navigating to another level', async () => {
-        localStorage.setItem('lemmings.audio-style.v1', 'windows');
+        localStorage.setItem('lemmings.game-mode.v1', 'windows');
         let finish!: (value: ArrayBuffer | undefined) => void;
         mock.getWindowsAudioFile.mockImplementationOnce(() => new Promise(resolve => { finish = resolve; }));
         const wrapper = mountView();
@@ -289,7 +275,7 @@ describe('game view lifecycle', () => {
     });
 
     it('keeps a delayed Windows MIDI preview silent while the tab is hidden', async () => {
-        localStorage.setItem('lemmings.audio-style.v1', 'windows');
+        localStorage.setItem('lemmings.game-mode.v1', 'windows');
         let finish!: (value: ArrayBuffer | undefined) => void;
         mock.getWindowsAudioFile.mockImplementationOnce(() => new Promise(resolve => { finish = resolve; })).mockResolvedValue(midiFixture());
         const original = Object.getOwnPropertyDescriptor(document, 'hidden');
@@ -676,63 +662,13 @@ describe('game view lifecycle', () => {
         }
     });
 
-    it('keeps original graphics by default, saves an opt-in mode and disconnects comparisons', async () => {
-        const wrapper = mountView();
-        await flushPromises();
-        expect(mock.stage.setGraphicsMode).toHaveBeenCalledWith('original');
-        const enhanced = wrapper.container.querySelector<HTMLInputElement>('input[value="enhanced"]')!;
-        enhanced.checked = true;
-        enhanced.dispatchEvent(new Event('change', { bubbles: true }));
-        expect(mock.stage.setGraphicsMode).toHaveBeenLastCalledWith('enhanced');
-        expect(localStorage.getItem('lemmings.graphics.v1')).toBe('enhanced');
-        button(wrapper.container, 'Compare styles').click();
+    it('reports a graphics failure and retains the DOS fallback', async () => {
+        localStorage.setItem('lemmings.game-mode.v1', 'windows');
+        const wrapper = mountView(); await flushPromises();
+        mock.graphicsError.handler?.('Windows graphics are unavailable. DOS graphics have been restored.');
         await nextTick();
-        expect(mock.stage.setComparisonCanvases).toHaveBeenLastCalledWith(expect.any(HTMLCanvasElement), expect.any(HTMLCanvasElement));
-        expect(wrapper.container.textContent).toContain('Both previews show the same moment and view');
-        button(wrapper.container, 'Close comparison').click();
-        await nextTick();
-        expect(mock.stage.setComparisonCanvases).toHaveBeenLastCalledWith(null, null);
-        wrapper.unmount();
-        expect(mock.stage.onGraphicsError.off).toHaveBeenCalledOnce();
-    });
-
-    it('restores this device’s graphics preference and disables empty previews on load failure', async () => {
-        localStorage.setItem('lemmings.graphics.v1', 'enhanced');
-        mock.resources.getLevel.mockRejectedValueOnce(new Error('Could not load this level.'));
-        const wrapper = mountView();
-        await flushPromises();
-        expect(mock.stage.setGraphicsMode).toHaveBeenCalledWith('enhanced');
-        expect(button(wrapper.container, 'Compare styles').disabled).toBe(true);
-        expect(wrapper.container.textContent).toContain('Could not load this level.');
-        wrapper.unmount();
-    });
-
-    it('does not intercept Space on the display settings summary', async () => {
-        const wrapper = mountView();
-        await flushPromises();
-        button(wrapper.container, 'Start level').click();
-        await flushPromises();
-        const event = new KeyboardEvent('keydown', { key: ' ', code: 'Space', bubbles: true, cancelable: true });
-        wrapper.container.querySelector('summary')!.dispatchEvent(event);
-        expect(event.defaultPrevented).toBe(false);
-        expect(mock.timer.isRunning()).toBe(true);
-        wrapper.unmount();
-    });
-
-    it('returns to the original mode and explains a rendering failure', async () => {
-        const wrapper = mountView();
-        await flushPromises();
-        const enhanced = wrapper.container.querySelector<HTMLInputElement>('input[value="enhanced"]')!;
-        enhanced.checked = true;
-        enhanced.dispatchEvent(new Event('change', { bubbles: true }));
-        button(wrapper.container, 'Compare styles').click();
-        await nextTick();
-        mock.graphicsError.handler?.('Enhanced graphics could not be displayed. Original graphics restored.');
-        await nextTick();
-        expect(wrapper.container.textContent).toContain('Original graphics restored.');
-        expect(wrapper.container.querySelector<HTMLInputElement>('input[value="original"]')!.checked).toBe(true);
-        expect(localStorage.getItem('lemmings.graphics.v1')).toBe('original');
-        expect(wrapper.container.querySelector('#graphics-comparison')).toBeNull();
+        expect(wrapper.container.textContent).toContain('DOS graphics have been restored.');
+        expect(mock.display.setNativeSprites).toHaveBeenLastCalledWith(null);
         wrapper.unmount();
     });
 
