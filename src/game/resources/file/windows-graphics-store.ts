@@ -1,6 +1,6 @@
 import { unzipSync } from 'fflate';
 import { decodeWindowsPalette, decodeWindowsSprites } from '../windows-graphics';
-import { WINDOWS_GRAPHICS_ALL_FILES, WINDOWS_GRAPHICS_FILES, WINDOWS_UI_GRAPHICS_FILES } from './windows-graphics-names';
+import { WINDOWS_GRAPHICS_ALL_FILES, WINDOWS_GRAPHICS_FILES, WINDOWS_OPTIONAL_GRAPHICS_FILES } from './windows-graphics-names';
 import { readWindowsGraphicsIso } from './windows-iso';
 
 const DATABASE = 'lemmings-windows-graphics';
@@ -109,7 +109,7 @@ async function importFiles(files: FileList | readonly File[], onlyIfMissing: boo
       const count = store.count();
       count.onsuccess = () => {
         if (count.result === 0) { write(); return; }
-        // Existing installs may acquire optional UI assets only from a bundle
+        // Existing installs may acquire optional assets only from a bundle
         // with the same palette, never from a different edition or after removal.
         const keys = store.getAllKeys();
         keys.onsuccess = () => {
@@ -123,7 +123,7 @@ async function importFiles(files: FileList | readonly File[], onlyIfMissing: boo
             const suppliedBytes = new Uint8Array(supplied);
             if (!new Uint8Array(existing).every((value, index) => value === suppliedBytes[index])) return;
             for (const file of selection) {
-              if (WINDOWS_UI_GRAPHICS_FILES.includes(file.name) && !saved.has(file.name)) {
+              if (WINDOWS_OPTIONAL_GRAPHICS_FILES.includes(file.name) && !saved.has(file.name)) {
                 store.put(file.data, file.name);
                 imported = true;
               }
@@ -154,11 +154,11 @@ export async function hasWindowsGraphics(): Promise<boolean> {
 export async function canAutoImportWindowsGraphics(): Promise<boolean> {
   return (await keys()).size === 0;
 }
-/** Existing installations can acquire new, matching UI files without replacing their art. */
+/** Existing installations can acquire new, matching optional files without replacing their art. */
 export async function canAutoImportWindowsUiGraphics(): Promise<boolean> {
   const saved = await keys();
   return !saved.has(REMOVED) && WINDOWS_GRAPHICS_FILES.every(name => saved.has(name)) &&
-    WINDOWS_UI_GRAPHICS_FILES.some(name => !saved.has(name));
+    WINDOWS_OPTIONAL_GRAPHICS_FILES.some(name => !saved.has(name));
 }
 export async function clearWindowsGraphics(): Promise<void> {
   const db = await openDatabase();
