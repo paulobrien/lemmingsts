@@ -9,6 +9,7 @@ import { GameVictoryCondition } from '../game-play/game-victory-condition';
 import { SkillTypes } from '../game-play/skill-types';
 import { SkillPanelSprites } from '../resources/skill-panel-sprites';
 import { DisplayImage } from './display-image';
+import { Frame } from '../resources/frame';
 
 /** handles the in-game-gui. e.g. the panel on the bottom of the game */
 export class GameGui {
@@ -21,6 +22,13 @@ export class GameGui {
     private display?: DisplayImage;
     private deltaReleaseRate = 0;
     private nukeRequestHandler: (() => void) | null = null;
+    private windowsPanel: readonly Frame[] | null = null;
+
+    /** Override panel artwork while preserving all original HUD hit targets. */
+    public setWindowsPanel(icons: readonly Frame[] | null) {
+        this.windowsPanel = icons?.length === 12 ? icons : null;
+        this.backgroundChanged = true;
+    }
 
     public setNukeRequestHandler(handler: (() => void) | null) {
         this.nukeRequestHandler = handler;
@@ -165,6 +173,12 @@ export class GameGui {
             const panelImage = this.skillPanelSprites.getPanelSprite();
             display.initSize(panelImage.width, panelImage.height);
             display.setBackground(panelImage.getData());
+
+            if (this.windowsPanel) {
+                for (let index = 0; index < this.windowsPanel.length; index++) {
+                    display.drawFrameCovered(this.windowsPanel[index], index * 16, 20, 0, 0, 0);
+                }
+            }
 
             /// redraw everything
             this.gameTimeChanged = true;

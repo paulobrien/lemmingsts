@@ -20,6 +20,7 @@ import { LogHandler } from './utilities/log-handler';
 import { DisplayImage } from './view/display-image';
 import { GameDisplay } from './view/game-display';
 import { GameGui } from './view/game-gui';
+import type { Frame } from './resources/frame';
 import { PlayerAssignmentResult } from './view/player-assignment-result';
 
 /** provides an game object to control the game */
@@ -133,6 +134,10 @@ export class Game {
 
     public setNukeRequestHandler(handler: (() => void) | null) {
         this.gameGui.setNukeRequestHandler(handler);
+    }
+
+    public setWindowsPanel(icons: readonly Frame[] | null) {
+        this.gameGui.setWindowsPanel(icons);
     }
 
 
