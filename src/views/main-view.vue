@@ -8,12 +8,20 @@
           <p class="intro">{{ ready ? 'Choose a difficulty and level, then lead your lemmings to the exit.' : 'Add your original DOS game files to unlock 120 levels.' }}</p>
           <p class="preview-note">Early preview. Testing on different devices is still underway.</p>
           <div v-if="ready" class="actions">
+            <label class="game-mode">Game mode
+              <select :value="gameMode" :disabled="busy || voiceBusy" @change="onGameModeChange">
+                <option value="dos">DOS</option>
+                <option value="windows" :disabled="!windowsReady">Windows{{ windowsReady ? '' : ' (add complete Windows files)' }}</option>
+              </select>
+            </label>
+            <p v-if="gameMode === 'windows' && !windowsReady" class="hint" role="status">Windows files are not ready on this device. Add them below or choose DOS to play.</p>
             <div class="level-picker" v-if="groups.length">
               <label>Difficulty <select v-model.number="selectedGroup" @change="selectedLevel = 0"><option v-for="(group, index) in groups" :key="group.name" :value="index">{{ group.name }}</option></select></label>
               <label>Level <select v-model.number="selectedLevel"><option v-for="index in groups[selectedGroup].count" :key="index" :value="index - 1">{{ index }}{{ bestScore(selectedGroup, index - 1) === null ? '' : ` (best ${bestScore(selectedGroup, index - 1)}%)` }}</option></select></label>
             </div>
             <p v-if="bestScore(selectedGroup, selectedLevel) !== null" class="best-score">Best saved: {{ bestScore(selectedGroup, selectedLevel) }}%</p>
-            <router-link class="primary-button" :to="{ name: 'game', params: { gameType: 1 }, query: { group: selectedGroup, level: selectedLevel } }">Play Lemmings</router-link>
+            <router-link v-if="gameMode === 'dos' || windowsReady" class="primary-button" :to="{ name: 'game', params: { gameType: 1 }, query: { group: selectedGroup, level: selectedLevel } }">Play Lemmings</router-link>
+            <button v-else class="primary-button" type="button" disabled>Play Lemmings</button>
             <p class="ready-note">Your game files are ready on this device</p>
           </div>
           <div v-else class="actions">
@@ -52,22 +60,14 @@
         </div>
       </section>
       <section v-if="ready" class="setup" aria-labelledby="voices-title">
-        <div><h2 id="voices-title">Windows audio</h2></div>
+        <div><h2 id="voices-title">Windows game files</h2></div>
         <div class="setup-detail">
-          <label class="audio-style">Audio style
-            <select :value="audioStyle" @change="onAudioStyleChange">
-              <option value="dos">DOS AdLib</option>
-              <option value="windows" :disabled="!voicesReady">Windows audio{{ voicesReady ? '' : ' (add files first)' }}</option>
-            </select>
-          </label>
-          <p>Audio style changes the sound; levels still use the DOS game data. Windows MIDI music is experimental.</p>
-          <p v-if="voicesReady">Your Windows voice recordings are ready on this device. Turn Sound on in a level to hear them. You can replace them with a larger Windows audio collection.</p>
-          <p v-else>Optionally add your Windows Lemmings ISO, one game folder, its audio files, or a ZIP. Include LETSGO.WAV, OHNO.WAV and YIPPEE.WAV; other Windows effects and MIDI tracks can be included. An ISO or complete folder can also supply Windows graphics. They stay in this browser.</p>
-          <p v-if="!voicesReady && audioStyle === 'windows'">Windows audio is unavailable; DOS sounds will play until you add the files again.</p>
+          <p v-if="windowsReady">Your Windows sound and graphics files are ready on this device.</p>
+          <p v-else>Add your Windows Lemmings ISO, an extracted game folder, or a ZIP containing its audio and graphics files. They stay in this browser. Windows mode currently also uses the original DOS game data.</p>
           <div class="backup-actions">
-            <button class="text-button" type="button" :disabled="busy || voiceBusy" @click="voiceInput?.click()">{{ voicesReady ? 'Replace Windows audio' : 'Add Windows audio' }}</button>
+            <button class="text-button" type="button" :disabled="busy || voiceBusy" @click="voiceInput?.click()">{{ voicesReady ? 'Replace Windows files' : 'Add Windows files' }}</button>
             <button class="text-button" type="button" :disabled="busy || voiceBusy" @click="voiceFolderInput?.click()">Choose game folder</button>
-            <button v-if="voicesReady" class="text-button" type="button" :disabled="busy || voiceBusy" @click="removeVoices">Remove Windows audio</button>
+            <button v-if="voicesReady || graphicsReady" class="text-button" type="button" :disabled="busy || voiceBusy" @click="removeVoices">Remove Windows files</button>
           </div>
           <p v-if="voiceMessage" class="status-message" role="status">{{ voiceMessage }}</p>
           <input ref="voiceInput" class="visually-hidden" type="file" accept=".wav,.mid,.midi,.zip,.iso,audio/wav,audio/midi,application/zip,application/x-iso9660-image" multiple tabindex="-1" aria-hidden="true" @change="onVoicesSelected" />
@@ -92,16 +92,16 @@
 </template>
 
 <script setup lang="ts">
-import { onBeforeUnmount, onMounted, ref, watch } from 'vue';
-import { clearLemmingsFiles, hasLemmingsFiles, importLemmingsFiles, clearWindowsVoiceFiles, hasWindowsVoiceFiles, importWindowsVoiceFiles } from '@/game/resources/file/game-file-store';
+import { computed, onBeforeUnmount, onMounted, ref, watch } from 'vue';
+import { clearLemmingsFiles, hasLemmingsFiles, importLemmingsFiles, clearWindowsVoiceFiles, hasWindowsVoiceFiles, hasWindowsAudioFiles, importWindowsVoiceFiles } from '@/game/resources/file/game-file-store';
 import { importBundledLemmingsFiles } from '@/game/resources/file/bundled-game-import';
 import { importBundledWindowsVoices } from '@/game/resources/file/bundled-voice-import';
 import { importBundledWindowsGraphics } from '@/game/resources/file/bundled-graphics-import';
-import { clearWindowsGraphics, importWindowsGraphics } from '@/game/resources/file/windows-graphics-store';
+import { clearWindowsGraphics, hasWindowsGraphics, importWindowsGraphics } from '@/game/resources/file/windows-graphics-store';
 import { WINDOWS_GRAPHICS_FILES } from '@/game/resources/file/windows-graphics-names';
 import { GameFactory } from '@/game/game-factory';
 import { GameTypes } from '@/game/game-types';
-import { readAudioStyle, writeAudioStyle, type AudioStyle } from '@/game/audio-style';
+import { readGameMode, writeGameMode, type GameMode } from '@/game/game-mode';
 import { exportProgressBackup, readLastLevel, readProgress, restoreProgressBackup } from '@/game/progress';
 import { loadHomeArtwork, paintHomeArtwork } from '@/game/resources/home-artwork';
 import { offlineReadiness } from '@/offline-readiness';
@@ -115,8 +115,11 @@ const message = ref('');
 const backupMessage = ref('');
 const voiceMessage = ref('');
 const voicesReady = ref(false);
+const audioReady = ref(false);
+const graphicsReady = ref(false);
+const windowsReady = computed(() => ready.value && audioReady.value && graphicsReady.value);
 const voiceBusy = ref(false);
-const audioStyle = ref<AudioStyle>(readAudioStyle());
+const gameMode = ref<GameMode>(readGameMode());
 const fileInput = ref<HTMLInputElement | null>(null);
 const voiceInput = ref<HTMLInputElement | null>(null);
 const voiceFolderInput = ref<HTMLInputElement | null>(null);
@@ -231,8 +234,12 @@ async function removeFiles() {
 }
 async function refreshVoices() {
   const generation = ++voiceReadinessGeneration;
-  try { const present = await hasWindowsVoiceFiles(); if (!disposed && generation === voiceReadinessGeneration) voicesReady.value = present; }
-  catch { if (!disposed && generation === voiceReadinessGeneration) voicesReady.value = false; }
+  try {
+    const [voices, audio, graphics] = await Promise.all([hasWindowsVoiceFiles(), hasWindowsAudioFiles(), hasWindowsGraphics()]);
+    if (!disposed && generation === voiceReadinessGeneration) { voicesReady.value = voices; audioReady.value = audio; graphicsReady.value = graphics; }
+  } catch {
+    if (!disposed && generation === voiceReadinessGeneration) { voicesReady.value = false; audioReady.value = false; graphicsReady.value = false; }
+  }
 }
 async function checkAutomaticVoices() {
   // Voice recordings are optional; a failed bundle must not block the game.
@@ -256,25 +263,30 @@ async function onVoicesSelected(event: Event) {
       try { await importWindowsGraphics(files); voiceMessage.value = 'Windows audio and graphics added to this device.'; }
       catch { if (explicitGraphics) voiceMessage.value = 'Windows audio added, but the graphics could not be imported.'; }
     }
+    await refreshVoices();
   }
   catch (error) { voiceMessage.value = error instanceof Error ? error.message : 'Could not read those audio files. Please try again.'; }
   finally { input.value = ''; voiceBusy.value = false; }
 }
 async function removeVoices() {
   voiceReadinessGeneration++; voiceBusy.value = true; voiceMessage.value = '';
-  try { await clearWindowsVoiceFiles(); await refreshVoices(); voiceMessage.value = 'Windows audio removed from this browser.'; }
-  catch { voiceMessage.value = 'Could not remove the audio files. Please try again.'; }
+  try {
+    await clearWindowsVoiceFiles(); await clearWindowsGraphics();
+    if (gameMode.value === 'windows' && writeGameMode('dos')) gameMode.value = 'dos';
+    await refreshVoices(); voiceMessage.value = 'Windows files removed from this browser.';
+  }
+  catch { voiceMessage.value = 'Could not remove the Windows files. Please try again.'; }
   finally { voiceBusy.value = false; }
 }
-function onAudioStyleChange(event: Event) {
+function onGameModeChange(event: Event) {
   const select = event.target as HTMLSelectElement;
-  const style = select.value;
-  if ((style !== 'dos' && style !== 'windows') || !writeAudioStyle(style)) {
-    select.value = audioStyle.value;
-    voiceMessage.value = 'Could not save the audio style. Check browser storage and try again.';
+  const mode = select.value;
+  if ((mode !== 'dos' && mode !== 'windows') || (mode === 'windows' && !windowsReady.value) || !writeGameMode(mode)) {
+    select.value = gameMode.value;
+    voiceMessage.value = 'Could not select that game mode. Check the game files and browser storage.';
     return;
   }
-  audioStyle.value = style;
+  gameMode.value = mode;
   voiceMessage.value = '';
 }
 function downloadBackup() {

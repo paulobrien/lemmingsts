@@ -330,6 +330,12 @@ export async function hasWindowsVoiceFiles(): Promise<boolean> {
   return WINDOWS_VOICE_FILES.every(name => keys.has(name));
 }
 
+/** True only when the full Windows sound and MIDI set is available locally. */
+export async function hasWindowsAudioFiles(): Promise<boolean> {
+  const keys = await voiceKeys();
+  return WINDOWS_AUDIO_FILES.every(name => keys.has(name));
+}
+
 /** Check before fetching a deployment bundle; the final write rechecks atomically. */
 export async function canAutoImportWindowsVoiceFiles(): Promise<boolean> {
   const keys = await voiceKeys();

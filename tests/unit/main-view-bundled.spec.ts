@@ -9,6 +9,8 @@ const mock = vi.hoisted(() => ({
   importFiles: vi.fn(async () => undefined),
   bundledVoices: vi.fn(async () => undefined),
   hasVoices: vi.fn(async () => false),
+  hasAudio: vi.fn(async () => false),
+  hasGraphics: vi.fn(async () => false),
   importVoices: vi.fn(async () => undefined),
   clearVoices: vi.fn(async () => undefined),
   bundledGraphics: vi.fn(async () => undefined),
@@ -19,8 +21,8 @@ const mock = vi.hoisted(() => ({
 vi.mock('@/game/resources/file/bundled-game-import', () => ({ importBundledLemmingsFiles: mock.bundled }));
 vi.mock('@/game/resources/file/bundled-voice-import', () => ({ importBundledWindowsVoices: mock.bundledVoices }));
 vi.mock('@/game/resources/file/bundled-graphics-import', () => ({ importBundledWindowsGraphics: mock.bundledGraphics }));
-vi.mock('@/game/resources/file/windows-graphics-store', () => ({ importWindowsGraphics: mock.importGraphics, clearWindowsGraphics: mock.clearGraphics }));
-vi.mock('@/game/resources/file/game-file-store', () => ({ hasLemmingsFiles: mock.hasFiles, clearLemmingsFiles: vi.fn(), importLemmingsFiles: mock.importFiles, hasWindowsVoiceFiles: mock.hasVoices, importWindowsVoiceFiles: mock.importVoices, clearWindowsVoiceFiles: mock.clearVoices }));
+vi.mock('@/game/resources/file/windows-graphics-store', () => ({ hasWindowsGraphics: mock.hasGraphics, importWindowsGraphics: mock.importGraphics, clearWindowsGraphics: mock.clearGraphics }));
+vi.mock('@/game/resources/file/game-file-store', () => ({ hasLemmingsFiles: mock.hasFiles, clearLemmingsFiles: vi.fn(), importLemmingsFiles: mock.importFiles, hasWindowsVoiceFiles: mock.hasVoices, hasWindowsAudioFiles: mock.hasAudio, importWindowsVoiceFiles: mock.importVoices, clearWindowsVoiceFiles: mock.clearVoices }));
 vi.mock('@/game/game-factory', () => ({ GameFactory: vi.fn(function () {
   return { getConfig: async () => ({ level: { groups: ['Fun'], getGroupLength: () => 30 } }) };
 }) }));
@@ -49,6 +51,8 @@ describe('home setup', () => {
     mock.importFiles.mockReset().mockResolvedValue(undefined);
     mock.bundledVoices.mockReset().mockResolvedValue(undefined);
     mock.hasVoices.mockReset().mockResolvedValue(false);
+    mock.hasAudio.mockReset().mockResolvedValue(false);
+    mock.hasGraphics.mockReset().mockResolvedValue(false);
     mock.importVoices.mockReset().mockResolvedValue(undefined);
     mock.clearVoices.mockReset().mockResolvedValue(undefined);
     mock.bundledGraphics.mockReset().mockResolvedValue(undefined);
@@ -78,7 +82,7 @@ describe('home setup', () => {
     mock.importVoices.mockImplementation(async () => { mock.hasVoices.mockResolvedValue(true); });
     mock.clearVoices.mockImplementation(async () => { mock.hasVoices.mockResolvedValue(false); });
     const view = await mount();
-    expect(view.container.textContent).toContain('Add Windows audio');
+    expect(view.container.textContent).toContain('Add Windows files');
     const input = view.container.querySelector<HTMLInputElement>('input[accept^=".wav"]')!;
     const files = [new File(['one'], 'LETSGO.WAV'), new File(['two'], 'OHNO.WAV'), new File(['three'], 'YIPPEE.WAV')];
     Object.defineProperty(input, 'files', { configurable: true, value: files });
@@ -86,14 +90,13 @@ describe('home setup', () => {
     for (let i = 0; i < 10; i++) await Promise.resolve();
     await nextTick();
     expect(mock.importVoices).toHaveBeenCalledWith(files);
-    expect(view.container.textContent).toContain('Your Windows voice recordings are ready');
-    const remove = Array.from(view.container.querySelectorAll('button')).find(button => button.textContent === 'Remove Windows audio')!;
+    const remove = Array.from(view.container.querySelectorAll('button')).find(button => button.textContent === 'Remove Windows files')!;
     remove.click();
     for (let i = 0; i < 10; i++) await Promise.resolve();
     await nextTick();
     expect(mock.clearVoices).toHaveBeenCalledOnce();
-    expect(view.container.textContent).toContain('Windows audio removed from this browser.');
-    expect(view.container.textContent).toContain('Add Windows audio');
+    expect(view.container.textContent).toContain('Windows files removed from this browser.');
+    expect(view.container.textContent).toContain('Add Windows files');
     view.unmount();
   });
 
@@ -122,20 +125,43 @@ describe('home setup', () => {
     view.unmount();
   });
 
-  it('stores an explicit audio style and restores it on the next visit', async () => {
+  it('only enables Windows with complete audio and graphics, and restores the chosen mode', async () => {
     mock.hasFiles.mockResolvedValue(true);
     mock.hasVoices.mockResolvedValue(true);
+    mock.hasAudio.mockResolvedValue(true);
+    mock.hasGraphics.mockResolvedValue(false);
     let view = await mount();
-    let select = view.container.querySelector<HTMLSelectElement>('.audio-style select')!;
+    let select = view.container.querySelector<HTMLSelectElement>('.game-mode select')!;
     expect(select.value).toBe('dos');
+    expect(select.querySelector<HTMLOptionElement>('option[value=windows]')!.disabled).toBe(true);
+    view.unmount();
+    mock.hasGraphics.mockResolvedValue(true);
+    view = await mount();
+    select = view.container.querySelector<HTMLSelectElement>('.game-mode select')!;
+    expect(select.querySelector<HTMLOptionElement>('option[value=windows]')!.disabled).toBe(false);
     select.value = 'windows';
     select.dispatchEvent(new Event('change', { bubbles: true }));
     await nextTick();
-    expect(localStorage.getItem('lemmings.audio-style.v1')).toBe('windows');
+    expect(localStorage.getItem('lemmings.game-mode.v1')).toBe('windows');
     view.unmount();
     view = await mount();
-    select = view.container.querySelector<HTMLSelectElement>('.audio-style select')!;
+    select = view.container.querySelector<HTMLSelectElement>('.game-mode select')!;
     expect(select.value).toBe('windows');
+    view.unmount();
+  });
+
+  it('blocks a saved Windows mode when its files disappear until DOS is selected', async () => {
+    localStorage.setItem('lemmings.game-mode.v1', 'windows');
+    mock.hasFiles.mockResolvedValue(true);
+    const view = await mount();
+    expect(view.container.textContent).toContain('Windows files are not ready');
+    expect(view.container.querySelector('a.primary-button')).toBeNull();
+    const select = view.container.querySelector<HTMLSelectElement>('.game-mode select')!;
+    select.value = 'dos';
+    select.dispatchEvent(new Event('change', { bubbles: true }));
+    await nextTick();
+    expect(view.container.querySelector('a.primary-button')).not.toBeNull();
+    expect(localStorage.getItem('lemmings.game-mode.v1')).toBe('dos');
     view.unmount();
   });
 
