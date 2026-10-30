@@ -18,11 +18,25 @@ test('a fresh browser loads bundled Windows and refresh restores it after remova
   await expect(page.getByRole('button', { name: 'Start level' })).toBeEnabled()
 })
 
-test('an existing Windows install receives the missing original fast-forward artwork', async ({ page }) => {
+test('an existing Windows install receives missing optional artwork without replacing its files', async ({ page }) => {
   test.skip(process.env.RUN_BUNDLED_GAME_TESTS !== '1', 'Requires a locally built deployment with the owner’s game files')
   test.setTimeout(90_000)
   await page.goto('/')
   await expect(page.getByLabel('Game mode')).toHaveValue('windows', { timeout: 45_000 })
+  const graphicsHashes = () => page.evaluate(async () => {
+    const db = await new Promise<IDBDatabase>((resolve, reject) => {
+      const request = indexedDB.open('lemmings-game-files')
+      request.onsuccess = () => resolve(request.result); request.onerror = () => reject(request.error)
+    })
+    try {
+      const values = await Promise.all(['FE.PAL', 'LEMMBIG.SPR'].map(name => new Promise<ArrayBuffer>((resolve, reject) => {
+        const request = db.transaction('windows-graphics').objectStore('windows-graphics').get(name)
+        request.onsuccess = () => resolve(request.result); request.onerror = () => reject(request.error)
+      })))
+      return Promise.all(values.map(async bytes => Array.from(new Uint8Array(await crypto.subtle.digest('SHA-256', bytes)))))
+    } finally { db.close() }
+  })
+  const before = await graphicsHashes()
   await page.evaluate(async () => {
     const db = await new Promise<IDBDatabase>((resolve, reject) => {
       const request = indexedDB.open('lemmings-game-files')
@@ -30,7 +44,9 @@ test('an existing Windows install receives the missing original fast-forward art
     })
     await new Promise<void>((resolve, reject) => {
       const transaction = db.transaction('windows-graphics', 'readwrite')
-      transaction.objectStore('windows-graphics').delete('ICO_FF.SPR')
+      const graphics = transaction.objectStore('windows-graphics')
+      graphics.delete('ICO_FF.SPR')
+      graphics.delete('WLEMLOGO.BMP')
       transaction.oncomplete = () => resolve(); transaction.onabort = () => reject(transaction.error)
     })
     db.close()
@@ -42,12 +58,13 @@ test('an existing Windows install receives the missing original fast-forward art
       request.onsuccess = () => resolve(request.result); request.onerror = () => reject(request.error)
     })
     try {
-      return await new Promise<boolean>((resolve, reject) => {
-        const request = db.transaction('windows-graphics').objectStore('windows-graphics').get('ICO_FF.SPR')
+      return await Promise.all(['ICO_FF.SPR', 'WLEMLOGO.BMP'].map(name => new Promise<boolean>((resolve, reject) => {
+        const request = db.transaction('windows-graphics').objectStore('windows-graphics').get(name)
         request.onsuccess = () => resolve(request.result instanceof ArrayBuffer)
         request.onerror = () => reject(request.error)
-      })
+      })))
     } finally { db.close() }
-  }), { timeout: 45_000 }).toBe(true)
+  }), { timeout: 45_000 }).toEqual([true, true])
+  expect(await graphicsHashes()).toEqual(before)
   await expect(page.getByLabel('Game mode')).toHaveValue('windows')
 })
