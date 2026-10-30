@@ -189,6 +189,27 @@ describe('game view lifecycle', () => {
         expect(mock.resources.getMusicPlayer).not.toHaveBeenCalled();
     });
 
+    it('falls back when a resumed Windows MIDI load finds no track', async () => {
+        localStorage.setItem('lemmings.audio-style.v1', 'windows');
+        let finish!: (value: ArrayBuffer | undefined) => void;
+        mock.getWindowsAudioFile.mockImplementationOnce(() => new Promise(resolve => { finish = resolve; })).mockResolvedValue(undefined);
+        const wrapper = mountView();
+        await flushPromises();
+        button(wrapper.container, 'Start level').click();
+        await flushPromises();
+        button(wrapper.container, 'Music off').click();
+        await flushPromises();
+        button(wrapper.container, 'Pause').click();
+        await nextTick();
+        finish(undefined);
+        await flushPromises();
+        expect(mock.resources.getMusicPlayer).not.toHaveBeenCalled();
+        button(wrapper.container, 'Resume').click();
+        await flushPromises();
+        expect(mock.resources.getMusicPlayer).toHaveBeenCalledWith(0);
+        expect(mock.music.play).toHaveBeenCalled();
+    });
+
     it('does not start a delayed Windows MIDI track after navigating to another level', async () => {
         localStorage.setItem('lemmings.audio-style.v1', 'windows');
         let finish!: (value: ArrayBuffer | undefined) => void;
