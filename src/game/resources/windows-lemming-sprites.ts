@@ -1,5 +1,5 @@
 import { Frame } from './frame';
-import { LemmingsSprite } from './lemmings-sprite';
+import type { LemmingsSprite } from './lemmings-sprite';
 import { SpriteTypes } from './sprite-types';
 import { WindowsSpriteFrame } from './windows-graphics';
 

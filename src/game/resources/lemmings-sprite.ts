@@ -2,6 +2,7 @@ import { BinaryReader } from './file/binary-reader';
 import { ColorPalette } from './lemmings/color-palette';
 import { SpriteTypes } from './sprite-types';
 import { Animation } from './animation';
+import { Frame } from './frame';
 
 /** manage the in-game Lemmings animation sprite */
 export class LemmingsSprite {
@@ -15,7 +16,7 @@ export class LemmingsSprite {
     }
 
 
-    constructor(fr: BinaryReader, colorPalette: ColorPalette) {
+    constructor(fr: BinaryReader | null, colorPalette: ColorPalette) {
         this.colorPalette = colorPalette;
 
         this.registerAnimation(SpriteTypes.WALKING, 1, fr, 2, 16, 10, -8, -10, 8); //- walking (r)
@@ -54,12 +55,13 @@ export class LemmingsSprite {
     }
 
 
-    private registerAnimation(state: SpriteTypes, dir: number, fr: BinaryReader, bitsPerPixel: number, width: number, height: number, offsetX: number, offsetY: number, frames: number) {
+    private registerAnimation(state: SpriteTypes, dir: number, fr: BinaryReader | null, bitsPerPixel: number, width: number, height: number, offsetX: number, offsetY: number, frames: number) {
 
         //- load animation frames from file (fr)
         const animation = new Animation();
 
-        animation.loadFromFile(fr, bitsPerPixel, width, height, frames, this.colorPalette, offsetX, offsetY);
+        if (fr) animation.loadFromFile(fr, bitsPerPixel, width, height, frames, this.colorPalette, offsetX, offsetY);
+        else for (let index = 0; index < frames; index++) animation.frames.push(new Frame(width, height, offsetX, offsetY));
 
         //- add animation to cache -add unidirectional (dir == 0) animations to both lists
         if (dir >= 0) {
