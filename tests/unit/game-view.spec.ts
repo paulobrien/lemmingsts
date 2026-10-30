@@ -38,6 +38,13 @@ const mock = vi.hoisted(() => {
         onPlayerAssignment: { on: vi.fn((handler: (result: string) => void) => { assignmentEvent.handler = handler; }) },
     };
     const music = { play: vi.fn(), suspend: vi.fn(), stop: vi.fn() };
+    const midiContext = {
+        state: 'running' as AudioContextState,
+        resume: vi.fn(async function (this: { state: AudioContextState }) { this.state = 'running'; }),
+        suspend: vi.fn(async function (this: { state: AudioContextState }) { this.state = 'suspended'; }),
+    };
+    const midiSynth = { getAudioContext: vi.fn(() => midiContext), setLoop: vi.fn(), loadMIDI: vi.fn(), playMIDI: vi.fn(), stopMIDI: vi.fn() };
+    const getWindowsAudioFile = vi.fn(async (_name: string): Promise<ArrayBuffer | undefined> => undefined);
     const resources = { getLevel: vi.fn(async () => level), getSoundTrack: vi.fn(), getMusicPlayer: vi.fn(async () => music) };
     const config = { level: { groups: ['Fun'], order: [[0, 1]], getGroupLength: () => 2 } };
     const getGame = vi.fn(async () => game);
@@ -45,7 +52,7 @@ const mock = vi.hoisted(() => {
     const route = { params: { gameType: '1' }, query: {} as Record<string, string | number> };
     const verifyHints = vi.fn(async (): Promise<'verified' | 'different' | 'unavailable'> => 'verified');
     const exampleMove = vi.fn(async (): Promise<{ x: number; y: number; skill: number; gameSeconds: number } | null> => ({ x: 100, y: 60, skill: 8, gameSeconds: 5 }));
-    return { timer, level, stage, game, skills, resources, music, config, getGame, replace, route, endEvent, soundEvent, effects, assignmentEvent, nukeRequest, verifyHints, exampleMove, graphicsError, zoomChange };
+    return { timer, level, stage, game, skills, resources, music, midiContext, midiSynth, getWindowsAudioFile, config, getGame, replace, route, endEvent, soundEvent, effects, assignmentEvent, nukeRequest, verifyHints, exampleMove, graphicsError, zoomChange };
 });
 
 vi.mock('vue-router', () => ({
@@ -57,6 +64,8 @@ vi.mock('@/game/view/keyboard-targeting', () => ({ KeyboardTargeting: vi.fn(func
 vi.mock('@/game/solutions/hint-compatibility', () => ({ verifyHintData: mock.verifyHints }));
 vi.mock('@/game/solutions/example-first-move', () => ({ getExampleFirstMove: mock.exampleMove }));
 vi.mock('@/game/resources/sound/sound-effects-player', () => ({ SoundEffectsPlayer: vi.fn(function () { return mock.effects; }) }));
+vi.mock('webaudio-tinysynth', () => ({ default: vi.fn(function () { return mock.midiSynth; }) }));
+vi.mock('@/game/resources/file/game-file-store', () => ({ getWindowsAudioFile: mock.getWindowsAudioFile }));
 vi.mock('@/game/game-factory', () => ({ GameFactory: vi.fn(function () {
     return { getConfig: async () => mock.config, getGameResources: async () => mock.resources, getGame: mock.getGame };
 }) }));
@@ -89,6 +98,14 @@ function button(container: HTMLElement, label: string): HTMLButtonElement {
     return found;
 }
 
+function midiFixture(): ArrayBuffer {
+    return new Uint8Array([
+        0x4d, 0x54, 0x68, 0x64, 0, 0, 0, 6, 0, 0, 0, 1, 0, 96,
+        0x4d, 0x54, 0x72, 0x6b, 0, 0, 0, 12,
+        0, 0x90, 60, 100, 48, 0x80, 60, 0, 0, 0xff, 0x2f, 0,
+    ]).buffer;
+}
+
 describe('game view lifecycle', () => {
     afterEach(() => {
         for (const unmount of mountedViews) unmount();
@@ -106,6 +123,63 @@ describe('game view lifecycle', () => {
         mock.exampleMove.mockResolvedValue({ x: 100, y: 60, skill: 8, gameSeconds: 5 });
         mock.resources.getLevel.mockImplementation(async () => mock.level);
         mock.resources.getMusicPlayer.mockImplementation(async () => mock.music);
+        mock.midiContext.state = 'running';
+        mock.getWindowsAudioFile.mockReset().mockResolvedValue(undefined);
+    });
+
+    it('cancels a pending Windows MIDI track on mute without starting it or falling back', async () => {
+        localStorage.setItem('lemmings.audio-style.v1', 'windows');
+        let finish!: (value: ArrayBuffer | undefined) => void;
+        mock.getWindowsAudioFile.mockImplementationOnce(() => new Promise(resolve => { finish = resolve; }));
+        const wrapper = mountView();
+        await flushPromises();
+        button(wrapper.container, 'Music off').click();
+        await flushPromises();
+        expect(mock.getWindowsAudioFile).toHaveBeenCalledOnce();
+        button(wrapper.container, 'Music on').click();
+        finish(midiFixture());
+        await flushPromises();
+        expect(mock.midiSynth.playMIDI).not.toHaveBeenCalled();
+        expect(mock.resources.getMusicPlayer).not.toHaveBeenCalled();
+    });
+
+    it('keeps pending Windows MIDI silent while paused and resumes it on request', async () => {
+        localStorage.setItem('lemmings.audio-style.v1', 'windows');
+        let finish!: (value: ArrayBuffer | undefined) => void;
+        mock.getWindowsAudioFile.mockImplementationOnce(() => new Promise(resolve => { finish = resolve; })).mockResolvedValue(midiFixture());
+        const wrapper = mountView();
+        await flushPromises();
+        button(wrapper.container, 'Start level').click();
+        await flushPromises();
+        button(wrapper.container, 'Music off').click();
+        await flushPromises();
+        button(wrapper.container, 'Pause').click();
+        await nextTick();
+        finish(midiFixture());
+        await flushPromises();
+        expect(mock.midiSynth.playMIDI).not.toHaveBeenCalled();
+        expect(mock.resources.getMusicPlayer).not.toHaveBeenCalled();
+        button(wrapper.container, 'Resume').click();
+        await flushPromises();
+        expect(mock.midiSynth.playMIDI).toHaveBeenCalledOnce();
+        expect(mock.resources.getMusicPlayer).not.toHaveBeenCalled();
+    });
+
+    it('does not start a delayed Windows MIDI track after navigating to another level', async () => {
+        localStorage.setItem('lemmings.audio-style.v1', 'windows');
+        let finish!: (value: ArrayBuffer | undefined) => void;
+        mock.getWindowsAudioFile.mockImplementationOnce(() => new Promise(resolve => { finish = resolve; }));
+        const wrapper = mountView();
+        await flushPromises();
+        button(wrapper.container, 'Music off').click();
+        await flushPromises();
+        reactive(mock.route).query = { group: 0, level: 1 };
+        await flushPromises();
+        finish(midiFixture());
+        await flushPromises();
+        expect(mock.midiSynth.playMIDI).not.toHaveBeenCalled();
+        expect(mock.resources.getMusicPlayer).not.toHaveBeenCalled();
+        expect(mock.resources.getLevel).toHaveBeenLastCalledWith(0, 1);
     });
 
     it('offers reset when stage zoom changes and keeps it available across levels', async () => {
