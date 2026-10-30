@@ -6,12 +6,60 @@ import { EventHandler } from '../utilities/event-handler';
 import { Position2D } from '../utilities/position2d';
 import { Rectangle } from '../utilities/rectangle';
 import { Stage } from './stage';
+import type { WindowsLemmingSprite } from '../resources/windows-lemming-sprites';
 
 /** handel the display of the game images */
 export class DisplayImage {
 
     private imgData?: ImageData;
     private groundMask?: SolidLayer;
+    private nativeBackground?: ImageData;
+    private nativeForeground?: ImageData;
+    private nativeForegroundPixels?: Uint32Array;
+    private nativeSprites?: ReadonlyMap<Frame, WindowsLemmingSprite>;
+    private rejectedNativeBackground?: Uint8ClampedArray<ArrayBuffer>;
+
+    /** Supply an optional 2× terrain layer without affecting the logical DOS raster. */
+    public setNativeBackground(pixels: Uint8ClampedArray<ArrayBuffer> | null, width?: number, height?: number): void {
+        if (!pixels) { this.nativeBackground = undefined; this.nativeForeground = undefined; this.nativeForegroundPixels = undefined; this.rejectedNativeBackground = undefined; return; }
+        if (pixels === this.rejectedNativeBackground) return;
+        if (!this.imgData || width !== this.imgData.width * 2 || height !== this.imgData.height * 2 || pixels.length !== width * height * 4) {
+            this.rejectNativeBackground(pixels);
+            return;
+        }
+        if (this.nativeBackground?.data !== pixels) {
+            try {
+                this.nativeBackground = new ImageData(pixels, width, height);
+                this.nativeForeground = new ImageData(width, height);
+                this.nativeForegroundPixels = new Uint32Array(this.nativeForeground.data.buffer, this.nativeForeground.data.byteOffset, this.nativeForeground.data.byteLength / 4);
+            } catch { this.rejectNativeBackground(pixels); }
+        }
+    }
+
+    /** Fall back to the DOS frame after an invalid native layer or allocation failure. */
+    public rejectNativeBackground(pixels = this.nativeBackground?.data): void {
+        this.rejectedNativeBackground = pixels;
+        this.nativeBackground = undefined;
+        this.nativeForeground = undefined;
+        this.nativeForegroundPixels = undefined;
+        this.stage.onGraphicsError.trigger('Windows graphics are unavailable. Original graphics have been restored.');
+    }
+
+    public setNativeSprites(sprites: ReadonlyMap<Frame, WindowsLemmingSprite> | null): void {
+        this.nativeSprites = sprites ?? undefined;
+    }
+
+    public getNativeLayers(): { background: ImageData; foreground: ImageData } | undefined {
+        return this.nativeBackground && this.nativeForeground ? { background: this.nativeBackground, foreground: this.nativeForeground } : undefined;
+    }
+
+    private setNativePixel(x: number, y: number, rgba: number): void {
+        const layer = this.nativeForeground;
+        if (!layer || x < 0 || y < 0 || x * 2 + 1 >= layer.width || y * 2 + 1 >= layer.height) return;
+        const pixels = this.nativeForegroundPixels!;
+        const at = y * 2 * layer.width + x * 2;
+        pixels[at] = pixels[at + 1] = pixels[at + layer.width] = pixels[at + layer.width + 1] = rgba;
+    }
 
 
     public getWidth(): number {
@@ -70,6 +118,7 @@ export class DisplayImage {
         /// set pixels
         this.imgData.data.set(groundImage);
         this.groundMask = groundMask;
+        this.nativeForeground?.data.fill(0);
     }
 
 
@@ -121,6 +170,7 @@ export class DisplayImage {
             destData[destIndex + 1] = green;
             destData[destIndex + 2] = blue;
             destData[destIndex + 3] = 255;
+            this.setNativePixel(x1, y, (0xff000000 | blue << 16 | green << 8 | red) >>> 0);
         }
     }
 
@@ -149,6 +199,7 @@ export class DisplayImage {
             destData[destIndex + 1] = green;
             destData[destIndex + 2] = blue;
             destData[destIndex + 3] = 255;
+            this.setNativePixel(x, y1, (0xff000000 | blue << 16 | green << 8 | red) >>> 0);
         }
     }
 
@@ -193,6 +244,7 @@ export class DisplayImage {
                 const destIndex = ((destW * outY) + outX);
 
                 destData[destIndex] = 0xFFFFFFFF;
+                this.setNativePixel(outX, outY, 0xffffffff);
             }
         }
     }
@@ -241,9 +293,11 @@ export class DisplayImage {
                 if (srcMask[srcIndex] == 0) {
                     /// transparent pixel
                     destData[destIndex] = nullColor;
+                    this.setNativePixel(outX, outY, nullColor);
                 }
                 else {
                     destData[destIndex] = srcBuffer[srcIndex];
+                    this.setNativePixel(outX, outY, srcBuffer[srcIndex]);
                 }
             }
         }
@@ -267,6 +321,7 @@ export class DisplayImage {
 
         const destX = posX + frame.offsetX;
         const destY = posY + frame.offsetY;
+        const nativeSprite = this.nativeForeground && this.nativeSprites?.get(frame);
 
         for (let y = 0; y < srcH; y++) {
 
@@ -291,6 +346,20 @@ export class DisplayImage {
                 const destIndex = ((destW * outY) + outX);
 
                 destData[destIndex] = srcBuffer[srcIndex];
+                if (!nativeSprite) this.setNativePixel(outX, outY, srcBuffer[srcIndex]);
+            }
+        }
+        if (nativeSprite && this.nativeForeground) {
+            const output = this.nativeForegroundPixels!;
+            const width = this.nativeForeground.width, height = this.nativeForeground.height;
+            const left = posX * 2 + nativeSprite.offsetX, top = posY * 2 + nativeSprite.offsetY;
+            for (let y = 0; y < nativeSprite.height; y++) {
+                const outY = top + y;
+                if (outY < 0 || outY >= height) continue;
+                for (let x = 0; x < nativeSprite.width; x++) {
+                    const outX = left + x, pixel = nativeSprite.pixels[y * nativeSprite.width + x];
+                    if (outX >= 0 && outX < width && pixel >>> 24) output[outY * width + outX] = pixel;
+                }
             }
         }
     }
@@ -359,6 +428,7 @@ export class DisplayImage {
                 const destIndex = ((destW * outY) + outX);
 
                 destData[destIndex] = srcBuffer[srcIndex];
+                this.setNativePixel(outX, outY, srcBuffer[srcIndex]);
             }
         }
 
@@ -381,6 +451,7 @@ export class DisplayImage {
         this.imgData.data[pointIndex + 1] = g;
         this.imgData.data[pointIndex + 2] = b;
         this.imgData.data[pointIndex + 3] = 255;
+        this.setNativePixel(x, y, (0xff000000 | b << 16 | g << 8 | r) >>> 0);
     }
 
 

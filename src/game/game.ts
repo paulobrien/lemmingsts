@@ -41,6 +41,7 @@ export class Game {
     private gameDisplay: GameDisplay;
     private gameTimer: GameTimer;
     private commandManager: CommandManager;
+    private readonly lemmingSprites: LemmingsSprite;
 
     private skills: GameSkills;
     private showDebug = false;
@@ -62,6 +63,7 @@ export class Game {
         this.skills = new GameSkills(level);
 
         this.level = level;
+        this.lemmingSprites = lemSprite;
 
         this.gameVictoryCondition = new GameVictoryCondition(level);
  
@@ -198,6 +200,11 @@ export class Game {
 
     public getLemmingManager(): LemmingManager {
         return this.lemmingManager;
+    }
+
+    /** Animation frames used by this game, for optional presentation mappings. */
+    public getLemmingsSprite(): LemmingsSprite {
+        return this.lemmingSprites;
     }
 
     public getVictoryCondition(): GameVictoryCondition {

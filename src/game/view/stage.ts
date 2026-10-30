@@ -26,6 +26,8 @@ export class Stage {
     private cropPixels: Uint8ClampedArray<ArrayBuffer> | null = null;
     private enhancedPixels: Uint8ClampedArray<ArrayBuffer> | null = null;
     private enhancedImage: ImageData | null = null;
+    private nativeCanvas: HTMLCanvasElement | null = null;
+    private nativeForegroundCanvas: HTMLCanvasElement | null = null;
     public readonly onGraphicsError = new EventHandler<string>();
     /** True when the playfield is away from its starting scale. */
     public readonly onZoomChange = new EventHandler<boolean>();
@@ -286,6 +288,8 @@ export class Stage {
         this.comparisonOriginal = null;
         this.comparisonEnhanced = null;
         this.releaseEnhancedFrame();
+        this.nativeCanvas = null;
+        this.nativeForegroundCanvas = null;
         this.onGraphicsError.dispose();
         this.onZoomChange.dispose();
         this.controller.dispose();
@@ -532,6 +536,37 @@ export class Stage {
             }
         }
 
+        // The DOS frame remains available for comparisons. Only the main
+        // canvas uses the optional 2× terrain and foreground layers.
+        let nativeCanvas: HTMLCanvasElement | null = null;
+        const native = display === this.gameImgProps ? display.display?.getNativeLayers() : undefined;
+        if (native) {
+            try {
+                if (!this.nativeCanvas) this.nativeCanvas = document.createElement('canvas');
+                if (!this.nativeForegroundCanvas) this.nativeForegroundCanvas = document.createElement('canvas');
+                for (const canvas of [this.nativeCanvas, this.nativeForegroundCanvas]) {
+                    if (canvas.width !== native.background.width || canvas.height !== native.background.height) {
+                        canvas.width = native.background.width;
+                        canvas.height = native.background.height;
+                    }
+                }
+                const background = this.nativeCanvas.getContext('2d');
+                const foreground = this.nativeForegroundCanvas.getContext('2d');
+                if (!background || !foreground) throw new Error('Native graphics canvas unavailable');
+                background.putImageData(native.background, 0, 0);
+                foreground.putImageData(native.foreground, 0, 0);
+                background.drawImage(this.nativeForegroundCanvas, 0, 0);
+                nativeCanvas = this.nativeCanvas;
+            } catch {
+                this.nativeCanvas = null;
+                this.nativeForegroundCanvas = null;
+                display.display?.rejectNativeBackground();
+            }
+        } else if (display === this.gameImgProps) {
+            this.nativeCanvas = null;
+            this.nativeForegroundCanvas = null;
+        }
+
         const targets: Array<{ canvas: HTMLCanvasElement | null; enhanced: boolean }> = [
             { canvas: this.stageCav, enhanced: this.graphicsMode === 'enhanced' },
             { canvas: this.comparisonOriginal, enhanced: false },
@@ -550,12 +585,15 @@ export class Stage {
                 ctx.fillStyle = '#000000';
                 ctx.fillRect(display.x, display.y, display.width, display.height);
             }
-            const filtered = target.enhanced && enhanced;
+            const useNative = target.canvas === this.stageCav && nativeCanvas;
+            const filtered = !useNative && target.enhanced && enhanced;
             let failed = false;
             try {
-                ctx.drawImage(filtered ? filtered.canvas : display.cav,
-                    filtered ? filtered.x : display.viewPoint.x, filtered ? filtered.y : display.viewPoint.y,
-                    filtered ? filtered.width : dW, filtered ? filtered.height : dH,
+                ctx.drawImage(useNative || (filtered ? filtered.canvas : display.cav),
+                    useNative ? display.viewPoint.x * 2 : filtered ? filtered.x : display.viewPoint.x,
+                    useNative ? display.viewPoint.y * 2 : filtered ? filtered.y : display.viewPoint.y,
+                    useNative ? dW * 2 : filtered ? filtered.width : dW,
+                    useNative ? dH * 2 : filtered ? filtered.height : dH,
                     display.x, display.y, Math.trunc(dW * display.viewPoint.scale), Math.trunc(dH * display.viewPoint.scale));
             } catch (error) {
                 if (!filtered) throw error;
