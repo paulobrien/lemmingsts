@@ -62,7 +62,7 @@
           </label>
           <p>Audio style changes the sound; levels still use the DOS game data. Windows MIDI music is experimental.</p>
           <p v-if="voicesReady">Your Windows voice recordings are ready on this device. Turn Sound on in a level to hear them. You can replace them with a larger Windows audio collection.</p>
-          <p v-else>Optionally add your Windows Lemmings ISO, one game folder, its audio files, or a ZIP. Include LETSGO.WAV, OHNO.WAV and YIPPEE.WAV; other Windows effects and MIDI tracks can be included. They stay in this browser.</p>
+          <p v-else>Optionally add your Windows Lemmings ISO, one game folder, its audio files, or a ZIP. Include LETSGO.WAV, OHNO.WAV and YIPPEE.WAV; other Windows effects and MIDI tracks can be included. An ISO or complete folder can also supply Windows graphics. They stay in this browser.</p>
           <p v-if="!voicesReady && audioStyle === 'windows'">Windows audio is unavailable; DOS sounds will play until you add the files again.</p>
           <div class="backup-actions">
             <button class="text-button" type="button" :disabled="busy || voiceBusy" @click="voiceInput?.click()">{{ voicesReady ? 'Replace Windows audio' : 'Add Windows audio' }}</button>
@@ -96,6 +96,9 @@ import { onBeforeUnmount, onMounted, ref, watch } from 'vue';
 import { clearLemmingsFiles, hasLemmingsFiles, importLemmingsFiles, clearWindowsVoiceFiles, hasWindowsVoiceFiles, importWindowsVoiceFiles } from '@/game/resources/file/game-file-store';
 import { importBundledLemmingsFiles } from '@/game/resources/file/bundled-game-import';
 import { importBundledWindowsVoices } from '@/game/resources/file/bundled-voice-import';
+import { importBundledWindowsGraphics } from '@/game/resources/file/bundled-graphics-import';
+import { clearWindowsGraphics, importWindowsGraphics } from '@/game/resources/file/windows-graphics-store';
+import { WINDOWS_GRAPHICS_FILES } from '@/game/resources/file/windows-graphics-names';
 import { GameFactory } from '@/game/game-factory';
 import { GameTypes } from '@/game/game-types';
 import { readAudioStyle, writeAudioStyle, type AudioStyle } from '@/game/audio-style';
@@ -222,7 +225,7 @@ async function onFilesSelected(event: Event) {
 async function removeFiles() {
   manualGeneration++; readinessGeneration++;
   busy.value = true; message.value = '';
-  try { await clearLemmingsFiles(); ready.value = false; message.value = 'Game files removed from this browser.'; }
+  try { await clearLemmingsFiles(); await clearWindowsGraphics(); ready.value = false; message.value = 'Game files removed from this browser.'; }
   catch { message.value = 'Could not remove the game files. Please try again.'; }
   finally { busy.value = false; void refreshReadiness(); void refreshVoices(); }
 }
@@ -234,13 +237,26 @@ async function refreshVoices() {
 async function checkAutomaticVoices() {
   // Voice recordings are optional; a failed bundle must not block the game.
   try { await importBundledWindowsVoices(); } catch { /* Manual voice import remains available. */ }
+  try { if (await hasLemmingsFiles()) await importBundledWindowsGraphics(); } catch { /* Original graphics remain available. */ }
   await refreshVoices();
 }
 async function onVoicesSelected(event: Event) {
   const input = event.target as HTMLInputElement;
   if (!input.files?.length) return;
   voiceReadinessGeneration++; voiceBusy.value = true; voiceMessage.value = '';
-  try { await importWindowsVoiceFiles(input.files); await refreshVoices(); voiceMessage.value = 'Windows audio added to this device.'; }
+  try {
+    const files = input.files;
+    await importWindowsVoiceFiles(files);
+    await refreshVoices();
+    voiceMessage.value = 'Windows audio added to this device.';
+    const selected = Array.from(files);
+    const explicitGraphics = selected.some(file => file.name.toLowerCase().endsWith('.iso') || WINDOWS_GRAPHICS_FILES.includes(file.name.toUpperCase()));
+    const wantsGraphics = explicitGraphics || selected.some(file => file.name.toLowerCase().endsWith('.zip'));
+    if (wantsGraphics) {
+      try { await importWindowsGraphics(files); voiceMessage.value = 'Windows audio and graphics added to this device.'; }
+      catch { if (explicitGraphics) voiceMessage.value = 'Windows audio added, but the graphics could not be imported.'; }
+    }
+  }
   catch (error) { voiceMessage.value = error instanceof Error ? error.message : 'Could not read those audio files. Please try again.'; }
   finally { input.value = ''; voiceBusy.value = false; }
 }

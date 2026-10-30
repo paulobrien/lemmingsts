@@ -11,10 +11,15 @@ const mock = vi.hoisted(() => ({
   hasVoices: vi.fn(async () => false),
   importVoices: vi.fn(async () => undefined),
   clearVoices: vi.fn(async () => undefined),
+  bundledGraphics: vi.fn(async () => undefined),
+  importGraphics: vi.fn(async () => undefined),
+  clearGraphics: vi.fn(async () => undefined),
 }));
 
 vi.mock('@/game/resources/file/bundled-game-import', () => ({ importBundledLemmingsFiles: mock.bundled }));
 vi.mock('@/game/resources/file/bundled-voice-import', () => ({ importBundledWindowsVoices: mock.bundledVoices }));
+vi.mock('@/game/resources/file/bundled-graphics-import', () => ({ importBundledWindowsGraphics: mock.bundledGraphics }));
+vi.mock('@/game/resources/file/windows-graphics-store', () => ({ importWindowsGraphics: mock.importGraphics, clearWindowsGraphics: mock.clearGraphics }));
 vi.mock('@/game/resources/file/game-file-store', () => ({ hasLemmingsFiles: mock.hasFiles, clearLemmingsFiles: vi.fn(), importLemmingsFiles: mock.importFiles, hasWindowsVoiceFiles: mock.hasVoices, importWindowsVoiceFiles: mock.importVoices, clearWindowsVoiceFiles: mock.clearVoices }));
 vi.mock('@/game/game-factory', () => ({ GameFactory: vi.fn(function () {
   return { getConfig: async () => ({ level: { groups: ['Fun'], getGroupLength: () => 30 } }) };
@@ -46,6 +51,9 @@ describe('home setup', () => {
     mock.hasVoices.mockReset().mockResolvedValue(false);
     mock.importVoices.mockReset().mockResolvedValue(undefined);
     mock.clearVoices.mockReset().mockResolvedValue(undefined);
+    mock.bundledGraphics.mockReset().mockResolvedValue(undefined);
+    mock.importGraphics.mockReset().mockResolvedValue(undefined);
+    mock.clearGraphics.mockReset().mockResolvedValue(undefined);
   });
 
   it('offers manual import when a deployment has no game files', async () => {
@@ -86,6 +94,21 @@ describe('home setup', () => {
     expect(mock.clearVoices).toHaveBeenCalledOnce();
     expect(view.container.textContent).toContain('Windows audio removed from this browser.');
     expect(view.container.textContent).toContain('Add Windows audio');
+    view.unmount();
+  });
+
+  it('imports graphics as well when a Windows ISO is selected', async () => {
+    mock.hasFiles.mockResolvedValue(true);
+    const view = await mount();
+    const input = view.container.querySelector<HTMLInputElement>('input[accept^=".wav"]')!;
+    const files = [new File(['disc'], 'lemmings.iso')];
+    Object.defineProperty(input, 'files', { configurable: true, value: files });
+    input.dispatchEvent(new Event('change', { bubbles: true }));
+    for (let i = 0; i < 15; i++) await Promise.resolve();
+    await nextTick();
+    expect(mock.importVoices).toHaveBeenCalledWith(files);
+    expect(mock.importGraphics).toHaveBeenCalledWith(files);
+    expect(view.container.textContent).toContain('Windows audio and graphics added to this device.');
     view.unmount();
   });
 

@@ -56,6 +56,7 @@ describe('offline shell updates', () => {
         expect(await app.request(`${origin}data/local-game/main.dat`, 'cors')).toBeUndefined();
         expect(await app.request(`${origin}data/local-windows-audio/manifest.json`, 'cors')).toBeUndefined();
         expect(await app.request(`${origin}data/local-windows-audio/letsgo.wav`, 'cors')).toBeUndefined();
+        expect(await app.request(`${origin}data/local-windows-graphics/lemmbig.spr`, 'cors')).toBeUndefined();
     });
     it('keeps the previous complete shell when an update asset fails, then works offline', async () => {
         const app = worker();

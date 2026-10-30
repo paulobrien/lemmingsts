@@ -12,7 +12,7 @@ it('packages application source and notices without private game files', () => {
   const root = mkdtempSync(join(tmpdir(), 'lemmings-source-'));
   const files = [
     '.gitignore', 'LICENSE', 'README.md', 'index.html', 'package.json', 'package-lock.json', 'tsconfig.json', 'vite.config.ts', 'playwright.config.ts',
-    'scripts/verify-public-data.ts', 'scripts/package-source.mjs', 'scripts/package-local.mjs', 'scripts/package-windows-audio.mjs', 'docu/LICENCE_REVIEW.md', 'docu/ANDROID_DEVICE_CHECK.md', 'docu/LEMMIX_REPLAY_IMPORT.md',
+    'scripts/verify-public-data.ts', 'scripts/package-source.mjs', 'scripts/package-local.mjs', 'scripts/package-windows-audio.mjs', 'scripts/package-windows-graphics.mjs', 'docu/LICENCE_REVIEW.md', 'docu/ANDROID_DEVICE_CHECK.md', 'docu/LEMMIX_REPLAY_IMPORT.md',
     'public/sw.js', 'public/manifest.webmanifest', 'public/favicon.ico', 'public/data/config.json',
     'public/data/README.md', 'public/data/lemmings/README.md', 'public/data/lemmings_ohNo/README.md',
     'public/data/lemmings_Holiday93/README.md', 'public/data/lemmings_Holiday94/README.md',

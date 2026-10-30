@@ -7,6 +7,7 @@ const indexPath = new URL('index.html', base).pathname;
 const gamePath = new URL('game/', base).pathname;
 const localGamePath = new URL('data/local-game/', base).pathname;
 const localAudioPath = new URL('data/local-windows-audio/', base).pathname;
+const localGraphicsPath = new URL('data/local-windows-graphics/', base).pathname;
 
 function isUsableShellResource(url, response) {
   const contentType = (response.headers.get('content-type') || '').split(';')[0].trim().toLowerCase();
@@ -62,7 +63,7 @@ self.addEventListener('fetch', event => {
   if (request.method !== 'GET' || url.origin !== base.origin || !url.pathname.startsWith(base.pathname)) return;
   // Optional deployment-supplied DOS files are imported into IndexedDB by the
   // application. Never copy those responses into the shared shell cache.
-  if (url.pathname.startsWith(localGamePath) || url.pathname.startsWith(localAudioPath)) return;
+  if (url.pathname.startsWith(localGamePath) || url.pathname.startsWith(localAudioPath) || url.pathname.startsWith(localGraphicsPath)) return;
   const navigation = request.mode === 'navigate';
   const appDocument = url.pathname === base.pathname || url.pathname === indexPath;
   // Vue owns only the home and game routes. Other HTML pages, such as the
