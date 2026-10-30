@@ -86,7 +86,19 @@ describe('home setup', () => {
 
   it('offers manual import when a deployment has no game files', async () => {
     const view = await mount();
-    expect(view.container.textContent).toContain('Add DOS files');
+    const primary = view.container.querySelector<HTMLButtonElement>('button.primary-button')!;
+    const windowsInput = view.container.querySelector<HTMLInputElement>('input[accept*=".iso"]')!;
+    const dosInput = view.container.querySelector<HTMLInputElement>('input[type=file]')!;
+    const openWindows = vi.spyOn(windowsInput, 'click');
+    const openDos = vi.spyOn(dosInput, 'click');
+    expect(primary.textContent).toBe('Add Windows ISO');
+    primary.click();
+    expect(openWindows).toHaveBeenCalledOnce();
+    expect(openDos).not.toHaveBeenCalled();
+    expect(view.container.querySelector<HTMLAnchorElement>('a[href="#dos-title"]')).not.toBeNull();
+    const dosButton = Array.from(view.container.querySelectorAll('button')).find(button => button.textContent === 'Add DOS files')!;
+    dosButton.click();
+    expect(openDos).toHaveBeenCalledOnce();
     expect(view.container.textContent).not.toContain('Game files added to this device.');
     view.unmount();
   });

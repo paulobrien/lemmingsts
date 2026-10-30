@@ -3,6 +3,24 @@ import { resolve } from 'node:path'
 import { expect, test } from '@playwright/test'
 import { zipSync } from 'fflate'
 
+test('offers Windows ISO first while keeping DOS setup available', async ({ page }) => {
+  await page.goto('/')
+  const primary = page.getByRole('button', { name: 'Add Windows ISO' })
+  await expect(primary).toBeVisible()
+  await expect(primary).toHaveClass(/primary-button/)
+  const chooserPromise = page.waitForEvent('filechooser')
+  await primary.click()
+  const chooser = await chooserPromise
+  expect(await chooser.element().getAttribute('accept')).toContain('.iso')
+  await chooser.setFiles({ name: 'incomplete.iso', mimeType: 'application/x-iso9660-image', buffer: Buffer.from('invalid') })
+  await expect(page.getByRole('status').filter({ hasText: 'Your existing Windows files were not changed.' })).toBeVisible()
+  const alternative = page.getByRole('link', { name: 'Have the DOS edition?' })
+  await expect(alternative).toHaveAttribute('href', '#dos-title')
+  await alternative.click()
+  await expect(page.getByRole('heading', { name: 'DOS game files' })).toBeInViewport()
+  await expect(page.getByRole('button', { name: 'Add DOS files' })).toBeVisible()
+})
+
 test('explains local setup and rejects an incomplete import', async ({ page }) => {
   const outgoingWrites: string[] = []
   page.on('request', request => {

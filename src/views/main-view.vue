@@ -5,7 +5,7 @@
       <section class="hero" aria-labelledby="welcome-title">
         <div class="hero-copy">
           <h1 id="welcome-title">Let's get them home.</h1>
-          <p class="intro">{{ ready ? 'Choose a difficulty and level, then lead your lemmings to the exit.' : 'Add your original DOS or Windows Lemmings files to play.' }}</p>
+          <p class="intro">{{ ready ? 'Choose a difficulty and level, then lead your lemmings to the exit.' : 'Add your original Windows or DOS Lemmings files to play.' }}</p>
           <p class="preview-note">Early preview. Testing on different devices is still underway.</p>
           <div v-if="ready" class="actions">
             <label class="game-mode">Game mode
@@ -26,9 +26,10 @@
             <p class="ready-note">Your game files are ready on this device</p>
           </div>
           <div v-else class="actions">
-            <button class="primary-button" type="button" :disabled="busy" @click="fileInput?.click()">{{ busy ? 'Getting things ready…' : 'Add DOS files' }}</button>
-            <button class="text-button folder-button" type="button" :disabled="busy" @click="folderInput?.click()">Or choose a folder</button>
-            <a class="edition-link" href="#voices-title">Have the Windows edition?</a>
+            <button class="primary-button" type="button" :disabled="busy || voiceBusy" @click="voiceInput?.click()">{{ voiceBusy ? 'Getting things ready…' : 'Add Windows ISO' }}</button>
+            <button class="text-button folder-button" type="button" :disabled="busy || voiceBusy" @click="voiceFolderInput?.click()">Or choose a Windows folder</button>
+            <a class="edition-link" href="#dos-title">Have the DOS edition?</a>
+            <p v-if="voiceMessage" class="status-message" role="status">{{ voiceMessage }}</p>
           </div>
           <p class="offline-note" role="status">{{ offlineReadiness === 'checking' ? 'Preparing offline play…' : offlineReadiness === 'ready' ? (ready ? 'The app shell is ready offline; your game files are stored on this device.' : 'The app shell is ready offline. Add your game files to play.') : 'Offline play may be unavailable. Reconnect and reopen the app.' }}</p>
           <p v-if="checkingAutomaticFiles && !ready" class="offline-note" role="status">Checking for game files supplied by this installation. You can also add your own files now.</p>
@@ -52,21 +53,10 @@
           </div>
         </div>
       </section>
-      <section class="setup" aria-labelledby="setup-title">
-        <div><h2 id="setup-title">{{ ready ? 'Your game, on this device' : 'Bring your own game' }}</h2></div>
-        <div class="setup-detail">
-          <p>Files you add stay in this browser. They aren’t uploaded or synced between devices.</p>
-          <p><strong>DOS:</strong> choose the original <strong>.dat</strong> files together, their folder, or a ZIP containing them.</p>
-          <div v-if="ready" class="backup-actions">
-            <button class="text-button" type="button" :disabled="busy || voiceBusy" @click="fileInput?.click()">{{ dosReady ? 'Replace DOS files' : 'Add DOS files' }}</button>
-            <button class="text-button folder-button" type="button" :disabled="busy || voiceBusy" @click="folderInput?.click()">Or choose a folder</button>
-          </div>
-          <button v-if="dosReady" class="text-button" type="button" :disabled="busy || voiceBusy" @click="removeFiles">Remove DOS files</button>
-        </div>
-      </section>
       <section class="setup" aria-labelledby="voices-title">
         <div><h2 id="voices-title">Windows game files</h2></div>
         <div class="setup-detail">
+          <p>Files you add stay in this browser. They aren’t uploaded or synced between devices.</p>
           <p v-if="windowsReady">Your Windows levels, graphics and audio are ready. To replace them, choose the ISO, complete game folder or ZIP.</p>
           <p v-else>Choose a Windows Lemmings <strong>ISO</strong>, or an extracted game folder or ZIP containing its levels, graphics and audio. Windows mode needs no DOS files.</p>
           <div class="backup-actions">
@@ -74,9 +64,20 @@
             <button class="text-button" type="button" :disabled="busy || voiceBusy" @click="voiceFolderInput?.click()">Choose game folder</button>
             <button v-if="voicesReady || graphicsReady || windowsGameReady" class="text-button" type="button" :disabled="busy || voiceBusy" @click="removeVoices">Remove Windows files</button>
           </div>
-          <p v-if="voiceMessage" class="status-message" role="status">{{ voiceMessage }}</p>
+          <p v-if="voiceMessage && ready" class="status-message" role="status">{{ voiceMessage }}</p>
           <input ref="voiceInput" class="visually-hidden" type="file" accept=".wav,.mid,.midi,.zip,.iso,audio/wav,audio/midi,application/zip,application/x-iso9660-image" multiple tabindex="-1" aria-hidden="true" @change="onVoicesSelected" />
           <input ref="voiceFolderInput" class="visually-hidden" type="file" webkitdirectory multiple tabindex="-1" aria-hidden="true" @change="onVoicesSelected" />
+        </div>
+      </section>
+      <section class="setup" aria-labelledby="dos-title">
+        <div><h2 id="dos-title">DOS game files</h2></div>
+        <div class="setup-detail">
+          <p>Choose the original <strong>.dat</strong> files together, their folder, or a ZIP containing them.</p>
+          <div class="backup-actions">
+            <button class="text-button" type="button" :disabled="busy || voiceBusy" @click="fileInput?.click()">{{ dosReady ? 'Replace DOS files' : 'Add DOS files' }}</button>
+            <button class="text-button folder-button" type="button" :disabled="busy || voiceBusy" @click="folderInput?.click()">Or choose a DOS folder</button>
+            <button v-if="dosReady" class="text-button" type="button" :disabled="busy || voiceBusy" @click="removeFiles">Remove DOS files</button>
+          </div>
         </div>
       </section>
       <section class="setup backup" aria-labelledby="backup-title">
