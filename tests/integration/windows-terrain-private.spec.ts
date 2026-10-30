@@ -39,13 +39,14 @@ it.skipIf(process.env.RUN_PRIVATE_GAME_TESTS !== '1' || !process.env.WINDOWS_LEM
           const target = (await resources.getLevel(group, index))!;
           const before = target.hasGroundAt(0, 0);
           const result = await prepareWindowsTerrain(target);
-          if (target.getWindowsTerrainSource()!.special) {
-            expect(result).toEqual({ status: 'special' });
-            special++;
-            continue;
-          }
           expect(result.status, `level ${group + 1}/${index + 1}`).toBe('ready');
           if (result.status !== 'ready') continue;
+          if (target.getWindowsTerrainSource()!.special) {
+            expect(result.usesDosBackground).toBe(true);
+            special++;
+          } else {
+            expect(result.usesDosBackground).toBeUndefined();
+          }
           const style = styles[target.getWindowsTerrainSource()!.graphicSet];
           const objects = mapWindowsObjectSprites(target, style.objects, style.palette);
           for (const object of target.objects) for (const frame of object.animation.frames) {
@@ -60,7 +61,7 @@ it.skipIf(process.env.RUN_PRIVATE_GAME_TESTS !== '1' || !process.env.WINDOWS_LEM
           expect(target.hasGroundAt(x, y)).toBe(false);
           const high = result.layer, pixel = ((y * 2) * high.width + x * 2) * 4;
           expect(high.pixels[pixel + 3]).toBe(0);
-          ready++;
+          if (!result.usesDosBackground) ready++;
         }
       }
       expect(ready).toBeGreaterThan(0);

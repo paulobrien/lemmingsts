@@ -8,6 +8,18 @@ export class WindowsTerrainLayer {
   readonly pixels: Uint8ClampedArray<ArrayBuffer>;
   private readonly mask: Uint8Array;
 
+  /** Preserve special DOS scenery when no corresponding Windows art exists. */
+  static fromLogicalImage(width: number, height: number, image: Uint8ClampedArray): WindowsTerrainLayer {
+    if (image.length !== width * height * 4) throw new Error('Invalid logical terrain image.');
+    const layer = new WindowsTerrainLayer(width, height, [], [], new Uint32Array());
+    for (let y = 0; y < height; y++) for (let x = 0; x < width; x++) {
+      const index = (y * width + x) * 4;
+      const color = (image[index] << 16) | (image[index + 1] << 8) | image[index + 2];
+      layer.update(x, y, color, image[index + 3] !== 0);
+    }
+    return layer;
+  }
+
   constructor(
     readonly logicalWidth: number,
     readonly logicalHeight: number,

@@ -37,11 +37,17 @@ describe('preparing optional Windows terrain', () => {
     expect(target.getWindowsTerrain()).toBeUndefined();
     expect(target.hasGroundAt(0, 0)).toBe(false);
   });
-  it('does not mistake a special full-screen background for a tile-based level', async () => {
+  it('keeps the special DOS background while allowing native foreground art', async () => {
     const target = level(true);
-    expect(await prepareWindowsTerrain(target)).toEqual({ status: 'special' });
-    expect(mocks.get).not.toHaveBeenCalled();
-    expect(target.getWindowsTerrain()).toBeUndefined();
+    target.setGroundAt(0, 0, 0);
+    const result = await prepareWindowsTerrain(target);
+    expect(result.status).toBe('ready');
+    if (result.status !== 'ready') throw new Error('Expected composite terrain');
+    expect(result.usesDosBackground).toBe(true);
+    expect(Array.from(result.layer.pixels.slice(0, 4))).toEqual([0, 0, 0, 255]);
+    target.setWindowsTerrain(result.layer);
+    target.clearGroundAt(0, 0);
+    expect(result.layer.pixels[3]).toBe(0);
   });
   it('falls back safely if optional files are missing, corrupt, or storage fails', async () => {
     for (const setup of [

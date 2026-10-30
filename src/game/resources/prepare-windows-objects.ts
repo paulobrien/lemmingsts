@@ -8,7 +8,7 @@ import type { Frame } from './frame';
 /** Prepare locally owned object artwork, falling back safely when unavailable. */
 export async function prepareWindowsObjects(level: Level): Promise<Map<Frame, WindowsLemmingSprite> | null> {
   const source = level.getWindowsTerrainSource();
-  if (!source || source.special || source.graphicSet < 0 || source.graphicSet > 4) return null;
+  if (!source || source.graphicSet < 0 || source.graphicSet > 4) return null;
   try {
     const [sprites, palette] = await Promise.all([
       getWindowsGraphicsFile(`LEVEL${source.graphicSet}OB.SPR`), getWindowsGraphicsFile(`LEVEL${source.graphicSet}.PAL`),

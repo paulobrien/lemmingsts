@@ -245,6 +245,11 @@ export class Level {
 
     public getWindowsTerrain(): WindowsTerrainLayer | undefined { return this.windowsTerrain; }
 
+    /** The Windows disc has no full-resolution art for the special levels. */
+    public createSpecialWindowsTerrain(): WindowsTerrainLayer {
+        return WindowsTerrainLayer.fromLogicalImage(this.width, this.height, this.groundImage);
+    }
+
     public setWindowsTerrainSource(source: WindowsTerrainSource): void { this.windowsTerrainSource = source; }
     public getWindowsTerrainSource(): WindowsTerrainSource | undefined { return this.windowsTerrainSource; }
 
