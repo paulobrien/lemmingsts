@@ -7,6 +7,19 @@ import { WINDOWS_GAME_FILES, WINDOWS_GROUND_FILES, WINDOWS_LEVEL_FILES } from '.
 // @ts-expect-error Build-only helper has no declaration file.
 import { packageWindowsGame } from '../../scripts/package-windows-game.mjs';
 
+function database() {
+  const data = new Uint8Array(8 + 9 * 137), view = new DataView(data.buffer);
+  view.setUint32(0, 2, true); view.setUint32(4, 9, true);
+  const record = (i: number, depth: number, folder: number, name: string, path = '') => {
+    const start = 8 + i * 137; data[start + 2] = depth; data[start + 3] = folder;
+    data.set(new TextEncoder().encode(name), start + 10); data.set(new TextEncoder().encode(path), start + 50);
+  };
+  record(0, 1, 1, 'Original', 'orig');
+  ['Fun', 'Tricky', 'Taxing', 'Mayhem'].forEach((name, i) => {
+    record(1 + i * 2, 2, 1, name); record(2 + i * 2, 3, 0, name, `LVL000${i}.LVL`);
+  });
+  return data;
+}
 function makeSource(root: string) {
   const source = join(root, 'source'), build = join(root, 'dist');
   mkdirSync(join(source, 'LEVEL/ORIG'), { recursive: true });
@@ -14,7 +27,7 @@ function makeSource(root: string) {
   for (const name of WINDOWS_GAME_FILES) {
     const folder = WINDOWS_LEVEL_FILES.includes(name) ? 'LEVEL/ORIG' : WINDOWS_GROUND_FILES.includes(name) ? 'STYLES' : 'USERS';
     const size = WINDOWS_LEVEL_FILES.includes(name) ? 2048 : WINDOWS_GROUND_FILES.includes(name) ? 1056 : 145;
-    writeFileSync(join(source, folder, name), new Uint8Array(size));
+    writeFileSync(join(source, folder, name), name === 'LEMMINGS.DB' ? database() : new Uint8Array(size));
   }
   return { source, build };
 }

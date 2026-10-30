@@ -68,6 +68,12 @@ if (process.argv[1] && fileURLToPath(import.meta.url) === resolve(process.argv[1
       const audio = packageWindowsAudio(audioDirectory, resolve('dist'));
       console.warn(`Windows audio was added to ${audio}. Anyone with access to this deployment can download it.`);
     }
+    const windowsGameDirectory = resolve(process.env.LEMMINGS_WINDOWS_GAME_DIR || 'dos/windows-game');
+    if (process.env.LEMMINGS_WINDOWS_GAME_DIR || existsSync(windowsGameDirectory)) {
+      const { packageWindowsGame } = await import('./package-windows-game.mjs');
+      const game = packageWindowsGame(windowsGameDirectory, resolve('dist'));
+      console.warn(`Windows game data was added to ${game}. Anyone with access to this deployment can download it.`);
+    }
     const graphicsDirectory = resolve(process.env.LEMMINGS_WINDOWS_GRAPHICS_DIR || 'dos/windows-graphics');
     if (process.env.LEMMINGS_WINDOWS_GRAPHICS_DIR || existsSync(graphicsDirectory)) {
       const { packageWindowsGraphics } = await import('./package-windows-graphics.mjs');
