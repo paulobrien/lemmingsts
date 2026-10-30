@@ -55,9 +55,9 @@ test('animates the player’s actual Windows icon artwork and pauses it with the
   await page.getByRole('button', { name: 'Start level' }).click()
   await expect(page.locator('.game-screen')).toHaveClass(/native-windows-playing/)
   const canvas = page.getByLabel('Lemmings level. Drag to move the view.')
-  // Sample the fast-forward button after the centred native toolbar is scaled.
+  // Sample the original fast-forward artwork inside its Windows button cell.
   const icon = () => canvas.evaluate((element: HTMLCanvasElement) => {
-    const pixels = element.getContext('2d')!.getImageData(438, 426, 35, 46).data
+    const pixels = element.getContext('2d')!.getImageData(492, 340, 44, 66).data
     return Array.from(pixels).join(',')
   })
   const initial = await icon()

@@ -29,6 +29,10 @@
   margin: 0;
 }
 
+.game-screen.is-fullscreen .canvas-frame canvas.windows-panel {
+  width: min(100%, calc(100dvh * 24 / 11));
+}
+
 /* Keep the playfield unobstructed until the game is paused. */
 .game-screen.is-fullscreen .game-controls { display: none; }
 .game-screen.is-fullscreen .game-controls.controls-open {

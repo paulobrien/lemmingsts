@@ -33,25 +33,25 @@ test('Windows minimap follows the live scene, camera and lemmings', async ({ pag
     stage.setMinimapProvider(() => points)
     const pixel = (x: number, y: number) => Array.from(canvas.getContext('2d')!.getImageData(x, y, 1, 1).data)
     stage.redraw(); stage.redraw()
-    const first = [pixel(700, 435), pixel(700, 449), pixel(520, 426), pixel(780, 449)]
+    const first = [pixel(900, 354), pixel(848, 378), pixel(608, 340), pixel(945, 378)]
     // Browsers without the canvas filter still get a monochrome map.
     const context = canvas.getContext('2d')!
     Object.defineProperty(context, 'filter', { value: undefined, configurable: true })
     stage.redraw()
-    const fallback = [pixel(700, 435), pixel(700, 449)]
+    const fallback = [pixel(900, 354), pixel(848, 378)]
     delete (context as unknown as { filter?: string }).filter
     // The native source represents terrain changing during play.
     native.fill(0)
     for (let i = 3; i < native.length; i += 4) native[i] = 255
     points[0].x = 600
     stage.redraw()
-    const changed = [pixel(700, 435), pixel(700, 449), pixel(609, 449)]
+    const changed = [pixel(900, 354), pixel(848, 378), pixel(728, 378)]
     stage.panGameBy(800)
     const camera = stage.getStageImageAt(1, 1)!.viewPoint.x
-    const panned = [pixel(640, 426), pixel(520, 426)]
+    const panned = [pixel(768, 340), pixel(608, 340)]
     stage.zoomGame(1)
     const scale = stage.getStageImageAt(1, 1)!.viewPoint.scale
-    const zoomed = pixel(640, 426)
+    const zoomed = pixel(768, 340)
     stage.setMinimapProvider(null)
     const removed = pixel(600, 440)
     stage.dispose()
@@ -59,8 +59,8 @@ test('Windows minimap follows the live scene, camera and lemmings', async ({ pag
   })
   const blueGrey = [18, 18, 18, 255], green = [0, 255, 0, 255]
   const yellow = [255, 255, 0, 255], black = [0, 0, 0, 255]
-  const grey = [128, 128, 128, 255]
-  expect(result.first).toEqual([blueGrey, green, yellow, black])
+  const grey = [128, 128, 128, 255], panelGrey = [192, 192, 192, 255]
+  expect(result.first).toEqual([blueGrey, green, yellow, panelGrey])
   expect(result.fallback[0][0]).toBe(result.fallback[0][1])
   expect(result.fallback[0][1]).toBe(result.fallback[0][2])
   expect(result.fallback[1]).toEqual(green)

@@ -18,6 +18,17 @@ export class ZoomEventArguments extends Position2D {
     }
 }
 
+/** The stage accepts a pinch only when both touch points belong to the level. */
+export class PinchStartEventArguments {
+    public handled = false;
+    constructor(public first: Position2D, public second: Position2D) {}
+}
+
+/** Ratio and centre in canvas coordinates, including centre motion for panning. */
+export class PinchEventArguments {
+    constructor(public previousCenter: Position2D, public center: Position2D, public scale: number) {}
+}
+
 /** Translates pointer coordinates from CSS pixels to the canvas's drawing space. */
 export class UserInputManager {
     private activePointer: number | null = null;
@@ -26,6 +37,11 @@ export class UserInputManager {
     private mouseDownY = 0;
     private lastMouseX = 0;
     private lastMouseY = 0;
+    private pinchPointer: number | null = null;
+    private pinching = false;
+    private pinchZoomAllowed = false;
+    private pinchX = 0;
+    private pinchY = 0;
 
     public onMouseMove = new EventHandler<MouseMoveEventArguments>();
     public onMouseUp = new EventHandler<Position2D>();
@@ -33,6 +49,8 @@ export class UserInputManager {
     public onCancel = new EventHandler<void>();
     public onDoubleClick = new EventHandler<Position2D>();
     public onZoom = new EventHandler<ZoomEventArguments>();
+    public onPinchStart = new EventHandler<PinchStartEventArguments>();
+    public onPinch = new EventHandler<PinchEventArguments>();
 
     constructor(private element: HTMLCanvasElement) {
         element.addEventListener('pointerdown', this.pointerDown);
@@ -53,6 +71,9 @@ export class UserInputManager {
         this.element.removeEventListener('dblclick', this.doubleClick);
         this.element.removeEventListener('wheel', this.wheel);
         this.activePointer = null;
+        this.pinchPointer = null;
+        this.pinching = false;
+        this.pinchZoomAllowed = false;
     }
 
     private getRelativePosition(clientX: number, clientY: number): Position2D {
@@ -64,7 +85,24 @@ export class UserInputManager {
     }
 
     private pointerDown = (event: PointerEvent): void => {
-        if (this.activePointer !== null || (event.pointerType === 'mouse' && event.button !== 0)) return;
+        if (this.pinching || (event.pointerType === 'mouse' && event.button !== 0)) return;
+        if (this.activePointer !== null) {
+            if (event.pointerType !== 'touch' || this.activePointerType !== 'touch' || event.pointerId === this.activePointer) return;
+            const second = this.getRelativePosition(event.clientX, event.clientY);
+            const first = new Position2D(this.lastMouseX, this.lastMouseY);
+            const pinch = new PinchStartEventArguments(first, second);
+            if (Math.hypot(second.x - first.x, second.y - first.y) >= 8) this.onPinchStart.trigger(pinch);
+            // Cancel a pending tap even when a second finger is outside the
+            // playfield, so a mixed gesture cannot assign an unintended skill.
+            this.onCancel.trigger();
+            this.pinchPointer = event.pointerId;
+            this.pinching = true;
+            this.pinchZoomAllowed = pinch.handled;
+            this.pinchX = second.x; this.pinchY = second.y;
+            this.element.setPointerCapture?.(event.pointerId);
+            event.preventDefault();
+            return;
+        }
         this.activePointer = event.pointerId;
         this.activePointerType = event.pointerType;
         const position = this.getRelativePosition(event.clientX, event.clientY);
@@ -76,6 +114,22 @@ export class UserInputManager {
     };
 
     private pointerMove = (event: PointerEvent): void => {
+        if (this.pinching) {
+            if ((event.pointerId !== this.activePointer && event.pointerId !== this.pinchPointer) ||
+                this.activePointer === null || this.pinchPointer === null) return;
+            const previousCenter = new Position2D((this.lastMouseX + this.pinchX) / 2, (this.lastMouseY + this.pinchY) / 2);
+            const previousDistance = Math.hypot(this.pinchX - this.lastMouseX, this.pinchY - this.lastMouseY);
+            const position = this.getRelativePosition(event.clientX, event.clientY);
+            if (event.pointerId === this.activePointer) { this.lastMouseX = position.x; this.lastMouseY = position.y; }
+            else { this.pinchX = position.x; this.pinchY = position.y; }
+            const distance = Math.hypot(this.pinchX - this.lastMouseX, this.pinchY - this.lastMouseY);
+            if (this.pinchZoomAllowed && previousDistance >= 1 && distance >= 1) {
+                this.onPinch.trigger(new PinchEventArguments(previousCenter,
+                    new Position2D((this.lastMouseX + this.pinchX) / 2, (this.lastMouseY + this.pinchY) / 2), distance / previousDistance));
+            }
+            event.preventDefault();
+            return;
+        }
         if (this.activePointer !== null && event.pointerId !== this.activePointer) return;
         const position = this.getRelativePosition(event.clientX, event.clientY);
         const pressed = this.activePointer === event.pointerId;
@@ -93,6 +147,18 @@ export class UserInputManager {
     };
 
     private pointerUp = (event: PointerEvent): void => {
+        if (this.pinching) {
+            if (event.pointerId === this.activePointer) this.activePointer = null;
+            else if (event.pointerId === this.pinchPointer) this.pinchPointer = null;
+            else return;
+            if (this.activePointer === null && this.pinchPointer === null) {
+                this.pinching = false;
+                this.pinchZoomAllowed = false;
+                this.activePointerType = '';
+            }
+            event.preventDefault();
+            return;
+        }
         if (event.pointerId !== this.activePointer) return;
         this.activePointer = null;
         const position = this.getRelativePosition(event.clientX, event.clientY);
@@ -106,6 +172,17 @@ export class UserInputManager {
     };
 
     private pointerCancel = (event: PointerEvent): void => {
+        if (this.pinching) {
+            if (event.pointerId === this.activePointer) this.activePointer = null;
+            else if (event.pointerId === this.pinchPointer) this.pinchPointer = null;
+            else return;
+            if (this.activePointer === null && this.pinchPointer === null) {
+                this.pinching = false;
+                this.pinchZoomAllowed = false;
+                this.activePointerType = '';
+            }
+            return;
+        }
         if (event.pointerId !== this.activePointer) return;
         this.activePointer = null;
         this.onCancel.trigger();

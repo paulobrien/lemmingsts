@@ -4,6 +4,22 @@ import { DisplayImage } from './display-image';
 import { StageImageProperties } from './stage-image-properties';
 import { UserInputManager } from './user-input-manager';
 
+/** Native Windows layout, in canvas pixels. DOS keeps its original geometry. */
+const WINDOWS_WIDTH = 960, WINDOWS_HEIGHT = 440, WINDOWS_PANEL_HEIGHT = 120;
+const WINDOWS_ICON_X = 8, WINDOWS_ICON_Y = 20, WINDOWS_ICON_SCALE = 2.75;
+const WINDOWS_ICON_TOP = 16, WINDOWS_ICON_COUNT = 13;
+const WINDOWS_MAP_X = 608, WINDOWS_MAP_Y = 20, WINDOWS_MAP_WIDTH = 320, WINDOWS_MAP_HEIGHT = 76;
+const WINDOWS_STATUS_Y = 98;
+const WINDOWS_SCROLL_X = 4, WINDOWS_SCROLL_Y = 0, WINDOWS_SCROLL_WIDTH = 952, WINDOWS_SCROLL_HEIGHT = 16;
+const WINDOWS_SCROLL_ARROW = 16;
+export interface WindowsStatus {
+    needed: number;
+    total: number;
+    out: number;
+    home: number;
+    time: string;
+}
+
 /** handel the display / output of game, gui, ... */
 export class Stage {
 
@@ -22,15 +38,22 @@ export class Stage {
     private nativeGuiCanvas: HTMLCanvasElement | null = null;
     private nativeGuiForegroundCanvas: HTMLCanvasElement | null = null;
     private minimapLemmings: (() => readonly { x: number; y: number }[]) | null = null;
+    private windowsStatus: (() => WindowsStatus) | null = null;
     private minimapDragging = false;
+    private scrollbarDragging = false;
+    private scrollbarDragOffset = 0;
     public readonly onGraphicsError = new EventHandler<string>();
     /** True when the playfield is away from its starting scale. */
     public readonly onZoomChange = new EventHandler<boolean>();
     private readonly defaultZoom: number;
+    private readonly originalCanvasWidth: number;
+    private readonly originalCanvasHeight: number;
 
 
     constructor(canvasForOutput: HTMLCanvasElement, zoom = 2) {
         this.defaultZoom = zoom;
+        this.originalCanvasWidth = canvasForOutput.width;
+        this.originalCanvasHeight = canvasForOutput.height;
         this.controller = new UserInputManager(canvasForOutput);
 
         this.handleOnMouseUp();
@@ -39,6 +62,7 @@ export class Stage {
         this.controller.onCancel.on(() => this.cancelPress());
         this.handleOnDoubleClick();
         this.handelOnZoom();
+        this.handlePinch();
 
         this.stageCav = canvasForOutput;
 
@@ -55,7 +79,7 @@ export class Stage {
     private contentOffset(stageImage: StageImageProperties): Position2D {
         if (!stageImage.display) return new Position2D(0, 0);
         if (stageImage === this.guiImgProps && this.minimapLemmings) {
-            return new Position2D(Math.max(0, Math.floor((stageImage.width - stageImage.display.getWidth() * stageImage.viewPoint.scale) / 2)), 0);
+            return new Position2D(WINDOWS_ICON_X, WINDOWS_ICON_Y);
         }
         if (stageImage !== this.gameImgProps) return new Position2D(0, 0);
         const width = stageImage.display.getWidth(), height = stageImage.display.getHeight();
@@ -68,7 +92,8 @@ export class Stage {
     private calcPosition2D(stageImage: StageImageProperties, e: Position2D): Position2D {
         const offset = this.contentOffset(stageImage);
         const x = (stageImage.viewPoint.getSceneX(e.x - stageImage.x - offset.x));
-        const y = (stageImage.viewPoint.getSceneY(e.y - stageImage.y - offset.y));
+        const y = (stageImage.viewPoint.getSceneY(e.y - stageImage.y - offset.y)) +
+            (stageImage === this.guiImgProps && this.minimapLemmings ? WINDOWS_ICON_TOP : 0);
 
         const result = new Position2D(x, y);
         // Keep touch assistance bounded so a tap still selects a nearby lemming.
@@ -79,6 +104,11 @@ export class Stage {
     /** Do not target the edge of a level by tapping its empty margins. */
     private isInContent(stageImage: StageImageProperties, e: Position2D): boolean {
         if (!stageImage.display || (stageImage !== this.gameImgProps && !(stageImage === this.guiImgProps && this.minimapLemmings))) return true;
+        if (stageImage === this.guiImgProps) {
+            const x = e.x - stageImage.x - WINDOWS_ICON_X, y = e.y - stageImage.y - WINDOWS_ICON_Y;
+            return x >= 0 && x < WINDOWS_ICON_COUNT * 16 * WINDOWS_ICON_SCALE &&
+                y >= 0 && y < (40 - WINDOWS_ICON_TOP) * WINDOWS_ICON_SCALE;
+        }
         const width = stageImage.display.getWidth(), height = stageImage.display.getHeight();
         if (!width || !height) return true;
         const offset = this.contentOffset(stageImage), scale = stageImage.viewPoint.scale;
@@ -95,6 +125,7 @@ export class Stage {
             }
 
             if (this.isOnMinimap(e)) return;
+            if (this.isOnScrollbar(e)) return;
 
             const stageImage = this.getStageImageAt(e.x, e.y);
             if ((stageImage == null) || (stageImage.display == null) || !this.isInContent(stageImage, e)) return;
@@ -111,6 +142,10 @@ export class Stage {
                 return;
             }
 
+            if (this.isOnScrollbar(e)) {
+                this.beginScrollbar(e);
+                return;
+            }
             if (this.isOnMinimap(e)) {
                 this.minimapDragging = true;
                 this.navigateMinimap(e);
@@ -141,6 +176,10 @@ export class Stage {
                 return;
             }
 
+            if (this.scrollbarDragging) {
+                this.scrollbarDragging = false;
+                return;
+            }
             if (this.minimapDragging) {
                 this.minimapDragging = false;
                 return;
@@ -169,6 +208,10 @@ export class Stage {
                 return;
             }
 
+            if (this.scrollbarDragging && e.button) {
+                this.navigateScrollbar(e.x);
+                return;
+            }
             if (this.minimapDragging && e.button) {
                 this.navigateMinimap(e);
                 return;
@@ -221,8 +264,43 @@ export class Stage {
         });
     }
 
+    /** Pinch only the playfield and keep the level beneath the fingers fixed. */
+    private handlePinch(): void {
+        this.controller.onPinchStart.on(event => {
+            if (!event || this.pressedImage !== this.gameImgProps || !this.gameImgProps.display) return;
+            if (this.getStageImageAt(event.first.x, event.first.y) !== this.gameImgProps ||
+                this.getStageImageAt(event.second.x, event.second.y) !== this.gameImgProps ||
+                !this.isInContent(this.gameImgProps, event.first) || !this.isInContent(this.gameImgProps, event.second)) return;
+            event.handled = true;
+        });
+        this.controller.onPinch.on(event => {
+            const image = this.gameImgProps;
+            if (!event || !image.display || !Number.isFinite(event.scale) || event.scale <= 0) return;
+            const oldScale = image.viewPoint.scale;
+            const oldOffset = this.contentOffset(image);
+            const worldX = image.viewPoint.x + (event.previousCenter.x - image.x - oldOffset.x) / oldScale;
+            const worldY = image.viewPoint.y + (event.previousCenter.y - image.y - oldOffset.y) / oldScale;
+            image.viewPoint.scale = this.limitValue(0.5, oldScale * event.scale, 10);
+            const offset = this.contentOffset(image);
+            image.viewPoint.x = this.limitValue(0,
+                worldX - (event.center.x - image.x - offset.x) / image.viewPoint.scale,
+                image.display.getWidth() - image.width / image.viewPoint.scale);
+            image.viewPoint.y = this.limitValue(0,
+                worldY - (event.center.y - image.y - offset.y) / image.viewPoint.scale,
+                image.display.getHeight() - image.height / image.viewPoint.scale);
+            if (image.viewPoint.scale !== oldScale) this.onZoomChange.trigger(image.viewPoint.scale !== this.defaultZoom);
+            this.clear(image);
+            const frame = image.display.getImageData();
+            if (!frame) return;
+            this.draw(image, frame);
+            this.drawScrollbar();
+            this.drawMinimap();
+        });
+    }
+
     private cancelPress(): void {
         this.minimapDragging = false;
+        this.scrollbarDragging = false;
         if (this.pressedImage && this.pressedImage.display && this.pressPosition) {
             this.pressedImage.display.onMouseUp.trigger(this.calcPosition2D(this.pressedImage, this.pressPosition));
         }
@@ -243,11 +321,21 @@ export class Stage {
 
     /** Enable the Windows micro-map for a live game, or remove it on teardown. */
     public setMinimapProvider(provider: (() => readonly { x: number; y: number }[]) | null): void {
+        const wasWindows = !!this.minimapLemmings;
         this.minimapLemmings = provider;
         this.minimapDragging = false;
-        this.updateWindowsPanelScale();
-        // Clear both margins when switching between centred Windows and DOS panels.
-        this.clear(this.guiImgProps);
+        this.scrollbarDragging = false;
+        if (wasWindows !== !!provider) {
+            this.stageCav.width = provider ? WINDOWS_WIDTH : this.originalCanvasWidth;
+            this.stageCav.height = provider ? WINDOWS_HEIGHT : this.originalCanvasHeight;
+            this.updateStageSize();
+        }
+        this.redraw();
+    }
+
+    /** Data for the original-style Windows status strip, updated on redraw. */
+    public setWindowsStatusProvider(provider: (() => WindowsStatus) | null): void {
+        this.windowsStatus = provider;
         this.redraw();
     }
 
@@ -257,10 +345,7 @@ export class Stage {
             this.guiImgProps.viewPoint.scale = this.defaultZoom;
             return;
         }
-        const width = this.guiImgProps.display?.getWidth() || 320;
-        const height = this.guiImgProps.display?.getHeight() || 40;
-        this.guiImgProps.viewPoint.scale = Math.min(this.defaultZoom * 1.15,
-            this.guiImgProps.width / width, this.guiImgProps.height / height);
+        this.guiImgProps.viewPoint.scale = WINDOWS_ICON_SCALE;
     }
 
     /** Move the camera by logical world pixels (also available to keyboard controls). */
@@ -269,17 +354,73 @@ export class Stage {
         this.updateViewPoint(this.gameImgProps, x * scale, y * scale, 0);
     }
 
+    /** Windows horizontal scrollbar mirrors the camera and its current zoom. */
+    private scrollbarBounds(): { x: number; y: number; width: number; height: number; thumbX: number; thumbWidth: number; maxX: number } | null {
+        if (!this.minimapLemmings || !this.gameImgProps.display?.getWidth()) return null;
+        const image = this.gameImgProps;
+        const world = image.display!.getWidth();
+        const visible = Math.min(world, image.width / image.viewPoint.scale);
+        const maxX = Math.max(0, world - visible);
+        const width = WINDOWS_SCROLL_WIDTH - 2 * WINDOWS_SCROLL_ARROW;
+        const thumbWidth = Math.min(width, Math.max(16, Math.round(width * visible / world)));
+        const x = WINDOWS_SCROLL_X + WINDOWS_SCROLL_ARROW;
+        const thumbX = x + (maxX ? Math.round((width - thumbWidth) * image.viewPoint.x / maxX) : 0);
+        return { x, y: this.guiImgProps.y + WINDOWS_SCROLL_Y, width, height: WINDOWS_SCROLL_HEIGHT, thumbX, thumbWidth, maxX };
+    }
+
+    private isOnScrollbar(point: Position2D): boolean {
+        const bounds = this.scrollbarBounds();
+        return !!bounds && point.x >= WINDOWS_SCROLL_X && point.x < WINDOWS_SCROLL_X + WINDOWS_SCROLL_WIDTH &&
+            point.y >= bounds.y && point.y < bounds.y + bounds.height;
+    }
+
+    private beginScrollbar(point: Position2D): void {
+        const bounds = this.scrollbarBounds();
+        if (!bounds) return;
+        if (point.x < bounds.x) { this.panGameBy(-160); return; }
+        if (point.x >= bounds.x + bounds.width) { this.panGameBy(160); return; }
+        this.scrollbarDragging = true;
+        this.scrollbarDragOffset = point.x >= bounds.thumbX && point.x < bounds.thumbX + bounds.thumbWidth
+            ? point.x - bounds.thumbX : bounds.thumbWidth / 2;
+        this.navigateScrollbar(point.x);
+    }
+
+    private navigateScrollbar(x: number): void {
+        const bounds = this.scrollbarBounds();
+        if (!bounds || !bounds.maxX || bounds.width <= bounds.thumbWidth) return;
+        const fraction = Math.max(0, Math.min(1, (x - bounds.x - this.scrollbarDragOffset) / (bounds.width - bounds.thumbWidth)));
+        const image = this.gameImgProps;
+        this.updateViewPoint(image, (fraction * bounds.maxX - image.viewPoint.x) * image.viewPoint.scale, 0, 0);
+    }
+
+    private drawScrollbar(): void {
+        const bounds = this.scrollbarBounds();
+        const ctx = this.stageCav.getContext('2d');
+        if (!bounds || !ctx) return;
+        ctx.save();
+        ctx.fillStyle = '#dedede';
+        ctx.fillRect(WINDOWS_SCROLL_X, bounds.y, WINDOWS_SCROLL_WIDTH, WINDOWS_SCROLL_HEIGHT);
+        const button = (x: number, width: number) => {
+            ctx.fillStyle = '#c0c0c0'; ctx.fillRect(x, bounds.y, width, bounds.height);
+            ctx.fillStyle = '#fff'; ctx.fillRect(x, bounds.y, width, 1); ctx.fillRect(x, bounds.y, 1, bounds.height);
+            ctx.fillStyle = '#808080'; ctx.fillRect(x, bounds.y + bounds.height - 1, width, 1); ctx.fillRect(x + width - 1, bounds.y, 1, bounds.height);
+        };
+        button(WINDOWS_SCROLL_X, WINDOWS_SCROLL_ARROW);
+        button(bounds.x + bounds.width, WINDOWS_SCROLL_ARROW);
+        button(bounds.thumbX, bounds.thumbWidth);
+        ctx.fillStyle = '#333';
+        for (const [x, direction] of [[WINDOWS_SCROLL_X + 6, -1], [bounds.x + bounds.width + 9, 1]]) {
+            ctx.beginPath(); ctx.moveTo(x + 3 * direction, bounds.y + 8);
+            ctx.lineTo(x - 2 * direction, bounds.y + 4); ctx.lineTo(x - 2 * direction, bounds.y + 12); ctx.fill();
+        }
+        ctx.restore();
+    }
+
     /** The map occupies the free part of the Windows bar, to the right of its icons. */
     private minimapBounds(): { x: number; y: number; width: number; height: number } | null {
         if (!this.minimapLemmings || !this.gameImgProps.display?.getWidth() || !this.gameImgProps.display.getHeight()) return null;
-        const panelX = this.guiImgProps.x + this.contentOffset(this.guiImgProps).x;
-        const x = panelX + 13 * 16 * this.guiImgProps.viewPoint.scale + 8;
-        const y = this.guiImgProps.y + 20 * this.guiImgProps.viewPoint.scale;
-        const panelWidth = Math.min(this.guiImgProps.width,
-            (this.guiImgProps.display?.getWidth() ?? 0) * this.guiImgProps.viewPoint.scale);
-        const width = panelWidth - (x - panelX) - 8;
-        const height = Math.min(20 * this.guiImgProps.viewPoint.scale, this.guiImgProps.height - (y - this.guiImgProps.y));
-        return width > 4 && height > 4 ? { x, y, width, height } : null;
+        return { x: this.guiImgProps.x + WINDOWS_MAP_X, y: this.guiImgProps.y + WINDOWS_MAP_Y,
+            width: WINDOWS_MAP_WIDTH, height: WINDOWS_MAP_HEIGHT };
     }
 
     private isOnMinimap(point: Position2D): boolean {
@@ -306,6 +447,13 @@ export class Stage {
         if (!ctx) return;
         const width = image.display.getWidth(), height = image.display.getHeight();
         ctx.save();
+        // A recessed frame keeps the miniature distinct from the surrounding
+        // Windows control bar, as in the original window.
+        ctx.fillStyle = '#808080';
+        ctx.fillRect(bounds.x - 3, bounds.y - 3, bounds.width + 6, bounds.height + 5);
+        ctx.fillStyle = '#fff';
+        ctx.fillRect(bounds.x - 3, bounds.y + bounds.height + 1, bounds.width + 6, 1);
+        ctx.fillRect(bounds.x + bounds.width + 2, bounds.y - 3, 1, bounds.height + 5);
         ctx.beginPath();
         ctx.rect(bounds.x, bounds.y, bounds.width, bounds.height);
         ctx.clip();
@@ -386,7 +534,9 @@ export class Stage {
         this.keyboardTarget = null;
         this.exampleHint = null;
         this.minimapLemmings = null;
+        this.windowsStatus = null;
         this.minimapDragging = false;
+        this.scrollbarDragging = false;
         this.nativeCanvas = null;
         this.nativeForegroundCanvas = null;
         this.nativeGuiCanvas = null;
@@ -428,7 +578,7 @@ export class Stage {
 
         this.draw(stageImage, gameImg);
 
-        if (stageImage === this.gameImgProps) this.drawMinimap();
+        if (stageImage === this.gameImgProps) { this.drawScrollbar(); this.drawMinimap(); }
 
     }
 
@@ -450,11 +600,12 @@ export class Stage {
         const stageWidth = ctx.canvas.width;
 
         this.gameImgProps.y = 0;
-        this.gameImgProps.height = stageHeight - 100;
+        const panelHeight = this.minimapLemmings ? WINDOWS_PANEL_HEIGHT : 100;
+        this.gameImgProps.height = stageHeight - panelHeight;
         this.gameImgProps.width = stageWidth;
 
-        this.guiImgProps.y = stageHeight - 100;
-        this.guiImgProps.height = 100;
+        this.guiImgProps.y = stageHeight - panelHeight;
+        this.guiImgProps.height = panelHeight;
         this.guiImgProps.width = stageWidth;
         this.updateWindowsPanelScale();
 
@@ -521,6 +672,7 @@ export class Stage {
                 this.draw(this.guiImgProps, guiImg);
             }
         }
+        this.drawScrollbar();
         this.drawMinimap();
     }
 
@@ -652,6 +804,21 @@ export class Stage {
         if (!ctx) return;
         ctx.imageSmoothingEnabled = false;
         ctx.globalAlpha = 1;
+        if (display === this.guiImgProps && this.minimapLemmings) {
+            // The Win95 window places the command bar above a separate status
+            // strip. Crop the shared DOS-shaped panel to its actual icons and
+            // numbers so neither its green HUD nor its unused map area shows.
+            ctx.fillStyle = '#c0c0c0';
+            ctx.fillRect(display.x, display.y, display.width, display.height);
+            const source = nativeCanvas ?? display.cav;
+            const factor = nativeCanvas ? 2 : 1;
+            ctx.drawImage(source, 0, WINDOWS_ICON_TOP * factor,
+                WINDOWS_ICON_COUNT * 16 * factor, (40 - WINDOWS_ICON_TOP) * factor,
+                display.x + WINDOWS_ICON_X, display.y + WINDOWS_ICON_Y,
+                WINDOWS_ICON_COUNT * 16 * WINDOWS_ICON_SCALE, (40 - WINDOWS_ICON_TOP) * WINDOWS_ICON_SCALE);
+            this.drawWindowsStatus(ctx);
+            return;
+        }
         // Transparent erased terrain must replace pixels from the prior frame.
         if (display === this.gameImgProps) {
             ctx.fillStyle = '#000000';
@@ -702,5 +869,33 @@ export class Stage {
             ctx.fillStyle = 'black';
             ctx.fillRect(destX, destY, Math.trunc(dW * display.viewPoint.scale), Math.trunc(dH * display.viewPoint.scale));
         }
+    }
+
+    /** A live Win95-style status strip; all game values still come from the engine. */
+    private drawWindowsStatus(ctx: CanvasRenderingContext2D): void {
+        const y = this.guiImgProps.y + WINDOWS_STATUS_Y;
+        const status = this.windowsStatus?.();
+        ctx.save();
+        ctx.fillStyle = '#c0c0c0';
+        ctx.fillRect(0, y, this.guiImgProps.width, WINDOWS_PANEL_HEIGHT - WINDOWS_STATUS_Y);
+        const fields: Array<[number, number, string]> = [
+            [4, 650, status ? `Save ${String(status.needed).padStart(2, '0')} of ${status.total} lemmings` : ''],
+            [656, 82, status ? `Out: ${String(status.out).padStart(2, '0')}` : ''],
+            [740, 92, status ? `Home: ${String(status.home).padStart(2, '0')}` : ''],
+            [834, this.guiImgProps.width - 838, status ? `Time: ${status.time.replace(/^(\d+)-(\d+)$/, (_, m: string, s: string) => `${m.padStart(2, '0')}:${s}`)}` : ''],
+        ];
+        ctx.textBaseline = 'middle';
+        ctx.font = '14px Arial, sans-serif';
+        for (const [x, width, text] of fields) {
+            ctx.fillStyle = '#808080';
+            ctx.fillRect(x, y + 1, width, 1);
+            ctx.fillRect(x, y + 1, 1, 19);
+            ctx.fillStyle = '#fff';
+            ctx.fillRect(x, y + 20, width, 1);
+            ctx.fillRect(x + width - 1, y + 1, 1, 19);
+            ctx.fillStyle = '#000';
+            ctx.fillText(text, x + 5, y + 11, Math.max(0, width - 10));
+        }
+        ctx.restore();
     }
 }

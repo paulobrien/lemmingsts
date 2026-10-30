@@ -6,7 +6,8 @@ function testCanvas(): HTMLCanvasElement {
   const canvas = document.createElement('canvas');
   canvas.width = 800; canvas.height = 480;
   canvas.getBoundingClientRect = () => ({ left: 10, top: 20, width: 400, height: 240 } as DOMRect);
-  canvas.getContext = vi.fn(() => ({ canvas, fillRect: vi.fn(), clearRect: vi.fn() })) as unknown as typeof canvas.getContext;
+  canvas.getContext = vi.fn(() => ({ canvas, fillRect: vi.fn(), clearRect: vi.fn(), save: vi.fn(), restore: vi.fn(),
+    beginPath: vi.fn(), moveTo: vi.fn(), lineTo: vi.fn(), fill: vi.fn() })) as unknown as typeof canvas.getContext;
   return canvas;
 }
 function pointer(element: HTMLElement, type: string, x: number, y: number, id = 1): void {
@@ -28,31 +29,47 @@ describe('Windows minimap navigation', () => {
     const panelDown = vi.fn(); const sceneDown = vi.fn();
     panel.onMouseDown.on(panelDown); scene.onMouseDown.on(sceneDown);
     stage.setMinimapProvider(() => []);
-    // At the 2.3x Windows GUI scale the map is x≈518..760, y=426..472.
-    pointer(canvas, 'pointerdown', 329.6, 244.5);
-    pointer(canvas, 'pointerup', 329.6, 244.5);
+    expect([canvas.width, canvas.height]).toEqual([960, 440]);
+    // The Windows map occupies x=608..928, y=340..416 in a 960×440 canvas.
+    pointer(canvas, 'pointerdown', 330, 226.2);
+    pointer(canvas, 'pointerup', 330, 226.2);
     const camera = stage.getStageImageAt(1, 1)!.viewPoint;
-    expect(camera.x).toBeCloseTo(600);
+    expect(camera.x).toBeCloseTo(560);
     expect(camera.y).toBe(0);
     expect(panelDown).not.toHaveBeenCalled();
     expect(sceneDown).not.toHaveBeenCalled();
-    pointer(canvas, 'pointerdown', 329.6, 244.5);
-    pointer(canvas, 'pointermove', 390, 244.5);
-    pointer(canvas, 'pointerup', 390, 244.5);
-    expect(camera.x).toBe(1200);
+    pointer(canvas, 'pointerdown', 330, 226.2);
+    pointer(canvas, 'pointermove', 400, 226.2);
+    pointer(canvas, 'pointerup', 400, 226.2);
+    expect(camera.x).toBe(1120);
     stage.panGameBy(-200);
-    expect(camera.x).toBe(1000);
+    expect(camera.x).toBe(920);
+    // Arrows and thumb drag move the view without ever pressing a skill.
+    pointer(canvas, 'pointerdown', 13.3, 198.9);
+    pointer(canvas, 'pointerup', 13.3, 198.9);
+    expect(camera.x).toBe(760);
+    stage.panGameBy(-2000);
+    pointer(canvas, 'pointerdown', 51.7, 198.9);
+    pointer(canvas, 'pointermove', 400, 198.9);
+    pointer(canvas, 'pointerup', 400, 198.9);
+    expect(camera.x).toBe(1120);
+    expect(panelDown).not.toHaveBeenCalled();
     // The Windows panel is centred; margins are inert and button coordinates
     // still refer to the original logical 320-pixel panel.
-    pointer(canvas, 'pointerdown', 20, 244.5);
-    pointer(canvas, 'pointerup', 20, 244.5);
+    pointer(canvas, 'pointerdown', 11, 227.3);
+    pointer(canvas, 'pointerup', 11, 227.3);
     expect(panelDown).not.toHaveBeenCalled();
-    pointer(canvas, 'pointerdown', 35.2, 244.5);
-    pointer(canvas, 'pointerup', 35.2, 244.5);
+    pointer(canvas, 'pointerdown', 22.5, 227.3);
+    pointer(canvas, 'pointerup', 22.5, 227.3);
     expect(panelDown).toHaveBeenCalledOnce();
     expect(panelDown.mock.calls[0][0].x).toBeCloseTo(8);
-    expect(panelDown.mock.calls[0][0].y).toBeCloseTo(30);
+    expect(panelDown.mock.calls[0][0].y).toBe(30);
+    // The status strip does not activate an icon underneath it.
+    pointer(canvas, 'pointerdown', 22.5, 255);
+    pointer(canvas, 'pointerup', 22.5, 255);
+    expect(panelDown).toHaveBeenCalledOnce();
     stage.setMinimapProvider(null);
+    expect([canvas.width, canvas.height]).toEqual([800, 480]);
     pointer(canvas, 'pointerdown', 329.6, 244.5);
     pointer(canvas, 'pointerup', 329.6, 244.5);
     expect(panelDown).toHaveBeenCalledTimes(2);

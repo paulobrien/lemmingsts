@@ -29,6 +29,7 @@ import { getWindowsAudioFile } from '@/game/resources/file/game-file-store';
 import { readGameMode } from '@/game/game-mode';
 import { Stage } from '@/game/view/stage';
 import { KeyboardTargeting } from '@/game/view/keyboard-targeting';
+import { readWindowsIconAnimationsEnabled, saveWindowsIconAnimationsEnabled } from '@/game/view/windows-icon-preference';
 import { assignPlayerSkill } from '@/game/view/player-assignment';
 import { useGameFullscreen } from './use-game-fullscreen';
 import './game-fullscreen.css';
@@ -146,6 +147,7 @@ export default defineComponent({
         const releaseRate = ref(0);
         const gameTime = ref('');
         const settings = readSettings();
+        const windowsIconAnimationsEnabled = ref(readWindowsIconAnimationsEnabled());
         const speed = ref(settings.speed);
         watch([fullscreenActive, playing, paused, finished, nukeArmed, deferFullscreenControls, nativeWindowsPanel], ([active, isPlaying, isPaused, isFinished, nuke, deferred, nativePanel]) => {
             fullscreenControlsOpen.value = active && !deferred && (!isPlaying || isPaused || isFinished || (nuke && !nativePanel));
@@ -264,6 +266,7 @@ export default defineComponent({
             windowsEffects.stop();
             effects?.stop();
             effects = null;
+            stage?.setWindowsStatusProvider(null);
             stage?.setMinimapProvider(null);
             game?.stop();
             game = null;
@@ -370,6 +373,7 @@ export default defineComponent({
                     if (disposed || generation !== loadGeneration || !stage) { nextGame.stop(); return; }
                     if (panel) {
                         nextGame.setWindowsPanel(panel.panel, panel.nativePanel, panel.animations, panel.nativeAnimations);
+                        nextGame.setWindowsIconAnimationsEnabled(windowsIconAnimationsEnabled.value);
                         nativeWindowsPanel.value = panel.panel.length === 13;
                         windowsSkillIcons.value = panel.skillIcons;
                     }
@@ -419,6 +423,12 @@ export default defineComponent({
                 if (gameMode.value === 'windows' && nativeWindowsPanel.value) {
                     const activeGame = game;
                     stage.setMinimapProvider(() => activeGame.getLemmingManager().getSelectableLemmings());
+                    stage.setWindowsStatusProvider(() => {
+                        const victory = activeGame.getVictoryCondition();
+                        return { needed: victory.getNeedCount(), total: victory.getReleaseCount(),
+                            out: victory.getOutCount(), home: victory.getSurvivorsCount(),
+                            time: activeGame.getGameTimer().getGameLeftTimeString() };
+                    });
                 }
                 stage.getGuiDisplay().onMouseDown.on(() => {
                     if (game && !finished.value) {
@@ -557,6 +567,12 @@ export default defineComponent({
                 if (gameMode.value === 'windows') game.setFastForwardActive(value > 1);
             }
             noteSaveResult(saveSettings({ speed: value, musicEnabled: musicEnabled.value, soundEnabled: soundEnabled.value }));
+        }
+
+        function toggleWindowsIconAnimations() {
+            windowsIconAnimationsEnabled.value = !windowsIconAnimationsEnabled.value;
+            game?.setWindowsIconAnimationsEnabled(windowsIconAnimationsEnabled.value);
+            noteSaveResult(saveWindowsIconAnimationsEnabled(windowsIconAnimationsEnabled.value));
         }
 
         function onSpeedChange(event: Event) {
@@ -740,6 +756,6 @@ export default defineComponent({
             level, levelIndex, groupName, title, error, loading, playing, paused,
             finished, levelSucceeded, nextLevelAvailable, savedCount, saveWarning, assignmentMessage, keyboardMessage, resultMessage, hints, availableHints, hintCompatibility, visibleHintCount, exampleMove, exampleBusy, exampleError, exampleSkillName, exampleClock, hideHints, showExample, clearExample, nukeArmed, nukeExecuted, selectedSkill, skillCounts, releaseRate, gameTime, speed,
             musicEnabled, soundEnabled, skillButtons, canPlay, start, openPauseMenu, resumeFromMenu, restartFromMenu, selectSkill, changeReleaseRate,
-            setSpeed, onSpeedChange, toggleMusic, toggleSound, zoom, zoomChanged, resetZoom, panLevel, changeLevel, loadLevel, confirmNuke, cancelNuke };
+            setSpeed, onSpeedChange, toggleMusic, toggleSound, windowsIconAnimationsEnabled, toggleWindowsIconAnimations, zoom, zoomChanged, resetZoom, panLevel, changeLevel, loadLevel, confirmNuke, cancelNuke };
     },
 });

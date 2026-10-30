@@ -11,7 +11,8 @@ function canvas(): HTMLCanvasElement {
     element.width = 800;
     element.height = 480;
     element.getBoundingClientRect = () => ({ left: 10, top: 20, width: 400, height: 240 } as DOMRect);
-    element.getContext = vi.fn(() => ({ canvas: element, fillRect: vi.fn() })) as unknown as typeof element.getContext;
+    element.getContext = vi.fn(() => ({ canvas: element, fillRect: vi.fn(), save: vi.fn(), restore: vi.fn(),
+        beginPath: vi.fn(), moveTo: vi.fn(), lineTo: vi.fn(), fill: vi.fn() })) as unknown as typeof element.getContext;
     return element;
 }
 
@@ -129,6 +130,74 @@ describe('canvas input', () => {
         expect(click).not.toHaveBeenCalled();
         pointer(element, 'pointerdown', 110, 70);
         pointer(element, 'pointerup', 110, 70);
+        expect(click).toHaveBeenCalledOnce();
+        stage.dispose();
+    });
+
+    it('zooms around the pinch centre without assigning a skill, then accepts a fresh tap', () => {
+        const element = canvas();
+        const stage = new Stage(element);
+        const playfield = stage.getGameDisplay();
+        vi.spyOn(playfield, 'getWidth').mockReturnValue(1600);
+        vi.spyOn(playfield, 'getHeight').mockReturnValue(400);
+        const click = vi.fn(), changed = vi.fn();
+        playfield.onMouseDown.on(click); stage.onZoomChange.on(changed);
+        const view = stage.getStageImageAt(1, 1)!.viewPoint;
+        view.x = 200; view.y = 100;
+        pointer(element, 'pointerdown', 110, 80, 1);
+        pointer(element, 'pointerdown', 210, 80, 2);
+        pointer(element, 'pointermove', 250, 80, 2);
+        expect(view.scale).toBeCloseTo(2.8);
+        // The world position under the moving pinch centre is retained.
+        expect(view.x + 340 / view.scale).toBeCloseTo(350);
+        expect(view.y + 120 / view.scale).toBeCloseTo(160);
+        expect(changed).toHaveBeenLastCalledWith(true);
+        pointer(element, 'pointerup', 110, 80, 1);
+        pointer(element, 'pointermove', 260, 80, 2);
+        pointer(element, 'pointerup', 260, 80, 2);
+        expect(view.scale).toBeCloseTo(2.8);
+        expect(click).not.toHaveBeenCalled();
+        stage.resetZoom();
+        expect(view.scale).toBe(2);
+        expect(changed).toHaveBeenLastCalledWith(false);
+        pointer(element, 'pointerdown', 110, 80, 3);
+        pointer(element, 'pointerup', 110, 80, 3);
+        expect(click).toHaveBeenCalledOnce();
+        stage.dispose();
+    });
+
+    it('suppresses a cancelled pinch and does not start a pinch across the Windows toolbar or map', () => {
+        const element = canvas();
+        const stage = new Stage(element);
+        const playfield = stage.getGameDisplay();
+        vi.spyOn(playfield, 'getWidth').mockReturnValue(1600);
+        vi.spyOn(playfield, 'getHeight').mockReturnValue(400);
+        const click = vi.fn(), panelClick = vi.fn();
+        playfield.onMouseDown.on(click);
+        stage.getGuiDisplay().onMouseDown.on(panelClick);
+        stage.setMinimapProvider(() => []);
+        const view = stage.getStageImageAt(1, 1)!.viewPoint;
+        // Both pointers on the level: cancelling either prevents a tap.
+        pointer(element, 'pointerdown', 110, 80, 1);
+        pointer(element, 'pointerdown', 210, 80, 2);
+        pointer(element, 'pointercancel', 210, 80, 2);
+        pointer(element, 'pointerup', 110, 80, 1);
+        expect(click).not.toHaveBeenCalled();
+        expect(view.scale).toBe(2);
+        // The second finger lands on the minimap; it must not start a pinch,
+        // navigate the map, or activate a panel button.
+        pointer(element, 'pointerdown', 110, 80, 3);
+        pointer(element, 'pointerdown', 330, 226, 4);
+        pointer(element, 'pointermove', 360, 226, 4);
+        pointer(element, 'pointerup', 360, 226, 4);
+        pointer(element, 'pointerup', 110, 80, 3);
+        expect(view.scale).toBe(2);
+        expect(view.x).toBe(0);
+        expect(panelClick).not.toHaveBeenCalled();
+        expect(click).not.toHaveBeenCalled();
+        // A subsequent deliberate single-finger tap still works normally.
+        pointer(element, 'pointerdown', 110, 80, 5);
+        pointer(element, 'pointerup', 110, 80, 5);
         expect(click).toHaveBeenCalledOnce();
         stage.dispose();
     });

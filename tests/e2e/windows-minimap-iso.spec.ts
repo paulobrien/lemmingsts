@@ -48,8 +48,8 @@ test('the Windows fullscreen minimap moves the view without activating the toolb
   // The yellow camera outline's top edge provides a stable measure of the
   // viewport location without exposing any production internals to tests.
   const cameraLeft = () => canvas.evaluate((element: HTMLCanvasElement) => {
-    const row = element.getContext('2d')!.getImageData(519, 426, 240, 1).data
-    for (let x = 0; x < 240; x++) {
+    const row = element.getContext('2d')!.getImageData(608, 340, 320, 1).data
+    for (let x = 0; x < 320; x++) {
       if (row[x * 4] === 255 && row[x * 4 + 1] === 255 && row[x * 4 + 2] === 0) return x
     }
     return -1
@@ -57,10 +57,10 @@ test('the Windows fullscreen minimap moves the view without activating the toolb
   const position = async (x: number) => {
     const box = await canvas.boundingBox()
     if (!box) throw new Error('Canvas is not visible')
-    return { x: box.x + box.width * x / 800, y: box.y + box.height * 449 / 480 }
+    return { x: box.x + box.width * x / 960, y: box.y + box.height * 378 / 440 }
   }
   const selectedBefore = await page.locator('.skill-button[aria-pressed="true"]').allTextContents()
-  const left = await position(526), right = await position(752)
+  const left = await position(616), right = await position(920)
   if (touch) await page.touchscreen.tap(right.x, right.y)
   else await page.mouse.click(right.x, right.y)
   await expect.poll(cameraLeft).toBeGreaterThan(50)
@@ -78,6 +78,30 @@ test('the Windows fullscreen minimap moves the view without activating the toolb
     await page.mouse.up()
   }
   await expect.poll(cameraLeft).toBeLessThan(afterTap)
+  // The original-style horizontal scrollbar moves the same camera. A track
+  // tap should move right, then dragging its thumb should move left again.
+  const afterMapDrag = await cameraLeft()
+  const box = await canvas.boundingBox()
+  if (!box) throw new Error('Canvas is not visible')
+  const trackPoint = (x: number) => ({ x: box.x + box.width * x / 960, y: box.y + box.height * 328 / 440 })
+  const trackRight = trackPoint(850), thumbRight = trackPoint(800), thumbLeft = trackPoint(250)
+  if (touch) await page.touchscreen.tap(trackRight.x, trackRight.y)
+  else await page.mouse.click(trackRight.x, trackRight.y)
+  await expect.poll(cameraLeft).toBeGreaterThan(afterMapDrag)
+  const afterTrackTap = await cameraLeft()
+  if (touch) {
+    const client = await page.context().newCDPSession(page)
+    await client.send('Input.dispatchTouchEvent', { type: 'touchStart', touchPoints: [thumbRight] })
+    await client.send('Input.dispatchTouchEvent', { type: 'touchMove', touchPoints: [thumbLeft] })
+    await client.send('Input.dispatchTouchEvent', { type: 'touchEnd', touchPoints: [] })
+    await client.detach()
+  } else {
+    await page.mouse.move(thumbRight.x, thumbRight.y)
+    await page.mouse.down()
+    await page.mouse.move(thumbLeft.x, thumbLeft.y, { steps: 5 })
+    await page.mouse.up()
+  }
+  await expect.poll(cameraLeft).toBeLessThan(afterTrackTap)
   await expect(page.getByRole('region', { name: 'Paused' })).toHaveCount(0)
   await expect(page.getByText('Nuke armed.', { exact: false })).toHaveCount(0)
   expect(await page.locator('.skill-button[aria-pressed="true"]').allTextContents()).toEqual(selectedBefore)
@@ -90,4 +114,21 @@ test('the Windows fullscreen minimap moves the view without activating the toolb
   await expect.poll(cameraLeft).toBeGreaterThan(beforeAccessiblePan)
   await menu.getByRole('button', { name: 'Move view left' }).click()
   await expect.poll(cameraLeft).toBe(beforeAccessiblePan)
+  const cameraWidth = () => canvas.evaluate((element: HTMLCanvasElement) => {
+    const row = element.getContext('2d')!.getImageData(608, 340, 320, 1).data
+    const positions: number[] = []
+    for (let x = 0; x < 320; x++) {
+      if (row[x * 4] === 255 && row[x * 4 + 1] === 255 && row[x * 4 + 2] === 0) positions.push(x)
+    }
+    return positions.length ? positions[positions.length - 1] - positions[0] : 0
+  })
+  const widthBeforeZoom = await cameraWidth()
+  await page.getByRole('button', { name: 'Zoom in' }).click()
+  await expect.poll(cameraWidth).toBeLessThan(widthBeforeZoom)
+  const leftAfterZoom = await cameraLeft()
+  await menu.getByRole('button', { name: 'Resume', exact: true }).click()
+  if (touch) await page.touchscreen.tap(trackRight.x, trackRight.y)
+  else await page.mouse.click(trackRight.x, trackRight.y)
+  await expect.poll(cameraLeft).toBeGreaterThan(leftAfterZoom)
+  await expect(page.getByRole('region', { name: 'Paused' })).toHaveCount(0)
 })

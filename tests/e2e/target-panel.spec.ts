@@ -27,17 +27,21 @@ for (const edition of ['dos', 'windows'] as const) {
     await expect(objective).toContainText('Save at least')
     await expect(objective).toContainText('Saved 0')
     const objectiveText = await objective.textContent()
-    // The left side of the original status row was blank before the target
-    // was added. Check for green glyph pixels in that area of the canvas.
-    const targetPixels = () => canvas.evaluate((element: HTMLCanvasElement, offset: number) => {
-      const { data } = element.getContext('2d')!.getImageData(offset, 380, 210, 32)
+    // DOS uses green glyphs above its buttons; Windows has dark text in the
+    // left-hand status field below the buttons. Exclude changing time/counts.
+    const targetPixels = () => canvas.evaluate((element: HTMLCanvasElement, mode: 'dos' | 'windows') => {
+      const { data } = mode === 'windows'
+        ? element.getContext('2d')!.getImageData(4, 420, 600, 18)
+        : element.getContext('2d')!.getImageData(0, 380, 210, 32)
       const values: number[] = []
       for (let i = 0; i < data.length; i += 4) {
-        const green = data[i + 1] > 100 && data[i + 1] > data[i] * 1.5 && data[i + 1] > data[i + 2] * 1.5
-        values.push(green ? 1 : 0)
+        const text = mode === 'windows'
+          ? data[i] < 90 && data[i + 1] < 90 && data[i + 2] < 90
+          : data[i + 1] > 100 && data[i + 1] > data[i] * 1.5 && data[i + 1] > data[i + 2] * 1.5
+        values.push(text ? 1 : 0)
       }
       return values
-    }, edition === 'windows' ? 32 : 0)
+    }, edition)
     await expect.poll(async () => (await targetPixels()).reduce((sum, value) => sum + value, 0)).toBeGreaterThan(50)
     const initial = await targetPixels()
     const enterFullscreen = async () => {

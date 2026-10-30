@@ -31,7 +31,7 @@
     <p v-if="nativeWindowsPanel && playing && !paused && nukeArmed" class="native-nuke-notice" role="status" aria-live="assertive">Nuke armed. Press Nuke again to confirm.</p>
 
     <div class="canvas-frame">
-      <canvas ref="gameCanvas" width="800" height="480" tabindex="0" aria-label="Lemmings level. Drag to move the view." aria-describedby="game-objective keyboard-instructions" @pointerdown.capture="beginCanvasGesture" @pointerup.capture="finishCanvasGesture" @pointercancel.capture="cancelCanvasGesture" @lostpointercapture="loseCanvasCapture" @click.capture="finishCanvasGestureFromClick">
+      <canvas ref="gameCanvas" :class="{ 'windows-panel': nativeWindowsPanel }" width="800" height="480" tabindex="0" aria-label="Lemmings level. Drag to move the view." aria-describedby="game-objective keyboard-instructions" @pointerdown.capture="beginCanvasGesture" @pointerup.capture="finishCanvasGesture" @pointercancel.capture="cancelCanvasGesture" @lostpointercapture="loseCanvasCapture" @click.capture="finishCanvasGestureFromClick">
         Your browser does not support the game canvas.
       </canvas>
     </div>
@@ -44,6 +44,7 @@
     <section v-if="playing && paused && !deferFullscreenControls" id="pause-menu" class="pause-menu" role="region" aria-labelledby="pause-menu-heading">
       <h2 id="pause-menu-heading" ref="pauseHeading" tabindex="-1">Paused</h2>
       <p>The game is paused. You can still select skills and inspect the level.</p>
+      <p v-if="gameMode === 'windows' && level">Save at least {{ level.needCount }} of {{ level.releaseCount }} lemmings; saved {{ savedCount }}.</p>
       <div class="pause-actions">
         <button class="primary" type="button" @click="resumeFromMenu">Resume</button>
         <button type="button" @click="restartFromMenu">Restart level</button>
@@ -53,6 +54,9 @@
       <div v-if="nativeWindowsPanel" class="pause-actions" role="group" aria-label="Move the level view">
         <button type="button" @click="panLevel(-1)">Move view left</button>
         <button type="button" @click="panLevel(1)">Move view right</button>
+      </div>
+      <div v-if="gameMode === 'windows'" class="pause-actions">
+        <button type="button" :aria-pressed="windowsIconAnimationsEnabled" @click="toggleWindowsIconAnimations">Button animations {{ windowsIconAnimationsEnabled ? 'on' : 'off' }}</button>
       </div>
     </section>
     <div class="game-toolbar" :class="{ 'windows-hidden-controls': nativeWindowsPanel && playing && !paused }" aria-label="Level controls">
@@ -142,6 +146,7 @@ h1 { font-size: 1.5rem; overflow-wrap: break-word; min-width: 0; text-wrap: bala
 .error { color: var(--color-error); }
 .canvas-frame { background: var(--color-black); border: 4px solid; border-color: var(--color-edge-light) var(--color-edge-dark) var(--color-edge-dark) var(--color-edge-light); overflow: hidden; }
 canvas { display: block; width: 100%; height: auto; aspect-ratio: 5 / 3; image-rendering: pixelated; touch-action: none; }
+canvas.windows-panel { aspect-ratio: 24 / 11; }
 button, select { min-height: 44px; padding: .55rem .8rem; border-radius: 2px; border: 2px solid; border-color: var(--color-edge-light) var(--color-edge-dark) var(--color-edge-dark) var(--color-edge-light); color: var(--color-ink); background: var(--color-panel-raised); font: inherit; cursor: pointer; }
 button:hover:not(:disabled) { background: var(--color-panel-raised); box-shadow: inset 0 0 0 1px var(--color-edge-light); }
 button:focus-visible, select:focus-visible { outline: 2px solid var(--color-focus); outline-offset: 2px; }
