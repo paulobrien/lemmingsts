@@ -11,16 +11,8 @@ import { clearWindowsGame, importWindowsGame, getWindowsGameFile } from '../../s
 import { clearWindowsGraphics, importWindowsGraphics } from '../../src/game/resources/file/windows-graphics-store';
 import { parseWindowsLevelDatabase } from '../../src/game/resources/windows-level-database';
 import { getTestedSolution } from '../../src/game/solutions/tested-solutions';
-
-/** These DOS-derived routes are adjusted for the Windows disc's different
- * bash masks. The Windows Art Gallery route uses an earlier bash and builders;
- * two other Windows routes need no assignment where DOS accepted one. */
-function windowsReplay(group: number, dosIndex: number, replay: string): string {
-  if (group === 0 && dosIndex === 4) return replay.replace('&710=l8', '');
-  if (group === 3 && dosIndex === 25) return replay.replace('&2880=l5', '');
-  if (group === 2 && dosIndex === 7) return '340=s6&340=l0&363=s5&363=l1&387=l0&414=l2&457=l3&500=l4&539=s6&539=l0&584=l0&684=l0&871=l0&915=s5&915=l0&1000=i99&1107=l0&1299=l0&1559=l0&1751=l0&1776=s6&1776=l18';
-  return replay;
-}
+import { getWindowsTestedSolution } from '../../src/game/solutions/windows-tested-solutions';
+import { getExampleFirstMove } from '../../src/game/solutions/example-first-move';
 
 it.skipIf(process.env.RUN_PRIVATE_GAME_TESTS !== '1' || !process.env.LEMMINGS_WINDOWS_ISO)(
   'runs the existing recorded solutions on every corresponding Windows-only level', async () => {
@@ -46,11 +38,19 @@ it.skipIf(process.env.RUN_PRIVATE_GAME_TESTS !== '1' || !process.env.LEMMINGS_WI
           const dosIndex = order[group].findIndex(value => Math.abs(value) === source);
           expect(dosIndex, `${group}/${index} must map to a unique DOS record`).toBeGreaterThanOrEqual(0);
           expect(order[group].filter(value => Math.abs(value) === source)).toHaveLength(1);
-          const solution = getTestedSolution(group, dosIndex);
-          expect(solution, `${entry.name} must have a recorded replay`).toBeDefined();
+          const dosSolution = getTestedSolution(group, dosIndex);
+          const solution = getWindowsTestedSolution(group, index);
+          expect(dosSolution, `${entry.name} must map to a DOS route`).toBeDefined();
+          expect(solution, `${entry.name} must have Windows hints and a replay`).toBeDefined();
+          expect(solution!.hints.length, `${entry.name} must have progressive hints`).toBeGreaterThanOrEqual(2);
+          if (!(group === 2 && dosIndex === 7)) expect(solution!.hints).toEqual(dosSolution!.hints);
+          if (/\d+=l\d+/.test(solution!.replay)) {
+            const first = await getExampleFirstMove(factory, group, index, solution);
+            expect.soft(first, `${entry.name} must reconstruct the first assignment from its Windows replay`).not.toBeNull();
+          }
           const game = await factory.getGame(GameTypes.LEMMINGS, group, index);
           expect(game, `${entry.name} must load with Windows files alone`).toBeDefined();
-          const replay = windowsReplay(group, dosIndex, solution!.replay);
+          const replay = solution!.replay;
           game!.getCommandManager().loadReplay(replay);
           const maxTicks = game!.getGameTimer().getGameTimeLimit() + 1;
           for (let tick = 0; tick < maxTicks && game!.getGameState() === GameStateTypes.RUNNING; tick++) game!.getGameTimer().tick();
