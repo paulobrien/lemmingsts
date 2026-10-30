@@ -48,7 +48,30 @@
         <div class="setup-detail">
           <p v-if="ready">Your original files are stored in this browser, ready for your next adventure. They stay on this device.</p>
           <p v-else>Select the original Lemmings <strong>.dat</strong> files together, or choose a ZIP containing them. They’re stored in this browser, not uploaded. You’ll need to add them separately on each device.</p>
-          <button v-if="ready" class="text-button" type="button" :disabled="busy" @click="removeFiles">Remove game files</button>
+          <button v-if="ready" class="text-button" type="button" :disabled="busy || voiceBusy" @click="removeFiles">Remove game files</button>
+        </div>
+      </section>
+      <section v-if="ready" class="setup" aria-labelledby="voices-title">
+        <div><h2 id="voices-title">Windows audio</h2></div>
+        <div class="setup-detail">
+          <label class="audio-style">Audio style
+            <select :value="audioStyle" @change="onAudioStyleChange">
+              <option value="dos">DOS AdLib</option>
+              <option value="windows" :disabled="!voicesReady">Windows audio{{ voicesReady ? '' : ' (add files first)' }}</option>
+            </select>
+          </label>
+          <p>Audio style changes the sound; levels still use the DOS game data. Windows MIDI music is experimental.</p>
+          <p v-if="voicesReady">Your Windows voice recordings are ready on this device. Turn Sound on in a level to hear them. You can replace them with a larger Windows audio collection.</p>
+          <p v-else>Optionally add your Windows Lemmings ISO, one game folder, its audio files, or a ZIP. Include LETSGO.WAV, OHNO.WAV and YIPPEE.WAV; other Windows effects and MIDI tracks can be included. They stay in this browser.</p>
+          <p v-if="!voicesReady && audioStyle === 'windows'">Windows audio is unavailable; DOS sounds will play until you add the files again.</p>
+          <div class="backup-actions">
+            <button class="text-button" type="button" :disabled="busy || voiceBusy" @click="voiceInput?.click()">{{ voicesReady ? 'Replace Windows audio' : 'Add Windows audio' }}</button>
+            <button class="text-button" type="button" :disabled="busy || voiceBusy" @click="voiceFolderInput?.click()">Choose game folder</button>
+            <button v-if="voicesReady" class="text-button" type="button" :disabled="busy || voiceBusy" @click="removeVoices">Remove Windows audio</button>
+          </div>
+          <p v-if="voiceMessage" class="status-message" role="status">{{ voiceMessage }}</p>
+          <input ref="voiceInput" class="visually-hidden" type="file" accept=".wav,.mid,.midi,.zip,.iso,audio/wav,audio/midi,application/zip,application/x-iso9660-image" multiple tabindex="-1" aria-hidden="true" @change="onVoicesSelected" />
+          <input ref="voiceFolderInput" class="visually-hidden" type="file" webkitdirectory multiple tabindex="-1" aria-hidden="true" @change="onVoicesSelected" />
         </div>
       </section>
       <section class="setup backup" aria-labelledby="backup-title">
@@ -70,10 +93,12 @@
 
 <script setup lang="ts">
 import { onBeforeUnmount, onMounted, ref, watch } from 'vue';
-import { clearLemmingsFiles, hasLemmingsFiles, importLemmingsFiles } from '@/game/resources/file/game-file-store';
+import { clearLemmingsFiles, hasLemmingsFiles, importLemmingsFiles, clearWindowsVoiceFiles, hasWindowsVoiceFiles, importWindowsVoiceFiles } from '@/game/resources/file/game-file-store';
 import { importBundledLemmingsFiles } from '@/game/resources/file/bundled-game-import';
+import { importBundledWindowsVoices } from '@/game/resources/file/bundled-voice-import';
 import { GameFactory } from '@/game/game-factory';
 import { GameTypes } from '@/game/game-types';
+import { readAudioStyle, writeAudioStyle, type AudioStyle } from '@/game/audio-style';
 import { exportProgressBackup, readLastLevel, readProgress, restoreProgressBackup } from '@/game/progress';
 import { loadHomeArtwork, paintHomeArtwork } from '@/game/resources/home-artwork';
 import { offlineReadiness } from '@/offline-readiness';
@@ -85,7 +110,13 @@ const busy = ref(false);
 const checkingAutomaticFiles = ref(true);
 const message = ref('');
 const backupMessage = ref('');
+const voiceMessage = ref('');
+const voicesReady = ref(false);
+const voiceBusy = ref(false);
+const audioStyle = ref<AudioStyle>(readAudioStyle());
 const fileInput = ref<HTMLInputElement | null>(null);
+const voiceInput = ref<HTMLInputElement | null>(null);
+const voiceFolderInput = ref<HTMLInputElement | null>(null);
 const folderInput = ref<HTMLInputElement | null>(null);
 const backupInput = ref<HTMLInputElement | null>(null);
 const logoCanvas = ref<HTMLCanvasElement | null>(null);
@@ -95,6 +126,7 @@ let artworkRequest = 0;
 let disposed = false;
 let manualGeneration = 0;
 let readinessGeneration = 0;
+let voiceReadinessGeneration = 0;
 
 watch(ready, async (hasFiles) => {
   const request = ++artworkRequest;
@@ -116,7 +148,7 @@ watch(ready, async (hasFiles) => {
     // is incomplete, incompatible, or local storage becomes unavailable.
   }
 });
-onBeforeUnmount(() => { artworkRequest++; disposed = true; readinessGeneration++; });
+onBeforeUnmount(() => { artworkRequest++; disposed = true; readinessGeneration++; voiceReadinessGeneration++; });
 const groups = ref<{ name: string; count: number }[]>([]);
 const selectedGroup = ref(0);
 const selectedLevel = ref(0);
@@ -156,6 +188,7 @@ async function checkAutomaticFiles() {
   } catch (error) {
     automaticSetupError = error instanceof Error ? error.message : 'Automatic setup could not be completed. Please add your game files manually.';
   }
+  void checkAutomaticVoices();
   if (disposed) return;
   checkingAutomaticFiles.value = false;
   if (busy.value) return;
@@ -167,6 +200,7 @@ async function checkAutomaticFiles() {
 
 onMounted(async () => {
   void refreshReadiness();
+  void refreshVoices();
   void checkAutomaticFiles();
   try {
     const config = await new GameFactory(`${import.meta.env.BASE_URL}data`).getConfig(GameTypes.LEMMINGS);
@@ -181,7 +215,7 @@ async function onFilesSelected(event: Event) {
   if (!input.files?.length) return;
   manualGeneration++; readinessGeneration++;
   busy.value = true; message.value = '';
-  try { await importLemmingsFiles(input.files); ready.value = true; message.value = 'Game files added. You’re ready to play!'; }
+  try { await importLemmingsFiles(input.files); ready.value = true; message.value = 'Game files added. You’re ready to play!'; void checkAutomaticVoices(); }
   catch (error) { message.value = error instanceof Error ? error.message : 'Could not read those files. Please try again.'; }
   finally { input.value = ''; busy.value = false; void refreshReadiness(); }
 }
@@ -190,7 +224,42 @@ async function removeFiles() {
   busy.value = true; message.value = '';
   try { await clearLemmingsFiles(); ready.value = false; message.value = 'Game files removed from this browser.'; }
   catch { message.value = 'Could not remove the game files. Please try again.'; }
-  finally { busy.value = false; void refreshReadiness(); }
+  finally { busy.value = false; void refreshReadiness(); void refreshVoices(); }
+}
+async function refreshVoices() {
+  const generation = ++voiceReadinessGeneration;
+  try { const present = await hasWindowsVoiceFiles(); if (!disposed && generation === voiceReadinessGeneration) voicesReady.value = present; }
+  catch { if (!disposed && generation === voiceReadinessGeneration) voicesReady.value = false; }
+}
+async function checkAutomaticVoices() {
+  // Voice recordings are optional; a failed bundle must not block the game.
+  try { await importBundledWindowsVoices(); } catch { /* Manual voice import remains available. */ }
+  await refreshVoices();
+}
+async function onVoicesSelected(event: Event) {
+  const input = event.target as HTMLInputElement;
+  if (!input.files?.length) return;
+  voiceReadinessGeneration++; voiceBusy.value = true; voiceMessage.value = '';
+  try { await importWindowsVoiceFiles(input.files); await refreshVoices(); voiceMessage.value = 'Windows audio added to this device.'; }
+  catch (error) { voiceMessage.value = error instanceof Error ? error.message : 'Could not read those audio files. Please try again.'; }
+  finally { input.value = ''; voiceBusy.value = false; }
+}
+async function removeVoices() {
+  voiceReadinessGeneration++; voiceBusy.value = true; voiceMessage.value = '';
+  try { await clearWindowsVoiceFiles(); await refreshVoices(); voiceMessage.value = 'Windows audio removed from this browser.'; }
+  catch { voiceMessage.value = 'Could not remove the audio files. Please try again.'; }
+  finally { voiceBusy.value = false; }
+}
+function onAudioStyleChange(event: Event) {
+  const select = event.target as HTMLSelectElement;
+  const style = select.value;
+  if ((style !== 'dos' && style !== 'windows') || !writeAudioStyle(style)) {
+    select.value = audioStyle.value;
+    voiceMessage.value = 'Could not save the audio style. Check browser storage and try again.';
+    return;
+  }
+  audioStyle.value = style;
+  voiceMessage.value = '';
 }
 function downloadBackup() {
   backupMessage.value = '';
@@ -246,7 +315,8 @@ h1 { margin: 0 0 1rem; font-size: 2rem; font-weight: 800; line-height: 1.2; text
 .actions { margin-top: 1.5rem; }
 .level-picker { display: flex; flex-wrap: wrap; gap: 1rem; max-width: 28rem; margin-bottom: 1rem; }
 .level-picker label { display: flex; flex: 1 1 120px; min-width: 0; flex-direction: column; gap: .5rem; color: var(--color-ink); font-size: .875rem; font-weight: 600; }
-.level-picker select { width: 100%; min-width: 0; min-height: 48px; padding: .6rem; border: 2px solid; border-color: var(--color-edge-dark) var(--color-edge) var(--color-edge) var(--color-edge-dark); border-radius: 2px; background: var(--color-panel); color: var(--color-ink); font: inherit; }
+.level-picker select, .audio-style select { min-width: 0; min-height: 48px; padding: .6rem; border: 2px solid; border-color: var(--color-edge-dark) var(--color-edge) var(--color-edge) var(--color-edge-dark); border-radius: 2px; background: var(--color-panel); color: var(--color-ink); font: inherit; }
+.level-picker select { width: 100%; }
 .best-score { color: var(--color-muted); font-size: .875rem; margin: 0 0 1rem; }
 .primary-button { display: inline-flex; align-items: center; justify-content: center; min-height: 52px; padding: .75rem 1.5rem; border: 2px solid; border-color: var(--color-edge-light) var(--color-edge-dark) var(--color-edge-dark) var(--color-edge-light); border-radius: 2px; background: var(--color-accent); color: var(--color-accent-ink); font: inherit; font-weight: 700; text-decoration: none; cursor: pointer; white-space: nowrap; }
 .primary-button:hover:not(:disabled) { box-shadow: inset 0 0 0 2px var(--color-accent-ink); }
@@ -276,6 +346,8 @@ h1 { margin: 0 0 1rem; font-size: 2rem; font-weight: 800; line-height: 1.2; text
 h2 { margin: 0; font-size: 1.25rem; font-weight: 700; line-height: 1.4; text-wrap: balance; overflow-wrap: break-word; }
 .setup-detail { color: var(--color-muted); font-size: .875rem; line-height: 1.7; }
 .setup-detail p { margin: 0; }
+.setup-detail p + p { margin-top: .5rem; }
+.audio-style { display: flex; align-items: center; flex-wrap: wrap; gap: .6rem; margin-bottom: .65rem; }
 .text-button { min-height: 44px; margin: .75rem 0 0; padding: .5rem .75rem; border: 2px solid; border-color: var(--color-edge) var(--color-edge-dark) var(--color-edge-dark) var(--color-edge); border-radius: 2px; background: none; color: var(--color-ink); cursor: pointer; font: inherit; text-decoration: none; }
 .text-button:hover:not(:disabled) { background: var(--color-panel-raised); }
 .text-button:active:not(:disabled) { border-color: var(--color-edge-dark) var(--color-edge) var(--color-edge) var(--color-edge-dark); }
