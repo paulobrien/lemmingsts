@@ -106,3 +106,28 @@ export async function clearWindowsFiles(): Promise<void> {
     await done;
   } finally { database.close(); }
 }
+
+/**
+ * A fresh home-page visit may restore a deployment's Windows bundle after a
+ * previous removal. Existing files are untouched; the bundle importers still
+ * recheck their stores in their write transactions before saving anything.
+ * The caller can cancel if the player acted while the database was opening.
+ */
+export async function allowBundledWindowsOnReload(shouldAllow: () => boolean = () => true): Promise<void> {
+  const database = await openGameDatabase();
+  try {
+    if (!shouldAllow()) return;
+    const transaction = database.transaction([ORIGINAL_STORE, WINDOWS_GRAPHICS_STORE, WINDOWS_GAME_STORE], 'readwrite');
+    const done = transactionDone(transaction);
+    try {
+      transaction.objectStore(ORIGINAL_STORE).delete(VOICE_AUTO_IMPORT_DISABLED);
+      transaction.objectStore(WINDOWS_GRAPHICS_STORE).delete(GRAPHICS_REMOVED);
+      transaction.objectStore(WINDOWS_GAME_STORE).delete(GAME_REMOVED);
+    } catch (error) {
+      try { transaction.abort(); } catch { /* It may already have aborted. */ }
+      await done.catch(() => undefined);
+      throw error;
+    }
+    await done;
+  } finally { database.close(); }
+}

@@ -2,8 +2,8 @@
 import { IDBFactory, IDBObjectStore } from 'fake-indexeddb';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { zipSync } from 'fflate';
-import { clearWindowsFiles, importWindowsFiles } from '../../src/game/resources/file/windows-file-import';
-import { clearLemmingsFiles, hasLemmingsFiles, getLemmingsFile, getWindowsAudioFile, importLemmingsFiles, importWindowsVoiceFilesIfMissing, REQUIRED_LEMMINGS_FILES } from '../../src/game/resources/file/game-file-store';
+import { allowBundledWindowsOnReload, clearWindowsFiles, importWindowsFiles } from '../../src/game/resources/file/windows-file-import';
+import { canAutoImportLemmingsFiles, clearLemmingsFiles, hasLemmingsFiles, getLemmingsFile, getWindowsAudioFile, importLemmingsFiles, importWindowsVoiceFilesIfMissing, REQUIRED_LEMMINGS_FILES } from '../../src/game/resources/file/game-file-store';
 import { getWindowsGraphicsFile, importWindowsGraphicsIfMissing } from '../../src/game/resources/file/windows-graphics-store';
 import { getWindowsGameFile, importWindowsGameIfMissing } from '../../src/game/resources/file/windows-game-store';
 import { WINDOWS_GAME_STORE, WINDOWS_GRAPHICS_STORE } from '../../src/game/resources/file/game-file-database';
@@ -107,6 +107,50 @@ describe('atomic Windows import', () => {
     expect(await getWindowsAudioFile('LETSGO.WAV')).toBeUndefined();
     expect(await getWindowsGraphicsFile('LEMMBIG.SPR')).toBeUndefined();
     expect(await getWindowsGameFile('LVL0000.LVL')).toBeUndefined();
+    expect(await importWindowsVoiceFilesIfMissing(windowsAudioFiles(2))).toBe(false);
+    expect(await importWindowsGraphicsIfMissing(windowsGraphicsFiles(2))).toBe(false);
+    expect(await importWindowsGameIfMissing(windowsGameFiles(2))).toBe(false);
+  });
+  it('allows a deployment bundle to restore deliberately removed Windows files on a later visit', async () => {
+    await importWindowsFiles(windowsFiles(1));
+    await clearWindowsFiles();
+    await allowBundledWindowsOnReload();
+    expect(await importWindowsVoiceFilesIfMissing(windowsAudioFiles(2))).toBe(true);
+    expect(await importWindowsGraphicsIfMissing(windowsGraphicsFiles(2))).toBe(true);
+    expect(await importWindowsGameIfMissing(windowsGameFiles(2))).toBe(true);
+    await expectVersion(2);
+  });
+  it('leaves deliberate DOS removal in place when enabling the Windows bundle', async () => {
+    await clearLemmingsFiles();
+    await clearWindowsFiles();
+    await allowBundledWindowsOnReload();
+    expect(await canAutoImportLemmingsFiles()).toBe(false);
+    expect(await importWindowsVoiceFilesIfMissing(windowsAudioFiles(2))).toBe(true);
+  });
+  it('does not reset removal markers when the player acts before startup is ready', async () => {
+    await clearWindowsFiles();
+    await allowBundledWindowsOnReload(() => false);
+    expect(await importWindowsVoiceFilesIfMissing(windowsAudioFiles(2))).toBe(false);
+    expect(await importWindowsGraphicsIfMissing(windowsGraphicsFiles(2))).toBe(false);
+    expect(await importWindowsGameIfMissing(windowsGameFiles(2))).toBe(false);
+  });
+  it('does not permit a bundle to replace a manually imported installation on reload', async () => {
+    await importWindowsFiles(windowsFiles(1));
+    await allowBundledWindowsOnReload();
+    expect(await importWindowsVoiceFilesIfMissing(windowsAudioFiles(2))).toBe(false);
+    expect(await importWindowsGraphicsIfMissing(windowsGraphicsFiles(2))).toBe(false);
+    expect(await importWindowsGameIfMissing(windowsGameFiles(2))).toBe(false);
+    await expectVersion(1);
+  });
+  it('keeps every removal marker when resetting them fails partway through', async () => {
+    await clearWindowsFiles();
+    const remove = IDBObjectStore.prototype.delete;
+    const failure = vi.spyOn(IDBObjectStore.prototype, 'delete').mockImplementation(function (this: IDBObjectStore, key) {
+      if (this.name === WINDOWS_GAME_STORE) throw new Error('Storage failed');
+      return remove.call(this, key);
+    });
+    await expect(allowBundledWindowsOnReload()).rejects.toThrow('Storage failed');
+    failure.mockRestore();
     expect(await importWindowsVoiceFilesIfMissing(windowsAudioFiles(2))).toBe(false);
     expect(await importWindowsGraphicsIfMissing(windowsGraphicsFiles(2))).toBe(false);
     expect(await importWindowsGameIfMissing(windowsGameFiles(2))).toBe(false);
