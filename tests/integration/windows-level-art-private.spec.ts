@@ -7,7 +7,7 @@ import { expect, it, vi } from 'vitest';
 import { GameFactory } from '../../src/game/game-factory';
 import { GameTypes } from '../../src/game/game-types';
 import { clearLemmingsFiles, importLemmingsFiles } from '../../src/game/resources/file/game-file-store';
-import { readWindowsGameIso } from '../../src/game/resources/file/windows-iso';
+import { readWindowsGameIso, readWindowsGraphicsIso } from '../../src/game/resources/file/windows-iso';
 import { parseWindowsLevelDatabase, readWindowsLevelRecord } from '../../src/game/resources/windows-level-database';
 import { createWindowsLevel } from '../../src/game/resources/windows-level-art';
 
@@ -21,7 +21,8 @@ it.skipIf(process.env.RUN_PRIVATE_GAME_TESTS !== '1' || !process.env.WINDOWS_LEM
       await importLemmingsFiles(await Promise.all(names.map(async name =>
         new File([Uint8Array.from(await readFile(`dos/lemmings/${name}`))], name))));
       const disc = await readFile(process.env.WINDOWS_LEMMINGS_ISO!);
-      const selection = await readWindowsGameIso(new File([Uint8Array.from(disc)], 'disc.iso'));
+      const image = new File([Uint8Array.from(disc)], 'disc.iso');
+      const selection = [...await readWindowsGameIso(image), ...await readWindowsGraphicsIso(image)];
       const files = new Map(await Promise.all(selection.map(async file => [file.name, await file.arrayBuffer()] as const)));
       const groups = parseWindowsLevelDatabase(files.get('LEMMINGS.DB')!);
       const config = JSON.parse(await readFile('public/data/config.json', 'utf8'));
@@ -29,8 +30,8 @@ it.skipIf(process.env.RUN_PRIVATE_GAME_TESTS !== '1' || !process.env.WINDOWS_LEM
       const dos = (await new GameFactory('/data').getGameResources(GameTypes.LEMMINGS))!;
       const styles = await Promise.all(Array.from({ length: 5 }, async (_, set) => ({
         ground: files.get(`GROUND${set}O.DAT`)!,
-        terrain: Uint8Array.from(await readFile(`dos/windows-graphics/STYLES/LEVEL${set}S.SPR`)).buffer,
-        objects: Uint8Array.from(await readFile(`dos/windows-graphics/STYLES/LEVEL${set}OS.SPR`)).buffer,
+        terrain: files.get(`LEVEL${set}S.SPR`)!,
+        objects: files.get(`LEVEL${set}OS.SPR`)!,
       })));
       let count = 0;
       for (let group = 0; group < groups.length; group++) for (const entry of groups[group].levels) {
