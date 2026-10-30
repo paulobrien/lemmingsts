@@ -35,7 +35,7 @@ export class GroundReader {
    *  vgaTerrar: Part of VGAGx.DAT for the terrar-images
    *  vgaObject: Part of VGAGx.DAT with the object-images 
    */
-  constructor(groundFile: BinaryReader, vgaTerrar: BinaryReader, vgaObject: BinaryReader) {
+  constructor(groundFile: BinaryReader, vgaTerrar?: BinaryReader, vgaObject?: BinaryReader) {
 
     if (groundFile.length != 1056) {
       this.log.log('groundFile ' + groundFile.fileName + ' has wrong size: ' + groundFile.length);
@@ -51,8 +51,8 @@ export class GroundReader {
     this.readObjectImages(groundFile, 0, this.colorPalette);
     this.readTerrainImages(groundFile, BYTE_SIZE_OF_OBJECTS, this.groundPalette);
 
-    this.readImages(this.imgObjects, vgaObject, 4);
-    this.readImages(this.imgTerrar, vgaTerrar, 3);
+    if (vgaObject) this.readImages(this.imgObjects, vgaObject, 4);
+    if (vgaTerrar) this.readImages(this.imgTerrar, vgaTerrar, 3);
 
   }
 
