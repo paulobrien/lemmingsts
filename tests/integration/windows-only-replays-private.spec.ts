@@ -12,6 +12,16 @@ import { clearWindowsGraphics, importWindowsGraphics } from '../../src/game/reso
 import { parseWindowsLevelDatabase } from '../../src/game/resources/windows-level-database';
 import { getTestedSolution } from '../../src/game/solutions/tested-solutions';
 
+/** These DOS-derived routes are adjusted for the Windows disc's different
+ * bash masks. The Windows Art Gallery route uses an earlier bash and builders;
+ * two other Windows routes need no assignment where DOS accepted one. */
+function windowsReplay(group: number, dosIndex: number, replay: string): string {
+  if (group === 0 && dosIndex === 4) return replay.replace('&710=l8', '');
+  if (group === 3 && dosIndex === 25) return replay.replace('&2880=l5', '');
+  if (group === 2 && dosIndex === 7) return '340=s6&340=l0&363=s5&363=l1&387=l0&414=l2&457=l3&500=l4&539=s6&539=l0&584=l0&684=l0&871=l0&915=s5&915=l0&1000=i99&1107=l0&1299=l0&1559=l0&1751=l0&1776=s6&1776=l18';
+  return replay;
+}
+
 it.skipIf(process.env.RUN_PRIVATE_GAME_TESTS !== '1' || !process.env.WINDOWS_LEMMINGS_ISO)(
   'runs the existing recorded solutions on every corresponding Windows-only level', async () => {
     vi.stubGlobal('indexedDB', indexedDB);
@@ -40,11 +50,12 @@ it.skipIf(process.env.RUN_PRIVATE_GAME_TESTS !== '1' || !process.env.WINDOWS_LEM
           expect(solution, `${entry.name} must have a recorded replay`).toBeDefined();
           const game = await factory.getGame(GameTypes.LEMMINGS, group, index);
           expect(game, `${entry.name} must load with Windows files alone`).toBeDefined();
-          game!.getCommandManager().loadReplay(solution!.replay);
+          const replay = windowsReplay(group, dosIndex, solution!.replay);
+          game!.getCommandManager().loadReplay(replay);
           const maxTicks = game!.getGameTimer().getGameTimeLimit() + 1;
           for (let tick = 0; tick < maxTicks && game!.getGameState() === GameStateTypes.RUNNING; tick++) game!.getGameTimer().tick();
           expect.soft(game!.getGameState(), `${group + 1}/${index + 1} ${entry.name}`).toBe(GameStateTypes.SUCCEEDED);
-          expect.soft(game!.getCommandManager().serialize(), `${entry.name} must execute every command`).toBe(solution!.replay);
+          expect.soft(game!.getCommandManager().serialize(), `${entry.name} must execute every command`).toBe(replay);
           checked++;
         }
       }
