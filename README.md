@@ -60,6 +60,8 @@ In a level, open **Display settings** to choose **Original** or the experimental
 
 Music and sound effects have separate switches and start off by default. Music can be previewed before starting a level; that preview suspends while the tab is hidden. The AdLib effects include opening cues, skill selection and assignments, builder warnings, steel, Oh No, exits, splats, explosions, drowning, fire and triggered traps. Each effects channel is monophonic; the short nuke alert takes priority over other speaker cues. The AdLib interpreter uses a legacy Web Audio processor, and browsers may require user interaction before audio can play.
 
+The original DOS AdLib effects are synthesized cues, not the recorded lemming voices heard in some other editions. This player does not currently import those sampled voices.
+
 After an update, reopen the home page online to refresh the cached app; close and reopen any older tabs if they still show the previous version. Avoid clearing site data as an update fix: it removes imported files and progress.
 
 ## Develop
