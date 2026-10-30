@@ -120,8 +120,15 @@ export class LevelLoader {
             groundReader.groundPalette
         );
 
+        let nextObjectFrame = 0;
+        const objectFrameStarts = groundReader.getObjectImages().map(image => {
+            const start = nextObjectFrame;
+            nextObjectFrame += image.frameCount;
+            return start;
+        });
         newLevel.setWindowsTerrainSource({ graphicSet: levelReader.graphicSet1,
-            special: levelReader.graphicSet2 !== 0, pieces: levelReader.terrains });
+            special: levelReader.graphicSet2 !== 0, pieces: levelReader.terrains,
+            objectTypes: levelReader.objects.map(object => object.id), objectFrameStarts });
 
         newLevel.setSteelAreas(levelReader.steel);
         newLevel.setMapObjects(levelReader.objects, groundReader.getObjectImages());

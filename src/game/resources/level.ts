@@ -19,6 +19,9 @@ export interface WindowsTerrainSource {
     graphicSet: number;
     special: boolean;
     pieces: readonly LevelElement[];
+    /** One object type per placed object and the starting frame for each type. */
+    objectTypes?: readonly number[];
+    objectFrameStarts?: readonly number[];
 }
 
 /** Level Data */

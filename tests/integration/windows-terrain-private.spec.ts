@@ -8,8 +8,10 @@ import { expect, it, vi } from 'vitest';
 import { GameFactory } from '../../src/game/game-factory';
 import { GameTypes } from '../../src/game/game-types';
 import { clearLemmingsFiles, importLemmingsFiles } from '../../src/game/resources/file/game-file-store';
-import { clearWindowsGraphics, importWindowsGraphics } from '../../src/game/resources/file/windows-graphics-store';
+import { clearWindowsGraphics, getWindowsGraphicsFile, importWindowsGraphics } from '../../src/game/resources/file/windows-graphics-store';
 import { prepareWindowsTerrain } from '../../src/game/resources/prepare-windows-terrain';
+import { decodeWindowsPalette, decodeWindowsSprites } from '../../src/game/resources/windows-graphics';
+import { mapWindowsObjectSprites } from '../../src/game/resources/windows-object-sprites';
 
 it.skipIf(process.env.RUN_PRIVATE_GAME_TESTS !== '1' || !process.env.WINDOWS_LEMMINGS_ISO)(
   'prepares every compatible original level from local Windows and DOS files', async () => {
@@ -27,6 +29,10 @@ it.skipIf(process.env.RUN_PRIVATE_GAME_TESTS !== '1' || !process.env.WINDOWS_LEM
       const configuration = await readFile('public/data/config.json', 'utf8');
       vi.stubGlobal('fetch', async () => new Response(configuration));
       const resources = (await new GameFactory('/data').getGameResources(GameTypes.LEMMINGS))!;
+      const styles = await Promise.all(Array.from({ length: 5 }, async (_, index) => ({
+        objects: decodeWindowsSprites(new Uint8Array((await getWindowsGraphicsFile(`LEVEL${index}OB.SPR`))!)),
+        palette: decodeWindowsPalette(new Uint8Array((await getWindowsGraphicsFile(`LEVEL${index}.PAL`))!)),
+      })));
       let ready = 0, special = 0;
       for (let group = 0; group < 4; group++) {
         for (let index = 0; index < 30; index++) {
@@ -40,6 +46,11 @@ it.skipIf(process.env.RUN_PRIVATE_GAME_TESTS !== '1' || !process.env.WINDOWS_LEM
           }
           expect(result.status, `level ${group + 1}/${index + 1}`).toBe('ready');
           if (result.status !== 'ready') continue;
+          const style = styles[target.getWindowsTerrainSource()!.graphicSet];
+          const objects = mapWindowsObjectSprites(target, style.objects, style.palette);
+          for (const object of target.objects) for (const frame of object.animation.frames) {
+            expect(objects.has(frame), `object in level ${group + 1}/${index + 1}`).toBe(true);
+          }
           expect(target.hasGroundAt(0, 0)).toBe(before);
           target.setWindowsTerrain(result.layer);
           const x = target.width - 1, y = target.height - 1;
