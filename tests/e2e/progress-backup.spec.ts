@@ -36,7 +36,7 @@ test('exports and restores only progress and settings', async ({ page }) => {
   await expect(page.getByRole('button', { name: 'Add DOS files' })).toBeVisible()
 })
 
-test('selects the remembered level and shows its best score', async ({ page }) => {
+test('suggests the next level after a completed remembered level, including after backup restore', async ({ page }) => {
   test.skip(process.env.RUN_PRIVATE_GAME_TESTS !== '1', 'Requires local, untracked original game files')
   const files = (await readdir(resolve('dos/lemmings')))
     .filter(name => name.toLowerCase().endsWith('.dat'))
@@ -48,9 +48,10 @@ test('selects the remembered level and shows its best score', async ({ page }) =
   await page.goto('/')
   await page.locator('input[type=file]').first().setInputFiles(files)
   await expect(page.getByLabel('Difficulty')).toHaveValue('1')
-  await expect(page.getByLabel('Level')).toHaveValue('3')
+  await expect(page.getByLabel('Level')).toHaveValue('4')
+  await expect(page.getByRole('link', { name: 'Play Lemmings' })).toHaveAttribute('href', /group=1&level=4/)
+  await page.getByLabel('Level').selectOption({ value: '3' })
   await expect(page.getByText('Best saved: 95%')).toBeVisible()
-  await expect(page.getByRole('link', { name: 'Play Lemmings' })).toHaveAttribute('href', /group=1&level=3/)
   const replacement = {
     format: 'lemmings-progress', version: 1,
     progress: [{ gameType: 1, groupIndex: 0, levelIndex: 2, bestSavedPercent: 88 }],
@@ -62,9 +63,10 @@ test('selects the remembered level and shows its best score', async ({ page }) =
   })
   await expect(page.getByText('Progress and settings restored. Your game files were not changed.')).toBeVisible()
   await expect(page.getByLabel('Difficulty')).toHaveValue('0')
-  await expect(page.getByLabel('Level')).toHaveValue('2')
+  await expect(page.getByLabel('Level')).toHaveValue('3')
+  await page.getByLabel('Level').selectOption({ value: '2' })
   await expect(page.getByText('Best saved: 88%')).toBeVisible()
   await page.reload()
   await expect(page.getByRole('link', { name: 'Play Lemmings' })).toBeVisible()
-  await expect(page.getByText('Best saved: 88%')).toBeVisible()
+  await expect(page.getByLabel('Level')).toHaveValue('3')
 })

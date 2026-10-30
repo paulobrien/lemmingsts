@@ -155,6 +155,24 @@ describe('home setup', () => {
     view.unmount();
   });
 
+  it('suggests the next Windows level for existing completion data without changing DOS progress', async () => {
+    mock.hasFiles.mockResolvedValue(true);
+    mock.hasVoices.mockResolvedValue(true);
+    mock.hasAudio.mockResolvedValue(true);
+    mock.hasGraphics.mockResolvedValue(true);
+    mock.hasWindowsGame.mockResolvedValue(true);
+    mock.hasStandaloneGraphics.mockResolvedValue(true);
+    localStorage.setItem('lemmings.windows-last-level.v1', JSON.stringify({ gameType: 1, groupIndex: 0, levelIndex: 10 }));
+    localStorage.setItem('lemmings.windows-progress.v1', JSON.stringify([{ gameType: 1, groupIndex: 0, levelIndex: 10, bestSavedPercent: 98 }]));
+    localStorage.setItem('lemmings.last-level.v1', JSON.stringify({ gameType: 1, groupIndex: 0, levelIndex: 3 }));
+    const view = await mount();
+    try {
+      await vi.waitFor(() => expect(view.container.querySelector<HTMLSelectElement>('.game-mode select')?.value).toBe('windows'));
+      await vi.waitFor(() => expect(view.container.querySelectorAll<HTMLSelectElement>('.level-picker select')[1]?.value).toBe('11'));
+      expect(JSON.parse(localStorage.getItem('lemmings.last-level.v1')!).levelIndex).toBe(3);
+    } finally { view.unmount(); }
+  });
+
   it('keeps Windows-only play available when browser preferences cannot be saved', async () => {
     mock.hasAudio.mockResolvedValue(true);
     mock.hasWindowsGame.mockResolvedValue(true);

@@ -1,8 +1,26 @@
 // @vitest-environment jsdom
 import { beforeEach, describe, expect, it, vi } from 'vitest';
-import { exportProgressBackup, readLastLevel, readProgress, readSettings, recordCompletion, rememberLevel, restoreProgressBackup, saveSettings } from '../../src/game/progress';
+import { exportProgressBackup, readLastLevel, readProgress, readSettings, recordCompletion, rememberLevel, restoreProgressBackup, saveSettings, suggestNextLevel } from '../../src/game/progress';
 
 describe('local game progress', () => {
+    it('suggests the next level after a completed selection and keeps unfinished selections', () => {
+        const completed = { gameType: 1, groupIndex: 0, levelIndex: 10, bestSavedPercent: 98 };
+        const last = { gameType: 1, groupIndex: 0, levelIndex: 10 };
+        expect(suggestNextLevel(last, [completed], [28, 28, 29, 29])).toEqual({ ...last, levelIndex: 11 });
+        expect(suggestNextLevel(last, [], [28, 28, 29, 29])).toEqual(last);
+        expect(suggestNextLevel(last, [{ ...completed, groupIndex: 1 }], [28, 28, 29, 29])).toEqual(last);
+    });
+
+    it('uses edition-specific group boundaries and keeps the final level at the end', () => {
+        const last = { gameType: 1, groupIndex: 0, levelIndex: 27 };
+        const completed = [{ ...last, bestSavedPercent: 100 }];
+        expect(suggestNextLevel(last, completed, [28, 28, 29, 29])).toEqual({ ...last, groupIndex: 1, levelIndex: 0 });
+        expect(suggestNextLevel(last, completed, [30, 30, 30, 30])).toEqual({ ...last, levelIndex: 28 });
+        const final = { ...last, groupIndex: 3, levelIndex: 28 };
+        expect(suggestNextLevel(final, [{ ...final, bestSavedPercent: 100 }], [28, 28, 29, 29])).toEqual(final);
+        expect(suggestNextLevel({ ...last, levelIndex: 29 }, [], [28, 28, 29, 29])).toBeNull();
+        expect(suggestNextLevel(null, [], [28])).toBeNull();
+    });
     beforeEach(() => localStorage.clear());
 
     it('saves completion and keeps the best rescue percentage', () => {

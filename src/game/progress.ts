@@ -178,6 +178,21 @@ export function readLastLevel(edition: ProgressEdition = 'dos'): LevelLocation |
         : null;
 }
 
+/** Suggest the level after a completed last selection, using the active edition's catalogue. */
+export function suggestNextLevel(last: LevelLocation | null, progress: readonly LevelCompletion[], groupLengths: readonly number[]): LevelLocation | null {
+    if (!last || !isLocation(last) || !Number.isInteger(groupLengths[last.groupIndex]) ||
+        last.levelIndex >= groupLengths[last.groupIndex]) return null;
+    const completed = progress.some(entry => entry.gameType === last.gameType &&
+        entry.groupIndex === last.groupIndex && entry.levelIndex === last.levelIndex);
+    if (!completed) return last;
+    if (last.levelIndex + 1 < groupLengths[last.groupIndex]) return { ...last, levelIndex: last.levelIndex + 1 };
+    for (let group = last.groupIndex + 1; group < groupLengths.length; group++) {
+        if (Number.isInteger(groupLengths[group]) && groupLengths[group] > 0) return { ...last, groupIndex: group, levelIndex: 0 };
+    }
+    // At the end of the catalogue retain the final level, rather than wrapping.
+    return last;
+}
+
 export function rememberLevel(gameType: number, groupIndex: number, levelIndex: number, edition: ProgressEdition = 'dos'): boolean {
     const lastLevel = { gameType, groupIndex, levelIndex };
     if (!isLocation(lastLevel)) return false;

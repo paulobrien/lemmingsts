@@ -115,7 +115,7 @@ import { allowBundledWindowsOnReload, clearWindowsFiles, importWindowsFiles } fr
 import { GameFactory } from '@/game/game-factory';
 import { GameTypes } from '@/game/game-types';
 import { readGameMode, readGameModePreference, writeGameMode, type GameMode } from '@/game/game-mode';
-import { exportProgressBackup, readLastLevel, readProgress, restoreProgressBackup } from '@/game/progress';
+import { exportProgressBackup, readLastLevel, readProgress, restoreProgressBackup, suggestNextLevel } from '@/game/progress';
 import { loadHomeArtwork, paintHomeArtwork } from '@/game/resources/home-artwork';
 import { offlineReadiness } from '@/offline-readiness';
 
@@ -185,7 +185,7 @@ function bestScore(group: number, level: number): number | null {
   return progress.value.find(entry => entry.gameType === GameTypes.LEMMINGS && entry.groupIndex === group && entry.levelIndex === level)?.bestSavedPercent ?? null;
 }
 function selectLastLevel() {
-  const last = readLastLevel(gameMode.value);
+  const last = suggestNextLevel(readLastLevel(gameMode.value), progress.value, groups.value.map(group => group.count));
   if (last?.gameType === GameTypes.LEMMINGS && groups.value[last.groupIndex] && last.levelIndex < groups.value[last.groupIndex].count) {
     selectedGroup.value = last.groupIndex;
     selectedLevel.value = last.levelIndex;
