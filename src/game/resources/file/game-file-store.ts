@@ -2,6 +2,7 @@ import { unzipSync } from 'fflate';
 import { REQUIRED_LEMMINGS_FILES } from './dos-file-names';
 import { validateDosFiles } from './validate-dos-files';
 import { WINDOWS_AUDIO_FILES, WINDOWS_VOICE_FILES, validateWindowsMusicFile, validateWindowsVoiceFile, type WindowsVoiceFile } from './windows-voice-files';
+import { readWindowsAudioIso } from './windows-iso';
 export { REQUIRED_LEMMINGS_FILES } from './dos-file-names';
 export { WINDOWS_AUDIO_FILES, WINDOWS_MUSIC_FILES, WINDOWS_SOUND_FILES, WINDOWS_VOICE_FILES } from './windows-voice-files';
 
@@ -231,6 +232,11 @@ export async function importWindowsVoiceFilesIfMissing(files: FileList | readonl
 
 async function importVoiceFiles(files: FileList | readonly File[], onlyIfMissing: boolean): Promise<boolean> {
   let selected = Array.from(files);
+  const discs = selected.filter(file => file.name.toLowerCase().endsWith('.iso'));
+  if (discs.length) {
+    if (selected.length !== 1) throw new Error('Select one ISO disc image, or select the audio files together.');
+    selected = await readWindowsAudioIso(discs[0]);
+  }
   const archives = selected.filter(file => file.name.toLowerCase().endsWith('.zip'));
   if (archives.length) {
     if (selected.length !== 1) throw new Error('Select one ZIP archive, or select the three voice files together.');
