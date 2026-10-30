@@ -138,15 +138,17 @@ export default defineComponent({
         const nukeArmed = ref(false);
         const nukeExecuted = ref(false);
         const nativeWindowsPanel = ref(false);
+        let nativeNukeTimeout: ReturnType<typeof setTimeout> | undefined;
         const selectedSkill = ref<SkillTypes>(SkillTypes.CLIMBER);
         const skillCounts = ref<Record<number, number>>({});
         const releaseRate = ref(0);
         const gameTime = ref('');
         const settings = readSettings();
         const speed = ref(settings.speed);
-        watch([fullscreenActive, playing, paused, finished, nukeArmed, deferFullscreenControls], ([active, isPlaying, isPaused, isFinished, nuke, deferred]) => {
-            fullscreenControlsOpen.value = active && !deferred && (!isPlaying || isPaused || isFinished || nuke);
+        watch([fullscreenActive, playing, paused, finished, nukeArmed, deferFullscreenControls, nativeWindowsPanel], ([active, isPlaying, isPaused, isFinished, nuke, deferred, nativePanel]) => {
+            fullscreenControlsOpen.value = active && !deferred && (!isPlaying || isPaused || isFinished || (nuke && !nativePanel));
         });
+        watch(paused, isPaused => { if (isPaused && nativeNukeTimeout !== undefined) cancelNuke(); });
         watch(fullscreenControlsOpen, (open, wasOpen) => {
             if (open && fullscreenActive.value && paused.value) {
                 void nextTick(focusPauseMenu);
@@ -280,7 +282,7 @@ export default defineComponent({
             error.value = '';
             finished.value = false;
             levelSucceeded.value = false;
-            nukeArmed.value = false;
+            cancelNuke();
             nukeExecuted.value = false;
             nativeWindowsPanel.value = false;
             assignmentMessage.value = '';
@@ -433,7 +435,7 @@ export default defineComponent({
                     playing.value = false;
                     paused.value = false;
                     finished.value = true;
-                    nukeArmed.value = false;
+                    cancelNuke();
                     levelSucceeded.value = result.state === GameStateTypes.SUCCEEDED;
                     resultMessage.value = result.state === GameStateTypes.SUCCEEDED
                         ? `Level complete! You saved ${result.survivorPercentage}%.`
@@ -486,6 +488,7 @@ export default defineComponent({
 
         function resumeFromMenu() {
             if (!game || !paused.value || finished.value) return;
+            if (nativeWindowsPanel.value && nukeArmed.value) cancelNuke();
             togglePause();
             void nextTick(() => { if (!paused.value) (fullscreenActive.value || nativeWindowsPanel.value ? gameCanvas.value : pauseControl.value)?.focus(); });
         }
@@ -510,11 +513,23 @@ export default defineComponent({
             updateStats();
         }
 
+        function cancelNuke() {
+            if (nativeNukeTimeout !== undefined) clearTimeout(nativeNukeTimeout);
+            nativeNukeTimeout = undefined;
+            nukeArmed.value = false;
+        }
+
         function confirmNuke() {
             if (!game || finished.value || nukeExecuted.value) return;
-            if (!nukeArmed.value) { nukeArmed.value = true; return; }
+            if (!nukeArmed.value) {
+                nukeArmed.value = true;
+                // The original Windows panel uses a second press; allow enough
+                // time for touch while preventing a stale press from arming it indefinitely.
+                if (nativeWindowsPanel.value && playing.value && !paused.value) nativeNukeTimeout = setTimeout(cancelNuke, 3000);
+                return;
+            }
             nukeExecuted.value = game.queueCommand(new CommandNuke());
-            nukeArmed.value = false;
+            cancelNuke();
         }
 
         function noteSaveResult(saved: boolean) {
@@ -633,6 +648,11 @@ export default defineComponent({
 
         function onKeyDown(event: KeyboardEvent) {
             if (event.defaultPrevented) return;
+            if (event.key === 'Escape' && nativeWindowsPanel.value && nukeArmed.value && !paused.value && !fullscreenActive.value) {
+                event.preventDefault();
+                cancelNuke();
+                return;
+            }
             if ((event.key === 'Escape' || event.key === 'BrowserBack') && paused.value && !fullscreenActive.value) {
                 const target = event.target as HTMLElement | null;
                 if (target?.tagName === 'SELECT') return;
@@ -694,6 +714,7 @@ export default defineComponent({
         });
         onBeforeUnmount(() => {
             disposed = true;
+            cancelNuke();
             clearCanvasGesture();
             ++loadGeneration;
             clearExample();
@@ -711,6 +732,6 @@ export default defineComponent({
             level, levelIndex, groupName, title, error, loading, playing, paused,
             finished, levelSucceeded, nextLevelAvailable, savedCount, saveWarning, assignmentMessage, keyboardMessage, resultMessage, hints, availableHints, hintCompatibility, visibleHintCount, exampleMove, exampleBusy, exampleError, exampleSkillName, exampleClock, hideHints, showExample, clearExample, nukeArmed, nukeExecuted, selectedSkill, skillCounts, releaseRate, gameTime, speed,
             musicEnabled, soundEnabled, skillButtons, canPlay, start, openPauseMenu, resumeFromMenu, restartFromMenu, selectSkill, changeReleaseRate,
-            setSpeed, onSpeedChange, toggleMusic, toggleSound, zoom, zoomChanged, resetZoom, changeLevel, loadLevel, confirmNuke };
+            setSpeed, onSpeedChange, toggleMusic, toggleSound, zoom, zoomChanged, resetZoom, changeLevel, loadLevel, confirmNuke, cancelNuke };
     },
 });

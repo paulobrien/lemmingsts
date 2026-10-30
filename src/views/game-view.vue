@@ -9,7 +9,7 @@
           Save at least {{ level.needCount }} of {{ level.releaseCount }} lemmings<template v-if="!playing && !finished">, {{ level.timeLimit }} {{ level.timeLimit === 1 ? 'minute' : 'minutes' }}</template>
         </p>
       </div>
-      <div class="audio-controls" :class="{ 'windows-hidden-controls': nativeWindowsPanel && playing && !paused && !nukeArmed }" role="group" aria-label="Audio settings">
+      <div class="audio-controls" :class="{ 'windows-hidden-controls': nativeWindowsPanel && playing && !paused }" role="group" aria-label="Audio settings">
       <button class="quiet" type="button" :disabled="loading" :aria-pressed="musicEnabled" @click="toggleMusic">
         Music {{ musicEnabled ? 'on' : 'off' }}
       </button>
@@ -19,7 +19,7 @@
       </div>
     </header>
 
-    <section ref="gameScreen" class="game-screen" :class="{ 'is-fullscreen': fullscreenActive, 'native-windows-playing': nativeWindowsPanel && playing && !paused && !nukeArmed }" aria-label="Game screen">
+    <section ref="gameScreen" class="game-screen" :class="{ 'is-fullscreen': fullscreenActive, 'native-windows-playing': nativeWindowsPanel && playing && !paused }" aria-label="Game screen">
     <div v-if="error" class="notice error" role="alert">{{ error }}</div>
     <p v-else-if="loading" class="notice" role="status">Getting the level ready…</p>
     <p v-else-if="resultMessage" class="notice" role="status">{{ resultMessage }}</p>
@@ -28,6 +28,7 @@
     <p v-if="graphicsError" class="notice error" role="status">{{ graphicsError }}</p>
     <p v-else-if="graphicsNotice" class="notice" role="status">{{ graphicsNotice }}</p>
     <p v-if="gameMode === 'windows' && playing && !nativeWindowsPanel" class="notice" role="status">To use fast-forward on the original Windows panel, reimport your Windows ISO. The controls below remain available.</p>
+    <p v-if="nativeWindowsPanel && playing && !paused && nukeArmed" class="native-nuke-notice" role="status" aria-live="assertive">Nuke armed. Press Nuke again to confirm.</p>
 
     <div class="canvas-frame">
       <canvas ref="gameCanvas" width="800" height="480" tabindex="0" aria-label="Lemmings level. Drag to move the view." aria-describedby="game-objective keyboard-instructions" @pointerdown.capture="beginCanvasGesture" @pointerup.capture="finishCanvasGesture" @pointercancel.capture="cancelCanvasGesture" @lostpointercapture="loseCanvasCapture" @click.capture="finishCanvasGestureFromClick">
@@ -50,7 +51,7 @@
         <button type="button" :aria-pressed="fullscreenActive" @click="toggleFullscreen">{{ fullscreenActive ? 'Exit fullscreen' : 'Fullscreen' }}</button>
       </div>
     </section>
-    <div class="game-toolbar" :class="{ 'windows-hidden-controls': nativeWindowsPanel && playing && !paused && !nukeArmed }" aria-label="Level controls">
+    <div class="game-toolbar" :class="{ 'windows-hidden-controls': nativeWindowsPanel && playing && !paused }" aria-label="Level controls">
       <button v-if="!playing && !finished" ref="startControl" class="primary" type="button" :disabled="!canPlay" @click="start">Start level</button>
       <button v-else-if="playing && !paused" ref="pauseControl" class="primary" type="button" aria-controls="pause-menu" :aria-expanded="paused" @click="openPauseMenu">Pause</button>
       <button v-if="finished && levelSucceeded && nextLevelAvailable" class="primary" type="button" @click="changeLevel(1)">Next level</button>
@@ -72,7 +73,7 @@
 
     <p v-if="fullscreenMode === 'expanded'" class="fullscreen-status" role="status">Expanded view (browser fullscreen unavailable)</p>
 
-    <section v-if="playing || finished" class="skill-section" :class="{ 'windows-hidden-controls': nativeWindowsPanel && playing && !paused && !nukeArmed }" aria-label="Lemming skills">
+    <section v-if="playing || finished" class="skill-section" :class="{ 'windows-hidden-controls': nativeWindowsPanel && playing && !paused }" aria-label="Lemming skills">
       <div class="skill-grid">
         <button v-for="(skill, index) in skillButtons" :key="skill.type" type="button" class="skill-button"
           :class="{ selected: selectedSkill === skill.type }" :aria-pressed="selectedSkill === skill.type"
@@ -86,13 +87,13 @@
         <button type="button" aria-label="Decrease release rate" :disabled="finished" @click="changeReleaseRate(-1)">−</button>
         <button type="button" aria-label="Increase release rate" :disabled="finished" @click="changeReleaseRate(1)">+</button>
         <button type="button" :disabled="finished || nukeExecuted" @click="confirmNuke">{{ nukeArmed ? 'Confirm nuke' : 'Nuke' }}</button>
-        <button v-if="nukeArmed" type="button" @click="nukeArmed = false">Cancel</button>
+        <button v-if="nukeArmed" type="button" @click="cancelNuke">Cancel</button>
       </div>
       <p v-if="nukeArmed" class="interaction-notice" role="status">Nuke will bomb all lemmings. Press Confirm nuke to proceed.</p>
       <p class="interaction-notice" role="status" aria-live="polite">{{ assignmentMessage }}</p>
     </section>
 
-    <section v-if="hints.length && !loading && !error" class="hints" :class="{ 'windows-hidden-controls': nativeWindowsPanel && playing && !paused && !nukeArmed }" aria-label="Hints">
+    <section v-if="hints.length && !loading && !error" class="hints" :class="{ 'windows-hidden-controls': nativeWindowsPanel && playing && !paused }" aria-label="Hints">
       <button v-if="visibleHintCount < hints.length" type="button" @click="visibleHintCount++">{{ visibleHintCount ? 'Another hint' : 'Show a hint' }}</button>
       <button v-if="visibleHintCount" type="button" @click="hideHints">Hide hints</button>
       <ol v-if="visibleHintCount" aria-live="polite"><li v-for="hint in hints.slice(0, visibleHintCount)" :key="hint">{{ hint }}</li></ol>
@@ -132,6 +133,8 @@ h1 { font-size: 1.5rem; overflow-wrap: break-word; min-width: 0; text-wrap: bala
 .objective { color: var(--color-muted); margin: .4rem 0; font-weight: 600; }
 .interaction-notice { color: var(--color-warning); margin: .4rem .2rem 0; }
 .interaction-notice:empty { display: none; }
+.game-screen { position: relative; }
+.native-nuke-notice { position: absolute; z-index: 3; top: .5rem; right: .5rem; margin: 0; padding: .35rem .55rem; color: var(--color-ink); background: var(--color-surface); pointer-events: none; }
 .error { color: var(--color-error); }
 .canvas-frame { background: var(--color-black); border: 4px solid; border-color: var(--color-edge-light) var(--color-edge-dark) var(--color-edge-dark) var(--color-edge-light); overflow: hidden; }
 canvas { display: block; width: 100%; height: auto; aspect-ratio: 5 / 3; image-rendering: pixelated; touch-action: none; }

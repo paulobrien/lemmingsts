@@ -4,6 +4,7 @@ import { createApp, defineComponent, h, nextTick, reactive } from 'vue';
 import GameView from '../../src/views/game-view.vue';
 import { GameStateTypes } from '../../src/game/game-state-types';
 import { readProgress } from '../../src/game/progress';
+import { CommandNuke } from '../../src/game/game-play/commands/command-nuke';
 
 const mock = vi.hoisted(() => {
     const timer = {
@@ -195,7 +196,7 @@ describe('game view lifecycle', () => {
         wrapper.unmount();
     });
 
-    it('keeps extra Windows controls accessible but visually tucked away, and exposes nuke confirmation', async () => {
+    it('keeps extra Windows controls tucked away while a second panel press confirms nuke', async () => {
         localStorage.setItem('lemmings.game-mode.v1', 'windows');
         mock.prepareWindowsPanel.mockResolvedValue({ panel: Array(13).fill({}), nativePanel: Array(13).fill({}), skillIcons: [] });
         const wrapper = mountView(); await flushPromises();
@@ -213,14 +214,16 @@ describe('game view lifecycle', () => {
         expect(button(wrapper.container, 'Pause game')).toBeDefined();
         expect(button(wrapper.container, 'Dig10')).toBeDefined();
         mock.nukeRequest.handler?.(); await nextTick();
-        expect(toolbar.classList.contains('windows-hidden-controls')).toBe(false);
-        expect(skills.classList.contains('windows-hidden-controls')).toBe(false);
-        expect(audio.classList.contains('windows-hidden-controls')).toBe(false);
-        expect(hints.classList.contains('windows-hidden-controls')).toBe(false);
-        expect(screen.classList.contains('native-windows-playing')).toBe(false);
-        expect(button(wrapper.container, 'Confirm nuke')).toBeDefined();
-        expect(button(wrapper.container, 'Cancel')).toBeDefined();
-        button(wrapper.container, 'Cancel').click(); await nextTick();
+        expect(toolbar.classList.contains('windows-hidden-controls')).toBe(true);
+        expect(skills.classList.contains('windows-hidden-controls')).toBe(true);
+        expect(audio.classList.contains('windows-hidden-controls')).toBe(true);
+        expect(hints.classList.contains('windows-hidden-controls')).toBe(true);
+        expect(screen.classList.contains('native-windows-playing')).toBe(true);
+        expect(wrapper.container.querySelector('.native-nuke-notice')?.textContent).toContain('Press Nuke again to confirm');
+        expect(mock.game.queueCommand).not.toHaveBeenCalledWith(expect.any(CommandNuke));
+        mock.nukeRequest.handler?.(); await nextTick();
+        expect(mock.game.queueCommand).toHaveBeenCalledWith(expect.any(CommandNuke));
+        expect(wrapper.container.querySelector('.native-nuke-notice')).toBeNull();
         expect(skills.classList.contains('windows-hidden-controls')).toBe(true);
         button(wrapper.container, 'Pause game').click(); await nextTick();
         expect(toolbar.classList.contains('windows-hidden-controls')).toBe(false);
@@ -229,6 +232,37 @@ describe('game view lifecycle', () => {
         expect(screen.classList.contains('native-windows-playing')).toBe(false);
         expect(button(wrapper.container, 'Resume')).toBeDefined();
         wrapper.unmount();
+    });
+
+    it('expires a native Windows nuke press and clears it on pause, Escape and level change', async () => {
+        localStorage.setItem('lemmings.game-mode.v1', 'windows');
+        mock.prepareWindowsPanel.mockResolvedValue({ panel: Array(13).fill({}), nativePanel: Array(13).fill({}), skillIcons: [] });
+        const wrapper = mountView(); await flushPromises();
+        button(wrapper.container, 'Start level').click(); await flushPromises();
+        vi.useFakeTimers();
+        const setTimer = vi.spyOn(globalThis, 'setTimeout');
+        const clearTimer = vi.spyOn(globalThis, 'clearTimeout');
+        try {
+            mock.nukeRequest.handler?.(); await nextTick();
+            expect(wrapper.container.querySelector('.native-nuke-notice')).not.toBeNull();
+            vi.advanceTimersByTime(3000); await nextTick();
+            expect(wrapper.container.querySelector('.native-nuke-notice')).toBeNull();
+            mock.nukeRequest.handler?.(); await nextTick();
+            expect(mock.game.queueCommand).not.toHaveBeenCalledWith(expect.any(CommandNuke));
+            window.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape', bubbles: true })); await nextTick();
+            expect(wrapper.container.querySelector('.native-nuke-notice')).toBeNull();
+            mock.nukeRequest.handler?.(); await nextTick();
+            button(wrapper.container, 'Pause game').click(); await nextTick();
+            expect(wrapper.container.querySelector('.native-nuke-notice')).toBeNull();
+            expect(button(wrapper.container, 'Nuke')).toBeDefined();
+            button(wrapper.container, 'Resume').click(); await nextTick();
+            mock.nukeRequest.handler?.(); await nextTick();
+            const nukeTimerIndex = setTimer.mock.calls.map(call => call[1]).lastIndexOf(3000);
+            expect(nukeTimerIndex).toBeGreaterThanOrEqual(0);
+            const nukeTimer = setTimer.mock.results[nukeTimerIndex].value;
+            reactive(mock.route).query = { group: 0, level: 1 }; await flushPromises();
+            expect(clearTimer).toHaveBeenCalledWith(nukeTimer);
+        } finally { wrapper.unmount(); vi.restoreAllMocks(); vi.useRealTimers(); }
     });
 
     it.each([null, { panel: Array(12).fill({}), nativePanel: Array(12).fill({}), skillIcons: [] }])(
