@@ -165,6 +165,30 @@ describe('game view lifecycle', () => {
         expect(mock.resources.getMusicPlayer).not.toHaveBeenCalled();
     });
 
+    it('does not let an older MIDI load cancel a resume that is still loading', async () => {
+        localStorage.setItem('lemmings.audio-style.v1', 'windows');
+        const finish: Array<(value: ArrayBuffer | undefined) => void> = [];
+        mock.getWindowsAudioFile.mockImplementation(() => new Promise(resolve => { finish.push(resolve); }));
+        const wrapper = mountView();
+        await flushPromises();
+        button(wrapper.container, 'Start level').click();
+        await flushPromises();
+        button(wrapper.container, 'Music off').click();
+        await flushPromises();
+        button(wrapper.container, 'Pause').click();
+        await nextTick();
+        button(wrapper.container, 'Resume').click();
+        await flushPromises();
+        expect(finish).toHaveLength(2);
+        finish[0](midiFixture());
+        await flushPromises();
+        expect(mock.resources.getMusicPlayer).not.toHaveBeenCalled();
+        finish[1](midiFixture());
+        await flushPromises();
+        expect(mock.midiSynth.playMIDI).toHaveBeenCalledOnce();
+        expect(mock.resources.getMusicPlayer).not.toHaveBeenCalled();
+    });
+
     it('does not start a delayed Windows MIDI track after navigating to another level', async () => {
         localStorage.setItem('lemmings.audio-style.v1', 'windows');
         let finish!: (value: ArrayBuffer | undefined) => void;
@@ -180,6 +204,34 @@ describe('game view lifecycle', () => {
         expect(mock.midiSynth.playMIDI).not.toHaveBeenCalled();
         expect(mock.resources.getMusicPlayer).not.toHaveBeenCalled();
         expect(mock.resources.getLevel).toHaveBeenLastCalledWith(0, 1);
+    });
+
+    it('keeps a delayed Windows MIDI preview silent while the tab is hidden', async () => {
+        localStorage.setItem('lemmings.audio-style.v1', 'windows');
+        let finish!: (value: ArrayBuffer | undefined) => void;
+        mock.getWindowsAudioFile.mockImplementationOnce(() => new Promise(resolve => { finish = resolve; })).mockResolvedValue(midiFixture());
+        const original = Object.getOwnPropertyDescriptor(document, 'hidden');
+        const wrapper = mountView();
+        try {
+            await flushPromises();
+            button(wrapper.container, 'Music off').click();
+            await flushPromises();
+            Object.defineProperty(document, 'hidden', { configurable: true, value: true });
+            document.dispatchEvent(new Event('visibilitychange'));
+            finish(midiFixture());
+            await flushPromises();
+            expect(mock.midiSynth.playMIDI).not.toHaveBeenCalled();
+            expect(mock.resources.getMusicPlayer).not.toHaveBeenCalled();
+            Object.defineProperty(document, 'hidden', { configurable: true, value: false });
+            document.dispatchEvent(new Event('visibilitychange'));
+            await flushPromises();
+            expect(mock.midiSynth.playMIDI).toHaveBeenCalledOnce();
+            expect(mock.resources.getMusicPlayer).not.toHaveBeenCalled();
+        } finally {
+            if (original) Object.defineProperty(document, 'hidden', original);
+            else delete (document as { hidden?: boolean }).hidden;
+            wrapper.unmount();
+        }
     });
 
     it('offers reset when stage zoom changes and keeps it available across levels', async () => {
