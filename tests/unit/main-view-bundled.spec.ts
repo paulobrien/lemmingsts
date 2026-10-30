@@ -202,18 +202,37 @@ describe('home setup', () => {
     view.unmount();
   });
 
-  it('blocks a saved Windows mode when its files disappear until DOS is selected', async () => {
+  it('temporarily uses DOS when a saved Windows choice is unavailable, then restores Windows', async () => {
     localStorage.setItem('lemmings.game-mode.v1', 'windows');
     mock.hasFiles.mockResolvedValue(true);
-    const view = await mount();
-    expect(view.container.textContent).toContain('Windows files are not ready');
-    expect(view.container.querySelector('a.primary-button')).toBeNull();
-    const select = view.container.querySelector<HTMLSelectElement>('.game-mode select')!;
-    select.value = 'dos';
-    select.dispatchEvent(new Event('change', { bubbles: true }));
-    await nextTick();
+    let view = await mount();
+    expect(view.container.querySelector<HTMLSelectElement>('.game-mode select')!.value).toBe('dos');
     expect(view.container.querySelector('a.primary-button')).not.toBeNull();
-    expect(localStorage.getItem('lemmings.game-mode.v1')).toBe('dos');
+    view.unmount();
+    mock.hasAudio.mockResolvedValue(true);
+    mock.hasWindowsGame.mockResolvedValue(true);
+    mock.hasStandaloneGraphics.mockResolvedValue(true);
+    view = await mount();
+    expect(view.container.querySelector<HTMLSelectElement>('.game-mode select')!.value).toBe('windows');
+    expect(view.container.querySelector('a.primary-button')).not.toBeNull();
+    view.unmount();
+  });
+
+  it('restores a saved Windows choice as soon as the missing Windows files are imported', async () => {
+    localStorage.setItem('lemmings.game-mode.v1', 'windows');
+    mock.hasFiles.mockResolvedValue(true);
+    mock.importVoices.mockImplementation(async () => { mock.hasAudio.mockResolvedValue(true); });
+    mock.importGraphics.mockImplementation(async () => { mock.hasStandaloneGraphics.mockResolvedValue(true); });
+    mock.importWindowsGame.mockImplementation(async () => { mock.hasWindowsGame.mockResolvedValue(true); });
+    const view = await mount();
+    const mode = view.container.querySelector<HTMLSelectElement>('.game-mode select')!;
+    expect(mode.value).toBe('dos');
+    const input = view.container.querySelector<HTMLInputElement>('input[accept^=".wav"]')!;
+    Object.defineProperty(input, 'files', { configurable: true, value: [new File(['disc'], 'lemmings.iso')] });
+    input.dispatchEvent(new Event('change', { bubbles: true }));
+    for (let i = 0; i < 30; i++) await Promise.resolve();
+    await nextTick();
+    expect(mode.value).toBe('windows');
     view.unmount();
   });
 

@@ -217,14 +217,14 @@ onMounted(async () => {
 });
 let groupRequest = 0;
 watch([gameMode, windowsReady, dosReady], async ([mode, hasWindows, hasDos]) => {
-  const defaultWindows = hasWindows && (!hasDos || gameModePreference.value === null);
-  const restoreDos = hasWindows && hasDos && gameModePreference.value === 'dos';
-  if (defaultWindows && mode !== 'windows') {
-    if (writeGameMode('windows', false)) gameMode.value = 'windows';
-    return;
-  }
-  if (restoreDos && mode !== 'dos') {
-    if (writeGameMode('dos', false)) gameMode.value = 'dos';
+  // Keep the chosen edition when available, and use the only installed
+  // edition temporarily if the preferred one is missing.
+  const desired: GameMode | null = hasWindows && hasDos ? gameModePreference.value ?? 'windows'
+    : hasWindows ? 'windows' : hasDos ? 'dos' : null;
+  if (desired && mode !== desired) {
+    ++groupRequest;
+    groups.value = [];
+    if (writeGameMode(desired, false)) gameMode.value = desired;
     return;
   }
   const generation = ++groupRequest;
