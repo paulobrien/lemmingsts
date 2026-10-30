@@ -5,7 +5,7 @@ import { expect, test } from '@playwright/test'
 test('Windows audio plays imported voice samples during a level', async ({ page }) => {
   test.skip(process.env.RUN_PRIVATE_GAME_TESTS !== '1', 'Requires untracked DOS files and Windows voice samples')
   const directory = resolve('dos/windows-audio/SOUND')
-  const available = await readdir(directory).catch(() => [])
+  const available: string[] = await readdir(directory).catch((): string[] => [])
   test.skip(!['LETSGO.WAV', 'OHNO.WAV', 'YIPPEE.WAV'].every(name => available.includes(name)), 'Requires optional untracked Windows voice files')
   await page.addInitScript(() => {
     const original = AudioBufferSourceNode.prototype.start
