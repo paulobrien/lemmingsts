@@ -103,10 +103,13 @@ test('keeps full-resolution Windows toolbar artwork behind the HUD', async ({ pa
     const stage = new Stage(canvas, 2)
     const noopEvent = { on: () => {} }
     const panel = new Frame(320, 40); panel.fill(0, 0, 0)
-    const empty = new Frame(8, 8)
+    const empty = new Frame(8, 8); empty.fill(255, 255, 255)
+    const digit = new Frame(8, 8); digit.setPixel(0, 0, 0xffffffff)
     const sprites = { getPanelSprite: () => panel, getLetterSprite: () => undefined,
-      getNumberSpriteLeft: () => empty, getNumberSpriteRight: () => empty, getNumberSpriteEmpty: () => empty }
-    const skills = { onCountChanged: noopEvent, onSelectionChanged: noopEvent, getSkill: () => 0, getSelectedSkill: () => 8 }
+      getNumberSpriteLeft: () => digit, getNumberSpriteRight: () => new Frame(8, 8), getNumberSpriteEmpty: () => empty }
+    let skillCount = 1, countChanged = () => {}
+    const skills = { onCountChanged: { on: (callback: () => void) => { countChanged = callback } },
+      onSelectionChanged: noopEvent, getSkill: (type: number) => type === 1 ? skillCount : 0, getSelectedSkill: () => 8 }
     const timer = { onGameTick: noopEvent, getGameLeftTimeString: () => '5' }
     const victory = { getReleaseCount: () => 10, getNeedCount: () => 1, getOutCount: () => 0,
       getSurvivorPercentage: () => 0, getMinReleaseRate: () => 0, getCurrentReleaseRate: () => 0 }
@@ -119,13 +122,18 @@ test('keeps full-resolution Windows toolbar artwork behind the HUD', async ({ pa
     gui.setWindowsPanel(logical, native); gui.render(); stage.redraw()
     const pixel = (x: number, y: number) => Array.from(canvas.getContext('2d')!.getImageData(x, y, 1, 1).data)
     const values = [pixel(5, 141), pixel(6, 141), pixel(0, 120), pixel(31, 159)]
+    const beforeEmpty = pixel(8, 114)
+    skillCount = 0; countChanged(); gui.render(); stage.redraw()
+    const afterEmpty = pixel(8, 114)
     // A new DOS game can reuse this same Stage and display.
     const dos = new GameGui({}, sprites, skills, timer, victory)
     dos.setGuiDisplay(stage.getGuiDisplay()); dos.render(); stage.redraw()
     const dosAfterWindows = { pixel: pixel(5, 141), native: !!stage.getGuiDisplay().getNativeLayers() }
     stage.dispose()
-    return { values, dosAfterWindows }
+    return { values, beforeEmpty, afterEmpty, dosAfterWindows }
   })
   expect(actual.values).toEqual([[255, 0, 0, 255], [192, 192, 192, 255], [255, 255, 255, 255], [128, 128, 128, 255]])
+  expect(actual.beforeEmpty).toEqual([255, 255, 255, 255])
+  expect(actual.afterEmpty).toEqual([0, 0, 0, 255])
   expect(actual.dosAfterWindows).toEqual({ pixel: [0, 0, 0, 255], native: false })
 })

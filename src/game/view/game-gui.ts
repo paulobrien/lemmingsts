@@ -243,6 +243,9 @@ export class GameGui {
 
             for (let i = 1 /* jump over unknown */; i < SkillTypes.length(); i++) {
                 const count = this.skills.getSkill(i);
+                // Windows leaves unavailable skills blank. The background is
+                // rebuilt on count changes, so the last digit is also erased.
+                if (this.isWindowsLayout && count <= 0) continue;
                 this.drawPanelNumber(display, count, this.getPanelIndexBySkill(i));
             }
         }
