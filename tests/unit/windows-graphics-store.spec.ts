@@ -3,7 +3,7 @@ import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { indexedDB } from 'fake-indexeddb';
 import { zipSync } from 'fflate';
 import { WINDOWS_GRAPHICS_FILES, WINDOWS_UI_GRAPHICS_FILES, WINDOWS_GAME_GRAPHICS_FILES } from '../../src/game/resources/file/windows-graphics-names';
-import { canAutoImportWindowsGraphics, canAutoImportWindowsUiGraphics, clearWindowsGraphics, getWindowsGraphicsFile, hasWindowsGraphics,
+import { canAutoImportWindowsGraphics, canAutoImportWindowsUiGraphics, clearWindowsGraphics, getWindowsGraphicsFile, hasWindowsGraphics, hasStandaloneWindowsGraphics,
   importWindowsGraphics, importWindowsGraphicsIfMissing } from '../../src/game/resources/file/windows-graphics-store';
 
 vi.stubGlobal('indexedDB', indexedDB);
@@ -70,6 +70,8 @@ describe('optional Windows graphics storage', () => {
     expect(await getWindowsGraphicsFile('ICO_CLIM.SPR')).toEqual(sprite().buffer);
     expect(await getWindowsGraphicsFile('LEMMSMA.SPR')).toEqual(sprite().buffer);
     expect(await getWindowsGraphicsFile('LEVEL4OS.SPR')).toEqual(sprite().buffer);
+    // Valid SRLE framing alone is insufficient: the game needs the named mask frames.
+    expect(await hasStandaloneWindowsGraphics()).toBe(false);
     expect(await canAutoImportWindowsUiGraphics()).toBe(false);
     const custom = files();
     const alternate = Uint8Array.from([...sprite().slice(0, -2), 7, 0x80]);

@@ -1,5 +1,6 @@
 import { unzipSync } from 'fflate';
 import { decodeWindowsPalette, decodeWindowsSprites } from '../windows-graphics';
+import { createWindowsMaskProvider } from '../windows-mask-provider';
 import { WINDOWS_GRAPHICS_ALL_FILES, WINDOWS_GRAPHICS_FILES, WINDOWS_OPTIONAL_GRAPHICS_FILES } from './windows-graphics-names';
 import { readWindowsGraphicsIso } from './windows-iso';
 
@@ -150,6 +151,17 @@ async function keys(): Promise<Set<IDBValidKey>> {
 export async function hasWindowsGraphics(): Promise<boolean> {
   const saved = await keys();
   return WINDOWS_GRAPHICS_FILES.every(name => saved.has(name));
+}
+/** Standalone needs the low-resolution simulation sprites and complete controls. */
+export async function hasStandaloneWindowsGraphics(): Promise<boolean> {
+  const saved = await keys();
+  if (!WINDOWS_GRAPHICS_ALL_FILES.every(name => saved.has(name))) return false;
+  try {
+    const lemmings = await getWindowsGraphicsFile('LEMMSMA.SPR');
+    if (!lemmings) return false;
+    createWindowsMaskProvider(new Uint8Array(lemmings));
+    return true;
+  } catch { return false; }
 }
 export async function canAutoImportWindowsGraphics(): Promise<boolean> {
   return (await keys()).size === 0;

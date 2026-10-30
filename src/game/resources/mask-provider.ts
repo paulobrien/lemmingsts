@@ -11,8 +11,13 @@ export class MaskProvider {
         return this.maskList[maskTypes];
     }
 
-    constructor(fr: BinaryReader) {
-
+    constructor(source: BinaryReader | MaskList[]) {
+        if (Array.isArray(source)) {
+            if (source.length !== 6 || source.some(list => !(list instanceof MaskList))) throw new Error('Incomplete gameplay masks.');
+            this.maskList = source.slice();
+            return;
+        }
+        const fr = source;
         this.maskList[MaskTypes.BASHING_R] = MaskList.fromFile(fr, 16, 10, 4, -8, -10);
         this.maskList[MaskTypes.BASHING_L] = MaskList.fromFile(fr, 16, 10, 4, -8, -10);
         // DOS miner animation has its foot at (8, 13), also used for mask placement.

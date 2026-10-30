@@ -12,7 +12,7 @@ export class MaskList {
 
 
     public get length(): number {
-        return frames.length;
+        return this.frames.length;
     }
 
     public getMask(index: number): Mask {
