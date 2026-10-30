@@ -50,6 +50,29 @@ describe('Windows toolbar artwork', () => {
       .toEqual([3, 4, 5, 6, 7, 8, 9, 10, 2, 1, 11, 13, 12]);
   });
 
+  it('preserves every original animation frame, including repeated frames', async () => {
+    const first = { width: 32, height: 40, indices: new Uint8Array(32 * 40).fill(1), mask: new Uint8Array(32 * 40).fill(1) };
+    const second = { ...first, indices: new Uint8Array(32 * 40).fill(2) };
+    const palette = new Uint32Array(256); palette[1] = 0x112233; palette[2] = 0x445566;
+    mocks.palette.mockReturnValue(palette);
+    mocks.sprites.mockReturnValue([first, second, second]);
+    const artwork = await prepareWindowsPanel();
+    expect(artwork?.animations).toHaveLength(13);
+    expect(artwork?.animations[0]).toHaveLength(3);
+    expect(artwork?.nativeAnimations[0]).toHaveLength(3);
+    expect(artwork?.nativeAnimations[0].map(frame => frame.getBuffer()[0]))
+      .toEqual([0xff332211, 0xff665544, 0xff665544]);
+    expect(artwork?.panel[0]).toBe(artwork?.animations[0][0]);
+  });
+
+  it('keeps a usable static icon when extra animation frames have unsupported dimensions', async () => {
+    const first = { width: 32, height: 40, indices: new Uint8Array(32 * 40), mask: new Uint8Array(32 * 40) };
+    mocks.sprites.mockReturnValue([first, { ...first, width: 1 }]);
+    const artwork = await prepareWindowsPanel();
+    expect(artwork?.panel).toHaveLength(13);
+    expect(artwork?.animations[0]).toHaveLength(1);
+  });
+
   it('keeps existing imports playable when fast-forward art is missing', async () => {
     mocks.read.mockImplementation(async (name: string) => name === 'ICO_FF.SPR' ? undefined : new ArrayBuffer(1));
     const artwork = await prepareWindowsPanel();

@@ -7,6 +7,7 @@ import { ColorPalette } from '../../src/game/resources/lemmings/color-palette';
 import { SkillPanelSprites } from '../../src/game/resources/skill-panel-sprites';
 import { GameGui } from '../../src/game/view/game-gui';
 import type { DisplayImage } from '../../src/game/view/display-image';
+import { Frame } from '../../src/game/resources/frame';
 
 /** Collect the letters handed to the renderer at their actual panel coordinates. */
 function renderTarget(need: number, total: number) {
@@ -50,5 +51,17 @@ describe('in-game target panel', () => {
     gui.setWindowsPanel(null);
     gui.render();
     expect(covered.filter(item => item.y === 0 && item.x < 112).map(item => item.character).join('')).toBe('NEED  80%');
+  });
+
+  it('centres Windows status fields evenly and keeps the complete time inside the panel', () => {
+    const { covered, gui } = renderTarget(1, 10);
+    covered.length = 0;
+    gui.setWindowsPanel(Array.from({ length: 13 }, () => new Frame(16, 20)));
+    gui.render();
+    const fields = Array.from({ length: 4 }, (_, i) => covered
+      .filter(item => item.y === 0 && item.x >= i * 80 && item.x < (i + 1) * 80)
+      .map(item => item.character).join(''));
+    expect(fields).toEqual(['NEED  10% ', '  OUT 0   ', '  IN 0%   ', 'TIME 5-00 ']);
+    expect(covered.every(item => item.y !== 0 || item.x < 320)).toBe(true);
   });
 });

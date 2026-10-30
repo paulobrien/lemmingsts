@@ -146,8 +146,9 @@ export class Game {
         this.guiDisplay?.redraw();
     }
 
-    public setWindowsPanel(icons: readonly Frame[] | null, nativeIcons?: readonly Frame[] | null) {
-        this.gameGui.setWindowsPanel(icons, nativeIcons);
+    public setWindowsPanel(icons: readonly Frame[] | null, nativeIcons?: readonly Frame[] | null,
+        animations?: readonly (readonly Frame[])[] | null, nativeAnimations?: readonly (readonly Frame[])[] | null) {
+        this.gameGui.setWindowsPanel(icons, nativeIcons, animations, nativeAnimations);
     }
 
 

@@ -23,7 +23,7 @@ function fixture() {
   const sprites = { getPanelSprite: () => new Frame(320, 40), getLetterSprite: () => undefined,
     getNumberSpriteLeft: () => frame, getNumberSpriteRight: () => frame, getNumberSpriteEmpty: () => frame };
   const display = { onMouseDown: new EventHandler<Position2D>(), onMouseUp: events(), onDoubleClick: new EventHandler<Position2D>(),
-    initSize: vi.fn(), setBackground: vi.fn(), drawFrameCovered: vi.fn(), drawFrame: vi.fn(), drawRect: vi.fn() };
+    initSize: vi.fn(), setBackground: vi.fn(), getImageData: () => undefined, drawFrameCovered: vi.fn(), drawFrame: vi.fn(), drawRect: vi.fn() };
   const gui = new GameGui(game as unknown as Game, sprites as unknown as SkillPanelSprites,
     skills as unknown as GameSkills, timer as unknown as GameTimer, victory as unknown as GameVictoryCondition);
   gui.setGuiDisplay(display as unknown as DisplayImage);
@@ -59,6 +59,27 @@ describe('Windows original toolbar', () => {
     expect(display.drawRect).toHaveBeenCalledWith(11 * 16, 16, 16, 23, 255, 255, 255);
     // The first skill's number is drawn over slot 0 rather than DOS slot 2.
     expect(display.drawFrameCovered).toHaveBeenCalledWith(expect.any(Frame), 4, 17, 0, 0, 0);
+  });
+
+  it('advances original icon frames on game ticks and keeps static icons unchanged', () => {
+    const { gui, display, timer } = fixture();
+    const icons = Array.from({ length: 13 }, () => new Frame(16, 20));
+    const native = Array.from({ length: 13 }, () => new Frame(32, 40));
+    const next = new Frame(16, 20), nextNative = new Frame(32, 40);
+    const animations = icons.map((frame, index) => index === 0 ? [frame, next] : [frame]);
+    const nativeAnimations = native.map((frame, index) => index === 0 ? [frame, nextNative] : [frame]);
+    gui.setWindowsPanel(icons, native, animations, nativeAnimations);
+    gui.render();
+    expect(display.drawFrameCovered).toHaveBeenCalledWith(icons[0], 0, 20, 192, 192, 192);
+    display.drawFrameCovered.mockClear();
+    timer.onGameTick.trigger();
+    gui.render();
+    expect(display.drawFrameCovered).toHaveBeenCalledWith(next, 0, 20, 192, 192, 192);
+    expect(display.drawFrameCovered).toHaveBeenCalledWith(icons[8], 8 * 16, 20, 192, 192, 192);
+    display.drawFrameCovered.mockClear();
+    timer.onGameTick.trigger();
+    gui.render();
+    expect(display.drawFrameCovered).toHaveBeenCalledWith(icons[0], 0, 20, 192, 192, 192);
   });
 
   it('keeps DOS controls and legacy 12-icon Windows installations on the original mapping', () => {

@@ -27,12 +27,26 @@ export class GameGui {
     private fastForwardActive = false;
     private windowsPanel: readonly Frame[] | null = null;
     private windowsNativePanel: readonly Frame[] | null = null;
+    private windowsAnimations: readonly (readonly Frame[])[] | null = null;
+    private windowsNativeAnimations: readonly (readonly Frame[])[] | null = null;
+    private iconAnimationTick = 0;
+    private iconAnimationChanged = false;
 
     /** New Windows art uses its original 13-button layout; older sets use DOS positions. */
-    public setWindowsPanel(icons: readonly Frame[] | null, nativeIcons?: readonly Frame[] | null) {
+    public setWindowsPanel(icons: readonly Frame[] | null, nativeIcons?: readonly Frame[] | null,
+        animations?: readonly (readonly Frame[])[] | null, nativeAnimations?: readonly (readonly Frame[])[] | null) {
         this.windowsPanel = icons?.length === 12 || icons?.length === 13 ? icons : null;
         this.windowsNativePanel = this.windowsPanel && nativeIcons?.length === this.windowsPanel.length &&
             nativeIcons.every(icon => icon.width === 32 && icon.height === 40) ? nativeIcons : null;
+        const validAnimations = this.windowsNativePanel && animations && nativeAnimations &&
+            animations.length === this.windowsPanel?.length && nativeAnimations.length === this.windowsPanel?.length && animations.every((frames, index) =>
+                frames.length > 0 && frames.length === nativeAnimations[index].length &&
+                frames.every(frame => frame.width === 16 && frame.height === 20) &&
+                nativeAnimations[index].every(frame => frame.width === 32 && frame.height === 40));
+        this.windowsAnimations = validAnimations ? animations ?? null : null;
+        this.windowsNativeAnimations = validAnimations ? nativeAnimations ?? null : null;
+        this.iconAnimationTick = 0;
+        this.iconAnimationChanged = false;
         this.backgroundChanged = true;
     }
 
@@ -61,6 +75,12 @@ export class GameGui {
         gameTimer.onGameTick.on(() => {
             this.gameTimeChanged = true;
             this.doReleaseRateChanges();
+            // Advance the supplied Win95 sprite sequences with simulation
+            // ticks: pause freezes them and the speed control scales them.
+            if (this.windowsAnimations?.some(frames => frames.length > 1)) {
+                this.iconAnimationTick++;
+                this.iconAnimationChanged = true;
+            }
         });
 
         skills.onCountChanged.on(() => {
@@ -203,7 +223,9 @@ export class GameGui {
 
             if (this.windowsPanel) {
                 for (let index = 0; index < this.windowsPanel.length; index++) {
-                    display.drawFrameCovered(this.windowsPanel[index], index * 16, 20, 192, 192, 192);
+                    const frames = this.windowsAnimations?.[index];
+                    const icon = frames ? frames[this.iconAnimationTick % frames.length] : this.windowsPanel[index];
+                    display.drawFrameCovered(icon, index * 16, 20, 192, 192, 192);
                 }
                 if (this.windowsNativePanel) this.setNativeWindowsPanel(display);
             }
@@ -212,6 +234,20 @@ export class GameGui {
             this.gameTimeChanged = true;
             this.skillsCountChanged = true;
             this.skillSelectionChanged = true;
+            this.iconAnimationChanged = false;
+        } else if (this.iconAnimationChanged && this.windowsPanel) {
+            this.iconAnimationChanged = false;
+            const background = display.getNativeLayers?.()?.background;
+            if (background && this.windowsNativePanel) {
+                // Reuse the existing native image rather than allocate an
+                // entire panel on every game tick (especially at 4× speed).
+                this.paintNativeWindowsIcons(new Uint32Array(background.data.buffer, background.data.byteOffset, background.data.byteLength / 4), background.width, background.height);
+            } else {
+                for (let index = 0; index < this.windowsPanel.length; index++) {
+                    const frames = this.windowsAnimations?.[index];
+                    display.drawFrameCovered(frames ? frames[this.iconAnimationTick % frames.length] : this.windowsPanel[index], index * 16, 20, 192, 192, 192);
+                }
+            }
         }
 
         /////////
@@ -223,14 +259,30 @@ export class GameGui {
         // Above 100 lemmings, adjacent counts can have the same displayed
         // percentage. Show the exact count instead of implying an early win.
         const target = total > 100 ? String(needed) : `${this.stringPad(String(total > 0 ? Math.floor(needed / total * 100) : 0), 3)}%`;
-        this.drawGreenString(display, `Need ${target}`, 0, 0);
-        this.drawGreenString(display, 'Out ' + this.gameVictoryCondition.getOutCount() + '  ', 112, 0);
-        this.drawGreenString(display, 'In' + this.stringPad(this.gameVictoryCondition.getSurvivorPercentage() + '', 3) + '%', 186, 0);
-
-        if (this.gameTimeChanged) {
+        if (this.isWindowsLayout) {
+            // Four equally sized fields keep the labels balanced across the
+            // toolbar, including the area above the minimap. Painting spaces
+            // on both sides also clears digits when values become shorter.
+            const fields = [
+                `Need ${target}`,
+                `Out ${this.gameVictoryCondition.getOutCount()}`,
+                `In ${this.gameVictoryCondition.getSurvivorPercentage()}%`,
+                `Time ${this.gameTimer.getGameLeftTimeString()}`,
+            ];
+            fields.forEach((field, index) => {
+                const leftPadding = Math.max(0, Math.floor((10 - field.length) / 2));
+                this.drawGreenString(display, field.padStart(field.length + leftPadding).padEnd(10), index * 80, 0);
+            });
             this.gameTimeChanged = false;
+        } else {
+            this.drawGreenString(display, `Need ${target}`, 0, 0);
+            this.drawGreenString(display, 'Out ' + this.gameVictoryCondition.getOutCount() + '  ', 112, 0);
+            this.drawGreenString(display, 'In' + this.stringPad(this.gameVictoryCondition.getSurvivorPercentage() + '', 3) + '%', 186, 0);
 
-            this.renderGameTime(display, 248, 0);
+            if (this.gameTimeChanged) {
+                this.gameTimeChanged = false;
+                this.renderGameTime(display, 248, 0);
+            }
         }
 
         /////////
@@ -272,8 +324,16 @@ export class GameGui {
             const color = original[y * image.width + x], at = y * 2 * width + x * 2;
             out[at] = out[at + 1] = out[at + width] = out[at + width + 1] = color;
         }
+        this.paintNativeWindowsIcons(out, width, height);
+        display.setNativeBackground(pixels, width, height);
+    }
+
+    private paintNativeWindowsIcons(out: Uint32Array, width: number, height: number): void {
+        if (!this.windowsNativePanel) return;
         for (let slot = 0; slot < this.windowsNativePanel.length; slot++) {
-            const icon = this.windowsNativePanel[slot], source = icon.getBuffer(), mask = icon.getMask();
+            const frames = this.windowsNativeAnimations?.[slot];
+            const icon = frames ? frames[this.iconAnimationTick % frames.length] : this.windowsNativePanel[slot];
+            const source = icon.getBuffer(), mask = icon.getMask();
             for (let y = 0; y < 40; y++) for (let x = 0; x < 32; x++) {
                 const destX = slot * 32 + x, destY = 40 + y;
                 if (destX >= width || destY >= height) continue;
@@ -282,7 +342,6 @@ export class GameGui {
                 out[destY * width + destX] = mask[y * 32 + x] ? source[y * 32 + x] : base;
             }
         }
-        display.setNativeBackground(pixels, width, height);
     }
 
     /** left pad a string with spaces */
