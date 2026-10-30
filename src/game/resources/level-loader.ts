@@ -120,6 +120,9 @@ export class LevelLoader {
             groundReader.groundPalette
         );
 
+        newLevel.setWindowsTerrainSource({ graphicSet: levelReader.graphicSet1,
+            special: levelReader.graphicSet2 !== 0, pieces: levelReader.terrains });
+
         newLevel.setSteelAreas(levelReader.steel);
         newLevel.setMapObjects(levelReader.objects, groundReader.getObjectImages());
 

@@ -14,6 +14,12 @@ import { SolidLayer } from './solid-layer';
 import { WindowsTerrainLayer } from './windows-terrain-layer';
 
 interface ProtectionRegion { x: number; y: number; width: number; height: number; flag: number }
+/** Layout metadata for optional Windows presentation; DOS physics is unchanged. */
+export interface WindowsTerrainSource {
+    graphicSet: number;
+    special: boolean;
+    pieces: readonly LevelElement[];
+}
 
 /** Level Data */
 export class Level {
@@ -21,6 +27,7 @@ export class Level {
     /** the background image */
     private groundImage: Uint8ClampedArray;
     private windowsTerrain?: WindowsTerrainLayer;
+    private windowsTerrainSource?: WindowsTerrainSource;
     // DOS uses an object map of 4×4 pixel cells, independent of terrain pixels.
     // Lemmix's ReadObjectMap / InitializeObjectMap document its alignment and
     // overwrite order: https://github.com/ericlangedijk/Lemmix/blob/master/src/Game.pas
@@ -234,6 +241,9 @@ export class Level {
     }
 
     public getWindowsTerrain(): WindowsTerrainLayer | undefined { return this.windowsTerrain; }
+
+    public setWindowsTerrainSource(source: WindowsTerrainSource): void { this.windowsTerrainSource = source; }
+    public getWindowsTerrainSource(): WindowsTerrainSource | undefined { return this.windowsTerrainSource; }
 
 
 
