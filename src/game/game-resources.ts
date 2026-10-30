@@ -11,6 +11,12 @@ import { SkillPanelSprites } from './resources/skill-panel-sprites';
 import { AudioPlayer } from './resources/sound/audio-player';
 import { SoundImageManager } from './resources/sound/sound-image-manager';
 import { SoundImagePlayer } from './resources/sound/sound-image-player';
+import { getWindowsGameFile } from './resources/file/windows-game-store';
+import { getWindowsGraphicsFile } from './resources/file/windows-graphics-store';
+import { readWindowsLevelRecord, type WindowsLevelGroup } from './resources/windows-level-database';
+import { prepareStandaloneWindowsSprites } from './resources/standalone-windows-sprites';
+import { createWindowsLevel } from './resources/windows-level-art';
+import { createWindowsMaskProvider } from './resources/windows-mask-provider';
 
 /** represent access to the resources of a Lemmings Game */
 export class GameResources {
@@ -20,7 +26,7 @@ export class GameResources {
     private soundImage: Promise<SoundImageManager> | null = null;
     private mainDat: Promise<FileContainer> | null = null;
 
-    constructor(private fileProvider: FileProvider, private config: GameConfig) {
+    constructor(private fileProvider: FileProvider, private config: GameConfig, private windowsGroups?: WindowsLevelGroup[]) {
 
     }
 
@@ -50,17 +56,24 @@ export class GameResources {
 
     /** return the Lemmings animations */
     public async getLemmingsSprite(colorPalette: ColorPalette): Promise<LemmingsSprite> {
+        if (this.windowsGroups) return prepareStandaloneWindowsSprites();
         const container = await this.getMainDat();
         return new LemmingsSprite(container.getPart(0), colorPalette);
     }
 
 
     public async getSkillPanelSprite(colorPalette: ColorPalette): Promise<SkillPanelSprites> {
+        if (this.windowsGroups) return new SkillPanelSprites(null, null, colorPalette);
         const container = await this.getMainDat();
         return new SkillPanelSprites(container.getPart(2), container.getPart(6), colorPalette);
     }
 
     public async getMasks(): Promise<MaskProvider> {
+        if (this.windowsGroups) {
+            const bytes = await getWindowsGraphicsFile('LEMMSMA.SPR');
+            if (!bytes) throw new Error('Windows gameplay masks are missing. Please add the Windows files again.');
+            return createWindowsMaskProvider(new Uint8Array(bytes));
+        }
         const container = await this.getMainDat();
         return new MaskProvider(container.getPart(1));
     }
@@ -74,8 +87,22 @@ export class GameResources {
 
 
     /** return the Level Data for a given Level-Index */
-    public getLevel(levelMode: number, levelIndex: number): Promise<Level | undefined> {
-
+    public async getLevel(levelMode: number, levelIndex: number): Promise<Level | undefined> {
+        if (this.windowsGroups) {
+            const entry = this.windowsGroups[levelMode]?.levels[levelIndex];
+            if (!entry) return undefined;
+            const record = await getWindowsGameFile(entry.fileName);
+            if (!record) throw new Error(`Windows level file ${entry.fileName} is missing.`);
+            const reader = readWindowsLevelRecord(entry, record);
+            const style = reader.graphicSet1;
+            const [ground, terrain, objects] = await Promise.all([
+                getWindowsGameFile(`GROUND${style}O.DAT`),
+                getWindowsGraphicsFile(`LEVEL${style}S.SPR`),
+                getWindowsGraphicsFile(`LEVEL${style}OS.SPR`),
+            ]);
+            if (!ground || !terrain || !objects) throw new Error('Windows level artwork is missing. Please add the Windows files again.');
+            return createWindowsLevel(reader, levelMode, levelIndex, ground, terrain, objects);
+        }
         const levelReader = new LevelLoader(this.fileProvider, this.config);
         return levelReader.getLevel(levelMode, levelIndex);
     }
