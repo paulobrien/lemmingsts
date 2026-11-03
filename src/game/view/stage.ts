@@ -3,6 +3,7 @@ import { EventHandler } from '../utilities/event-handler';
 import { DisplayImage } from './display-image';
 import { StageImageProperties } from './stage-image-properties';
 import { UserInputManager } from './user-input-manager';
+import { compositeNativeLayers } from './composite-native-layers';
 
 /** Native Windows layout, in canvas pixels. DOS keeps its original geometry. */
 const WINDOWS_WIDTH = 960, WINDOWS_HEIGHT = 440, WINDOWS_PANEL_HEIGHT = 120;
@@ -34,7 +35,7 @@ export class Stage {
     private keyboardTarget: (() => Position2D | null) | null = null;
     private exampleHint: Position2D | null = null;
     private nativeCanvas: HTMLCanvasElement | null = null;
-    private nativeForegroundCanvas: HTMLCanvasElement | null = null;
+    private nativeComposite: ImageData | null = null;
     private nativeGuiCanvas: HTMLCanvasElement | null = null;
     private nativeGuiForegroundCanvas: HTMLCanvasElement | null = null;
     private minimapLemmings: (() => readonly { x: number; y: number }[]) | null = null;
@@ -610,7 +611,7 @@ export class Stage {
         this.minimapDragging = false;
         this.scrollbarDragging = false;
         this.nativeCanvas = null;
-        this.nativeForegroundCanvas = null;
+        this.nativeComposite = null;
         this.nativeGuiCanvas = null;
         this.nativeGuiForegroundCanvas = null;
         this.onGraphicsError.dispose();
@@ -840,34 +841,47 @@ export class Stage {
                 const game = display === this.gameImgProps;
                 if (game) {
                     if (!this.nativeCanvas) this.nativeCanvas = document.createElement('canvas');
-                    if (!this.nativeForegroundCanvas) this.nativeForegroundCanvas = document.createElement('canvas');
                 } else {
                     if (!this.nativeGuiCanvas) this.nativeGuiCanvas = document.createElement('canvas');
                     if (!this.nativeGuiForegroundCanvas) this.nativeGuiForegroundCanvas = document.createElement('canvas');
                 }
                 const backCanvas = (game ? this.nativeCanvas : this.nativeGuiCanvas)!;
-                const frontCanvas = (game ? this.nativeForegroundCanvas : this.nativeGuiForegroundCanvas)!;
-                for (const canvas of [backCanvas, frontCanvas]) {
-                    if (canvas.width !== native.background.width || canvas.height !== native.background.height) {
-                        canvas.width = native.background.width;
-                        canvas.height = native.background.height;
-                    }
+                if (backCanvas.width !== native.background.width || backCanvas.height !== native.background.height) {
+                    backCanvas.width = native.background.width;
+                    backCanvas.height = native.background.height;
                 }
                 const background = backCanvas.getContext('2d');
-                const foreground = frontCanvas.getContext('2d');
-                if (!background || !foreground) throw new Error('Native graphics canvas unavailable');
-                background.putImageData(native.background, 0, 0);
-                foreground.putImageData(native.foreground, 0, 0);
-                background.drawImage(frontCanvas, 0, 0);
+                if (!background) throw new Error('Native graphics canvas unavailable');
+                if (game) {
+                    if (!this.nativeComposite || this.nativeComposite.width !== native.background.width ||
+                        this.nativeComposite.height !== native.background.height) {
+                        this.nativeComposite = new ImageData(native.background.width, native.background.height);
+                    }
+                    // Present a single complete image instead of composing two
+                    // changing offscreen canvas textures on every game tick.
+                    compositeNativeLayers(native.background.data, native.foreground.data, this.nativeComposite.data);
+                    background.putImageData(this.nativeComposite, 0, 0);
+                } else {
+                    const frontCanvas = this.nativeGuiForegroundCanvas!;
+                    if (frontCanvas.width !== native.foreground.width || frontCanvas.height !== native.foreground.height) {
+                        frontCanvas.width = native.foreground.width;
+                        frontCanvas.height = native.foreground.height;
+                    }
+                    const foreground = frontCanvas.getContext('2d');
+                    if (!foreground) throw new Error('Native graphics canvas unavailable');
+                    background.putImageData(native.background, 0, 0);
+                    foreground.putImageData(native.foreground, 0, 0);
+                    background.drawImage(frontCanvas, 0, 0);
+                }
                 nativeCanvas = backCanvas;
             } catch {
-                if (display === this.gameImgProps) { this.nativeCanvas = null; this.nativeForegroundCanvas = null; }
+                if (display === this.gameImgProps) { this.nativeCanvas = null; this.nativeComposite = null; }
                 else { this.nativeGuiCanvas = null; this.nativeGuiForegroundCanvas = null; }
                 display.display?.rejectNativeBackground();
             }
         } else if (display === this.gameImgProps) {
             this.nativeCanvas = null;
-            this.nativeForegroundCanvas = null;
+            this.nativeComposite = null;
         } else {
             this.nativeGuiCanvas = null;
             this.nativeGuiForegroundCanvas = null;
