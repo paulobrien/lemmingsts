@@ -1,5 +1,6 @@
 import { Level } from '@/game/resources/level';
 import { MaskList } from '@/game/resources/mask-list';
+import { Mask } from '@/game/resources/mask';
 import { MaskProvider } from '@/game/resources/mask-provider';
 import { MaskTypes } from '@/game/resources/mask-types';
 import { DisplayImage } from '@/game/view/display-image';
@@ -17,6 +18,7 @@ export class ActionCountdownSystem implements IActionSystem {
     public soundSystem = new SoundSystem();
 
     private numberMasks: MaskList;
+    private readonly numberOffsets = new WeakMap<Mask, number>();
 
     constructor(masks: MaskProvider) {
         this.numberMasks = masks.GetMask(MaskTypes.NUMBERS)
@@ -38,9 +40,27 @@ export class ActionCountdownSystem implements IActionSystem {
             return;
         }
 
-        let numberFrame = this.numberMasks.getMask(count);
+        const numberFrame = this.numberMasks.getMask(count);
+        let offset = this.numberOffsets.get(numberFrame);
+        if (offset === undefined) {
+            // Digit artwork can occupy only part of its mask cell, and the
+            // Windows and DOS cells use different origins. Centre the visible
+            // pixels on the lemming instead of centring the whole cell.
+            let left = numberFrame.width, right = -1;
+            const pixels = numberFrame.getMask();
+            for (let y = 0; y < numberFrame.height; y++) {
+                for (let x = 0; x < numberFrame.width; x++) {
+                    if (pixels[y * numberFrame.width + x]) {
+                        left = Math.min(left, x);
+                        right = Math.max(right, x);
+                    }
+                }
+            }
+            offset = right < 0 ? 0 : Math.round(-numberFrame.offsetX - (left + right) / 2);
+            this.numberOffsets.set(numberFrame, offset);
+        }
 
-        gameDisplay.drawMask(numberFrame, lem.x, lem.y);
+        gameDisplay.drawMask(numberFrame, lem.x + offset, lem.y);
     }
 
 
