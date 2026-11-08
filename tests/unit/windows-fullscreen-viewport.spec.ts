@@ -88,6 +88,21 @@ describe('Windows fullscreen viewport', () => {
     stage.dispose();
   });
 
+  it('can restore an opening entrance that drops out of view when leaving a wide fullscreen view', () => {
+    const { stage } = setup();
+    stage.setMinimapProvider(() => []);
+    stage.setGameViewPointPosition(0, 0);
+    expect(stage.setWindowsFullscreenViewport(1600, 250)).toBe(true);
+    stage.ensureGameRectVisible(100, 20, 48, 25);
+    expect(stage.isGameRectVisible(100, 20, 48, 25)).toBe(true);
+    expect(stage.setWindowsFullscreenViewport()).toBe(true);
+    expect(stage.isGameRectVisible(100, 20, 48, 25)).toBe(false);
+    stage.ensureGameRectVisible(100, 20, 48, 25);
+    expect(stage.isGameRectVisible(100, 20, 48, 25)).toBe(true);
+    expect(stage.setWindowsFullscreenViewport()).toBe(false);
+    stage.dispose();
+  });
+
   it('treats manually returning to fitted zoom as the default and adapts on the next rotation', () => {
     const { stage } = setup();
     stage.setMinimapProvider(() => []);

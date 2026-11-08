@@ -333,16 +333,17 @@ export class Stage {
     }
 
     /** Resize only the native Windows fullscreen presentation, retaining camera and custom zoom. */
-    public setWindowsFullscreenViewport(width?: number, height?: number): void {
+    public setWindowsFullscreenViewport(width?: number, height?: number): boolean {
         if (width === undefined || height === undefined) {
-            if (!this.fullscreenViewport) return;
+            if (!this.fullscreenViewport) return false;
             this.fullscreenViewport = null;
         } else {
-            if (!Number.isFinite(width) || !Number.isFinite(height) || width <= 0 || height <= 0) return;
-            if (this.fullscreenViewport?.width === width && this.fullscreenViewport.height === height) return;
+            if (!Number.isFinite(width) || !Number.isFinite(height) || width <= 0 || height <= 0) return false;
+            if (this.fullscreenViewport?.width === width && this.fullscreenViewport.height === height) return false;
             this.fullscreenViewport = { width, height };
         }
         if (this.minimapLemmings) this.resizeWindowsCanvas();
+        return true;
     }
 
     private resizeWindowsCanvas(): void {
@@ -588,6 +589,15 @@ export class Stage {
         const desiredY = y - image.height / image.viewPoint.scale / 2;
         this.updateViewPoint(image, (desiredX - image.viewPoint.x) * image.viewPoint.scale,
             (desiredY - image.viewPoint.y) * image.viewPoint.scale, 0);
+    }
+
+    /** Check whether a world rectangle is entirely within the current playfield. */
+    public isGameRectVisible(x: number, y: number, width: number, height: number): boolean {
+        const image = this.gameImgProps;
+        if (!image.display) return false;
+        const view = image.viewPoint;
+        return x >= view.x && y >= view.y && x + width <= view.x + image.width / view.scale &&
+            y + height <= view.y + image.height / view.scale;
     }
 
     /** Keep a level's entrance in view while preserving its preferred camera when possible. */

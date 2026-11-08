@@ -181,17 +181,21 @@ export default defineComponent({
         let viewportObserver: ResizeObserver | null = null;
         function updateFullscreenViewport() {
             if (!stage) return;
-            if (!fullscreenActive.value) { stage.setWindowsFullscreenViewport(); return; }
-            const bounds = gameScreen.value?.getBoundingClientRect();
-            if (bounds?.width && bounds.height) {
-                stage.setWindowsFullscreenViewport(bounds.width, bounds.height);
-                // Resizing an idle preview changes the fitted zoom. Keep the
-                // entrance visible before the player starts this level.
-                const entrance = !playing.value && !finished.value ? level.value?.entrances[0] : undefined;
-                if (entrance) {
-                    stage.ensureGameRectVisible(entrance.x, entrance.y, 48, 25);
-                    stage.redraw();
-                }
+            const entrance = !playing.value && !finished.value ? level.value?.entrances[0] : undefined;
+            const entranceWasVisible = entrance && stage.isGameRectVisible(entrance.x, entrance.y, 48, 25);
+            let resized: boolean;
+            if (!fullscreenActive.value) {
+                resized = stage.setWindowsFullscreenViewport();
+            } else {
+                const bounds = gameScreen.value?.getBoundingClientRect();
+                if (!bounds?.width || !bounds.height) return;
+                resized = stage.setWindowsFullscreenViewport(bounds.width, bounds.height);
+            }
+            // Keep an initially visible entrance in view after either entering
+            // or leaving fullscreen. Respect a player's deliberate preview pan.
+            if (resized && entrance && entranceWasVisible) {
+                stage.ensureGameRectVisible(entrance.x, entrance.y, 48, 25);
+                stage.redraw();
             }
         }
         let keyboardTargeting: KeyboardTargeting | null = null;

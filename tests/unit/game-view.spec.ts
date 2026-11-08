@@ -22,7 +22,7 @@ const mock = vi.hoisted(() => {
     const display = { onMouseDown: event, clear: vi.fn(), redraw: vi.fn(), setScreenPosition: vi.fn(), setNativeSprites: vi.fn(), setNativeBackground: vi.fn() };
     const graphicsError: { handler?: (message?: string) => void } = {};
     const zoomChange: { handler?: (changed?: boolean) => void } = {};
-    const stage = { setWindowsFullscreenViewport: vi.fn(), setWindowsStatusProvider: vi.fn(), setMinimapProvider: vi.fn(), ensureGameRectVisible: vi.fn(), panGameBy: vi.fn(), redraw: vi.fn(), getGameDisplay: vi.fn(() => display), getGuiDisplay: vi.fn(() => display), resetFade: vi.fn(), clearInputBindings: vi.fn(), dispose: vi.fn(), zoomGame: vi.fn(), resetZoom: vi.fn(), onZoomChange: { on: vi.fn((handler: (changed?: boolean) => void) => { zoomChange.handler = handler; }), off: vi.fn() }, setExampleHint: vi.fn(), setGraphicsMode: vi.fn(), setComparisonCanvases: vi.fn(), onGraphicsError: { on: vi.fn((handler: (message?: string) => void) => { graphicsError.handler = handler; }), off: vi.fn() } };
+    const stage = { setWindowsFullscreenViewport: vi.fn(), setWindowsStatusProvider: vi.fn(), setMinimapProvider: vi.fn(), isGameRectVisible: vi.fn(() => true), ensureGameRectVisible: vi.fn(), panGameBy: vi.fn(), redraw: vi.fn(), getGameDisplay: vi.fn(() => display), getGuiDisplay: vi.fn(() => display), resetFade: vi.fn(), clearInputBindings: vi.fn(), dispose: vi.fn(), zoomGame: vi.fn(), resetZoom: vi.fn(), onZoomChange: { on: vi.fn((handler: (changed?: boolean) => void) => { zoomChange.handler = handler; }), off: vi.fn() }, setExampleHint: vi.fn(), setGraphicsMode: vi.fn(), setComparisonCanvases: vi.fn(), onGraphicsError: { on: vi.fn((handler: (message?: string) => void) => { graphicsError.handler = handler; }), off: vi.fn() } };
     const skills = { getSkill: vi.fn((_type: number) => 10), getSelectedSkill: vi.fn(() => 1) };
     const endEvent: { handler?: (result: { state: number; survivorPercentage: number }) => void } = {};
     const soundEvent: { handler?: (effect: number) => void } = {};
@@ -130,6 +130,8 @@ describe('game view lifecycle', () => {
 
     beforeEach(() => {
         vi.clearAllMocks();
+        mock.stage.setWindowsFullscreenViewport.mockReset();
+        mock.stage.isGameRectVisible.mockReset().mockReturnValue(true);
         localStorage.clear();
         mock.timer.running = false;
         mock.timer.speedFactor = 1;
@@ -198,6 +200,24 @@ describe('game view lifecycle', () => {
         expect(mock.stage.setMinimapProvider).toHaveBeenCalledWith(null);
         expect(wrapper.container.querySelector('canvas.windows-panel')).toBeNull();
         expect(wrapper.container.querySelector('.game-toolbar.windows-hidden-controls')).toBeNull();
+        wrapper.unmount();
+    });
+
+    it('keeps a visible preview entrance in view when leaving fullscreen without undoing an intentional pan', async () => {
+        mock.level.entrances = [{ x: 700, y: 30 }] as never[];
+        mock.stage.setWindowsFullscreenViewport.mockReturnValue(true);
+        mock.stage.isGameRectVisible.mockReturnValue(true);
+        const wrapper = mountView(); await flushPromises();
+        button(wrapper.container, 'Fullscreen').click(); await flushPromises();
+        mock.stage.ensureGameRectVisible.mockClear();
+        button(wrapper.container, 'Exit fullscreen').click(); await flushPromises();
+        expect(mock.stage.setWindowsFullscreenViewport).toHaveBeenLastCalledWith();
+        expect(mock.stage.ensureGameRectVisible).toHaveBeenCalledWith(700, 30, 48, 25);
+        button(wrapper.container, 'Fullscreen').click(); await flushPromises();
+        mock.stage.isGameRectVisible.mockReturnValue(false);
+        mock.stage.ensureGameRectVisible.mockClear();
+        button(wrapper.container, 'Exit fullscreen').click(); await flushPromises();
+        expect(mock.stage.ensureGameRectVisible).not.toHaveBeenCalled();
         wrapper.unmount();
     });
 
