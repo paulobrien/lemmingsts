@@ -457,6 +457,9 @@ export default defineComponent({
                 game.onGameEnd.on(result => {
                     if (!result || !game) return;
                     game.getGameTimer().suspend();
+                    // Fast-forward is temporary: the next attempt or level
+                    // should start at normal speed after either outcome.
+                    if (speed.value > 1) setSpeed(1);
                     stopEffects();
                     stopMusic();
                     playing.value = false;

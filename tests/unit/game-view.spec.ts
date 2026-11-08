@@ -196,6 +196,21 @@ describe('game view lifecycle', () => {
         wrapper.unmount();
     });
 
+    it.each([2, 3, 4])('turns fast-forward off when a level ends with state %s', async state => {
+        localStorage.setItem('lemmings.game-mode.v1', 'windows');
+        mock.prepareWindowsPanel.mockResolvedValue({ panel: Array(13).fill({}), nativePanel: Array(13).fill({}), skillIcons: [] });
+        const wrapper = mountView(); await flushPromises();
+        button(wrapper.container, 'Start level').click(); await flushPromises();
+        mock.fastForwardRequest.handler?.(); await nextTick();
+        expect(mock.timer.speedFactor).toBe(4);
+
+        mock.endEvent.handler?.({ state, survivorPercentage: 50 }); await nextTick();
+        expect(mock.timer.running).toBe(false);
+        expect(mock.timer.speedFactor).toBe(1);
+        expect(mock.game.setFastForwardActive).toHaveBeenLastCalledWith(false);
+        expect(JSON.parse(localStorage.getItem('lemmings.settings.v1')!).speed).toBe(1);
+    });
+
     it('keeps extra Windows controls tucked away while a second panel press confirms nuke', async () => {
         localStorage.setItem('lemmings.game-mode.v1', 'windows');
         mock.prepareWindowsPanel.mockResolvedValue({ panel: Array(13).fill({}), nativePanel: Array(13).fill({}), skillIcons: [] });
