@@ -590,6 +590,32 @@ export class Stage {
             (desiredY - image.viewPoint.y) * image.viewPoint.scale, 0);
     }
 
+    /** Keep a level's entrance in view while preserving its preferred camera when possible. */
+    public ensureGameRectVisible(x: number, y: number, width: number, height: number): void {
+        const image = this.gameImgProps;
+        if (!image.display) return;
+        const oldScale = image.viewPoint.scale;
+        // A portal must fit within the playfield even after a previous level
+        // was inspected at a very high zoom, or in a shallow landscape view.
+        const fitScale = Math.min(oldScale, image.width / width, image.height / height);
+        image.viewPoint.scale = this.limitValue(0.5, fitScale, 10);
+        if (image.viewPoint.scale !== oldScale) {
+            this.customZoom = this.isZoomChanged(image.viewPoint.scale);
+            this.onZoomChange.trigger(this.customZoom);
+        }
+        const viewportWidth = image.width / image.viewPoint.scale;
+        const viewportHeight = image.height / image.viewPoint.scale;
+        const adjust = (start: number, size: number, camera: number, visible: number, extent: number) => {
+            let target = camera;
+            if (size > visible) target = start + (size - visible) / 2;
+            else if (start < camera) target = start;
+            else if (start + size > camera + visible) target = start + size - visible;
+            return this.limitValue(0, target, extent - visible);
+        };
+        image.viewPoint.x = adjust(x, width, image.viewPoint.x, viewportWidth, image.display.getWidth());
+        image.viewPoint.y = adjust(y, height, image.viewPoint.y, viewportHeight, image.display.getHeight());
+    }
+
     /** Remove listeners belonging to the previous game before attaching a new one. */
     public clearInputBindings(): void {
         this.cancelPress();

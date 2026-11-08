@@ -22,7 +22,7 @@ const mock = vi.hoisted(() => {
     const display = { onMouseDown: event, clear: vi.fn(), redraw: vi.fn(), setScreenPosition: vi.fn(), setNativeSprites: vi.fn(), setNativeBackground: vi.fn() };
     const graphicsError: { handler?: (message?: string) => void } = {};
     const zoomChange: { handler?: (changed?: boolean) => void } = {};
-    const stage = { setWindowsFullscreenViewport: vi.fn(), setWindowsStatusProvider: vi.fn(), setMinimapProvider: vi.fn(), panGameBy: vi.fn(), getGameDisplay: vi.fn(() => display), getGuiDisplay: vi.fn(() => display), resetFade: vi.fn(), clearInputBindings: vi.fn(), dispose: vi.fn(), zoomGame: vi.fn(), resetZoom: vi.fn(), onZoomChange: { on: vi.fn((handler: (changed?: boolean) => void) => { zoomChange.handler = handler; }), off: vi.fn() }, setExampleHint: vi.fn(), setGraphicsMode: vi.fn(), setComparisonCanvases: vi.fn(), onGraphicsError: { on: vi.fn((handler: (message?: string) => void) => { graphicsError.handler = handler; }), off: vi.fn() } };
+    const stage = { setWindowsFullscreenViewport: vi.fn(), setWindowsStatusProvider: vi.fn(), setMinimapProvider: vi.fn(), ensureGameRectVisible: vi.fn(), panGameBy: vi.fn(), redraw: vi.fn(), getGameDisplay: vi.fn(() => display), getGuiDisplay: vi.fn(() => display), resetFade: vi.fn(), clearInputBindings: vi.fn(), dispose: vi.fn(), zoomGame: vi.fn(), resetZoom: vi.fn(), onZoomChange: { on: vi.fn((handler: (changed?: boolean) => void) => { zoomChange.handler = handler; }), off: vi.fn() }, setExampleHint: vi.fn(), setGraphicsMode: vi.fn(), setComparisonCanvases: vi.fn(), onGraphicsError: { on: vi.fn((handler: (message?: string) => void) => { graphicsError.handler = handler; }), off: vi.fn() } };
     const skills = { getSkill: vi.fn((_type: number) => 10), getSelectedSkill: vi.fn(() => 1) };
     const endEvent: { handler?: (result: { state: number; survivorPercentage: number }) => void } = {};
     const soundEvent: { handler?: (effect: number) => void } = {};
@@ -151,6 +151,7 @@ describe('game view lifecycle', () => {
         mock.prepareWindowsLevelPreview.mockReset().mockResolvedValue(null);
         mock.renderWindowsLevelPreview.mockReset();
         mock.level.getWindowsTerrain.mockReset().mockReturnValue(undefined);
+        mock.level.entrances = [];
     });
 
     it('provides the live saved count and exact target in the game canvas description, including fullscreen', async () => {
@@ -197,6 +198,16 @@ describe('game view lifecycle', () => {
         expect(mock.stage.setMinimapProvider).toHaveBeenCalledWith(null);
         expect(wrapper.container.querySelector('canvas.windows-panel')).toBeNull();
         expect(wrapper.container.querySelector('.game-toolbar.windows-hidden-controls')).toBeNull();
+        wrapper.unmount();
+    });
+
+    it('shows the first entrance initially and retains the inspected camera when starting', async () => {
+        mock.level.entrances = [{ x: 700, y: 30 }] as never[];
+        const wrapper = mountView(); await flushPromises();
+        expect(mock.display.setScreenPosition).toHaveBeenCalledWith(0, 0);
+        expect(mock.stage.ensureGameRectVisible).toHaveBeenCalledWith(700, 30, 48, 25);
+        button(wrapper.container, 'Start level').click(); await flushPromises();
+        expect(mock.game.setGameDisplay).toHaveBeenCalledWith(mock.display, true);
         wrapper.unmount();
     });
 

@@ -51,6 +51,43 @@ describe('Windows fullscreen viewport', () => {
     stage.dispose();
   });
 
+  it('keeps the opening portal visible at the chosen zoom without moving an already suitable camera', () => {
+    const { stage } = setup();
+    stage.setMinimapProvider(() => []);
+    const view = stage.getStageImageAt(1, 1)!.viewPoint;
+    stage.setGameViewPointPosition(100, 0);
+    stage.ensureGameRectVisible(200, 20, 48, 25);
+    expect(view.x).toBe(100);
+    stage.ensureGameRectVisible(900, 20, 48, 25);
+    expect(view.x).toBe(468);
+    stage.zoomGame(4);
+    const scale = view.scale;
+    stage.setGameViewPointPosition(100, 0);
+    stage.ensureGameRectVisible(900, 120, 48, 25);
+    expect(view.scale).toBe(scale);
+    expect(view.x).toBeLessThanOrEqual(900);
+    expect(view.x + 960 / scale).toBeGreaterThanOrEqual(948);
+    expect(view.y).toBeLessThanOrEqual(120);
+    expect(view.y + 320 / scale).toBeGreaterThanOrEqual(145);
+    stage.dispose();
+  });
+
+  it('reduces excessive zoom just enough to fit an entrance in a shallow fullscreen viewport', () => {
+    const { stage } = setup();
+    stage.setMinimapProvider(() => []);
+    stage.setWindowsFullscreenViewport(1600, 250);
+    stage.zoomGame(10);
+    const view = stage.getStageImageAt(1, 1)!.viewPoint;
+    expect(view.scale).toBeGreaterThan(1.2);
+    stage.ensureGameRectVisible(900, 120, 48, 25);
+    expect(view.scale).toBeCloseTo(1.2);
+    expect(view.x).toBeLessThanOrEqual(900);
+    expect(view.x + 960 / view.scale).toBeGreaterThanOrEqual(948);
+    expect(view.y).toBeLessThanOrEqual(120);
+    expect(view.y + 30 / view.scale).toBeGreaterThanOrEqual(145);
+    stage.dispose();
+  });
+
   it('treats manually returning to fitted zoom as the default and adapts on the next rotation', () => {
     const { stage } = setup();
     stage.setMinimapProvider(() => []);

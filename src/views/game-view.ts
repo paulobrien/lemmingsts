@@ -183,7 +183,16 @@ export default defineComponent({
             if (!stage) return;
             if (!fullscreenActive.value) { stage.setWindowsFullscreenViewport(); return; }
             const bounds = gameScreen.value?.getBoundingClientRect();
-            if (bounds?.width && bounds.height) stage.setWindowsFullscreenViewport(bounds.width, bounds.height);
+            if (bounds?.width && bounds.height) {
+                stage.setWindowsFullscreenViewport(bounds.width, bounds.height);
+                // Resizing an idle preview changes the fitted zoom. Keep the
+                // entrance visible before the player starts this level.
+                const entrance = !playing.value && !finished.value ? level.value?.entrances[0] : undefined;
+                if (entrance) {
+                    stage.ensureGameRectVisible(entrance.x, entrance.y, 48, 25);
+                    stage.redraw();
+                }
+            }
         }
         let keyboardTargeting: KeyboardTargeting | null = null;
         let music: Pick<AudioPlayer, 'play' | 'suspend' | 'stop'> | null = null;
@@ -361,6 +370,8 @@ export default defineComponent({
                         gui.clear();
                     }
                     display.setScreenPosition(nextLevel.screenPositionX, 0);
+                    const entrance = nextLevel.entrances[0];
+                    if (entrance) stage.ensureGameRectVisible(entrance.x, entrance.y, 48, 25);
                     display.redraw();
                 }
             } catch (reason) {
@@ -452,7 +463,7 @@ export default defineComponent({
                     });
                 });
                 stage.clearInputBindings();
-                game.setGameDisplay(stage.getGameDisplay());
+                game.setGameDisplay(stage.getGameDisplay(), true);
                 game.setGuiDisplay(stage.getGuiDisplay());
                 if (gameMode.value === 'windows' && nativeWindowsPanel.value) {
                     const activeGame = game;
