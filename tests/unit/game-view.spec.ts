@@ -17,7 +17,7 @@ const mock = vi.hoisted(() => {
         getGameLeftTimeString: vi.fn(() => '5-00'),
         onGameTick: { on: vi.fn() },
     };
-    const level = { name: 'Just dig!', screenPositionX: 0, needCount: 8, releaseCount: 10, timeLimit: 5, render: vi.fn(), setWindowsTerrain: vi.fn(), getWindowsTerrain: vi.fn(() => undefined) };
+    const level = { name: 'Just dig!', screenPositionX: 0, needCount: 8, releaseCount: 10, timeLimit: 5, render: vi.fn(), renderPreview: vi.fn(), setWindowsTerrain: vi.fn(), getWindowsTerrain: vi.fn(() => undefined) };
     const event = { on: vi.fn() };
     const display = { onMouseDown: event, clear: vi.fn(), redraw: vi.fn(), setScreenPosition: vi.fn(), setNativeSprites: vi.fn() };
     const graphicsError: { handler?: (message?: string) => void } = {};

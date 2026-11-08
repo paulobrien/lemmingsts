@@ -335,14 +335,17 @@ export default defineComponent({
                     display.clear();
                     graphicsNotice.value = '';
                     if (gameMode.value === 'windows') {
-                        const prepared = await prepareWindowsTerrain(nextLevel);
+                        const [prepared, objects] = await Promise.all([
+                            prepareWindowsTerrain(nextLevel), prepareWindowsObjects(nextLevel),
+                        ]);
                         if (disposed || generation !== loadGeneration || gameMode.value !== 'windows') return;
+                        display.setNativeSprites(objects);
                         if (prepared.status === 'ready') {
                             nextLevel.setWindowsTerrain(prepared.layer);
                             if (prepared.usesDosBackground) graphicsNotice.value = 'This special level uses its DOS background with Windows characters and objects.';
                         } else graphicsNotice.value = 'High-resolution Windows artwork is unavailable. This level uses its original-sized Windows graphics.';
                     }
-                    nextLevel.render(display);
+                    nextLevel.renderPreview(display);
                     display.setScreenPosition(nextLevel.screenPositionX, 0);
                     display.redraw();
                 }
