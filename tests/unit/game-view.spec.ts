@@ -460,6 +460,21 @@ describe('game view lifecycle', () => {
         }
     });
 
+    it('shows the current difficulty progress and levels remaining in the pause menu', async () => {
+        const wrapper = mountView();
+        await flushPromises();
+        expect(wrapper.container.querySelector('.level-context')?.textContent).toContain('Level 1 of 2');
+        expect(wrapper.container.querySelector('.level-context')?.textContent).toContain('1 level to go');
+        button(wrapper.container, 'Start level').click(); await flushPromises();
+        button(wrapper.container, 'Pause').click(); await nextTick();
+        expect(wrapper.container.querySelector('#pause-menu')?.textContent).toContain('Fun · Level 1 of 2 · 1 level to go');
+        button(wrapper.container, 'Resume').click(); await nextTick();
+        reactive(mock.route).query = { group: 0, level: 1 }; await flushPromises();
+        expect(wrapper.container.querySelector('.level-context')?.textContent).toContain('Level 2 of 2');
+        expect(wrapper.container.querySelector('.level-context')?.textContent).toContain('0 levels to go');
+        wrapper.unmount();
+    });
+
     it('offers reset when stage zoom changes and keeps it available across levels', async () => {
         const wrapper = mountView();
         await flushPromises();

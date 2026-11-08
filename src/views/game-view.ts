@@ -121,6 +121,7 @@ export default defineComponent({
         const levelIndex = ref(readLevelIndex(route.query.level));
         const groupIndex = ref(readLevelIndex(route.query.group));
         const groupName = ref('');
+        const groupLevelCount = ref(0);
         const error = ref('');
         const loading = ref(true);
         const playing = ref(false);
@@ -316,6 +317,7 @@ export default defineComponent({
                 if (disposed || generation !== loadGeneration) return;
                 resources = nextResources;
                 groupName.value = config.level.groups[requestedGroup] || `Group ${requestedGroup + 1}`;
+                groupLevelCount.value = group.length;
                 level.value = nextLevel;
                 nextLevelAvailable.value = levelIndex.value + 1 < group.length || groupIndex.value + 1 < config.level.order.length;
                 noteSaveResult(rememberLevel(requestedGame, requestedGroup, requestedLevel, gameMode.value));
@@ -769,7 +771,7 @@ export default defineComponent({
         });
 
         return { gameScreen, fullscreenEnterButton, startControl, gameCanvas, beginCanvasGesture, finishCanvasGesture, cancelCanvasGesture, loseCanvasCapture, finishCanvasGestureFromClick, gameMode, nativeWindowsPanel, deferFullscreenControls, graphicsError, graphicsNotice, windowsSkillIcons, pauseControl, pauseHeading, fullscreenActive, fullscreenControlsOpen, fullscreenMode, toggleFullscreen,
-            level, levelIndex, groupName, title, error, loading, playing, paused,
+            level, levelIndex, groupName, groupLevelCount, title, error, loading, playing, paused,
             finished, levelSucceeded, nextLevelAvailable, savedCount, saveWarning, assignmentMessage, keyboardMessage, resultMessage, hints, availableHints, hintCompatibility, visibleHintCount, exampleMove, exampleBusy, exampleError, exampleSkillName, exampleClock, hideHints, showExample, clearExample, nukeArmed, nukeExecuted, selectedSkill, skillCounts, releaseRate, gameTime, speed,
             musicEnabled, soundEnabled, skillButtons, canPlay, start, openPauseMenu, resumeFromMenu, restartFromMenu, selectSkill, changeReleaseRate,
             setSpeed, onSpeedChange, toggleMusic, toggleSound, windowsIconAnimationsEnabled, toggleWindowsIconAnimations, zoom, zoomChanged, resetZoom, panLevel, changeLevel, loadLevel, confirmNuke, cancelNuke };
