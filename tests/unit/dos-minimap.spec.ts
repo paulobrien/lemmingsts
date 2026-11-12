@@ -80,11 +80,23 @@ describe('DOS panel minimap', () => {
         expect(pixels.get(`${originX + 10},${originY + 19}`)).toBe(BLACK);
     });
 
+    it('uses the visible map origin when a smaller level has horizontal and vertical margins', () => {
+        const { gui, display, level } = setup();
+        level.width = 80; level.height = 10;
+        const navigate = vi.fn();
+        gui.setMinimapNavigationHandler(navigate);
+        // The 80×10 map sits 12 pixels right and 5 pixels down inside the frame.
+        display.onMouseDown.trigger(new Position2D(DOS_MINIMAP.x + 12 + 40, DOS_MINIMAP.y + 5 + 4));
+        expect(navigate).toHaveBeenLastCalledWith(40, 4);
+        display.onMouseMove.trigger(new Position2D(DOS_MINIMAP.x, DOS_MINIMAP.y));
+        expect(navigate).toHaveBeenLastCalledWith(0, 0);
+    });
+
     it('navigates on tap and drag within the map and leaves the skill buttons alone', () => {
         const { game, gui, display } = setup();
         const navigate = vi.fn();
         gui.setMinimapNavigationHandler(navigate);
-        display.onMouseDown.trigger(new Position2D(DOS_MINIMAP.x + 50, DOS_MINIMAP.y + 10));
+        display.onMouseDown.trigger(new Position2D(DOS_MINIMAP.x + 2 + 50, DOS_MINIMAP.y + 10));
         expect(navigate).toHaveBeenLastCalledWith(800, 80);
         display.onMouseMove.trigger(new Position2D(DOS_MINIMAP.x + 200, DOS_MINIMAP.y - 5)); // off the map while dragging
         expect(navigate).toHaveBeenLastCalledWith(1599, 0);

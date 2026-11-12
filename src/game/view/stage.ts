@@ -3,6 +3,7 @@ import { EventHandler } from '../utilities/event-handler';
 import { DisplayImage } from './display-image';
 import { StageImageProperties } from './stage-image-properties';
 import { UserInputManager } from './user-input-manager';
+import { minimapToWorld, worldToMinimap, type MinimapProjection } from './minimap-projection';
 
 /** Native Windows layout, in canvas pixels. DOS keeps its original geometry. */
 const WINDOWS_WIDTH = 960, WINDOWS_HEIGHT = 440, WINDOWS_PANEL_HEIGHT = 120;
@@ -508,20 +509,28 @@ export class Stage {
             point.y >= bounds.y && point.y < bounds.y + bounds.height;
     }
 
+    /** The Windows map uses its full bounds; DOS supplies its centered content bounds. */
+    private windowsMinimapProjection(): MinimapProjection | null {
+        const bounds = this.minimapBounds(), display = this.gameImgProps.display;
+        if (!bounds || !display) return null;
+        const width = display.getWidth(), height = display.getHeight();
+        return { originX: bounds.x, originY: bounds.y, scaleX: width / bounds.width,
+            scaleY: height / bounds.height, maxX: width, maxY: height };
+    }
+
     private navigateMinimap(point: Position2D): void {
-        const bounds = this.minimapBounds();
-        const display = this.gameImgProps.display;
-        if (!bounds || !display) return;
-        const clamp = (value: number) => Math.max(0, Math.min(1, value));
-        this.revealGamePosition(clamp((point.x - bounds.x) / bounds.width) * display.getWidth(),
-            clamp((point.y - bounds.y) / bounds.height) * display.getHeight());
+        const projection = this.windowsMinimapProjection();
+        if (!projection) return;
+        const target = minimapToWorld(projection, point.x, point.y);
+        this.revealGamePosition(target.x, target.y);
     }
 
     /** Paint the current scene, live lemmings and the yellow camera rectangle. */
     private drawMinimap(): void {
         const bounds = this.minimapBounds();
+        const projection = this.windowsMinimapProjection();
         const image = this.gameImgProps;
-        if (!bounds || !image.cav || !image.display || !this.minimapLemmings) return;
+        if (!bounds || !projection || !image.cav || !image.display || !this.minimapLemmings) return;
         const ctx = this.stageCav.getContext('2d');
         if (!ctx) return;
         const width = image.display.getWidth(), height = image.display.getHeight();
@@ -558,16 +567,17 @@ export class Stage {
         ctx.fillStyle = '#00ff00';
         for (const lemming of this.minimapLemmings()) {
             if (lemming.x >= 0 && lemming.x < width && lemming.y >= 0 && lemming.y < height) {
-                ctx.fillRect(bounds.x + Math.floor(lemming.x / width * bounds.width),
-                    bounds.y + Math.floor(lemming.y / height * bounds.height), 2, 2);
+                const point = worldToMinimap(projection, lemming.x, lemming.y);
+                ctx.fillRect(Math.floor(point.x), Math.floor(point.y), 2, 2);
             }
         }
         const viewWidth = Math.min(width, image.width / image.viewPoint.scale);
         const viewHeight = Math.min(height, image.height / image.viewPoint.scale);
-        const left = bounds.x + image.viewPoint.x / width * bounds.width;
-        const top = bounds.y + image.viewPoint.y / height * bounds.height;
-        const right = Math.min(bounds.x + bounds.width - 1, left + viewWidth / width * bounds.width);
-        const bottom = Math.min(bounds.y + bounds.height - 1, top + viewHeight / height * bounds.height);
+        const start = worldToMinimap(projection, image.viewPoint.x, image.viewPoint.y);
+        const end = worldToMinimap(projection, image.viewPoint.x + viewWidth, image.viewPoint.y + viewHeight);
+        const left = start.x, top = start.y;
+        const right = Math.min(bounds.x + bounds.width - 1, end.x);
+        const bottom = Math.min(bounds.y + bounds.height - 1, end.y);
         ctx.strokeStyle = '#ffff00';
         ctx.lineWidth = 1;
         ctx.strokeRect(Math.floor(left) + .5, Math.floor(top) + .5,

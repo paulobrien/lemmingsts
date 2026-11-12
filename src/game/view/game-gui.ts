@@ -11,6 +11,7 @@ import { SkillPanelSprites } from '../resources/skill-panel-sprites';
 import { DisplayImage } from './display-image';
 import { Frame } from '../resources/frame';
 import { GameStateTypes } from '../game-state-types';
+import { minimapToWorld, worldToMinimap, type MinimapProjection } from './minimap-projection';
 
 /** The DOS panel's minimap: the black area inside the red frame at the right of the panel. */
 export const DOS_MINIMAP = { x: 208, y: 18, width: 104, height: 20 } as const;
@@ -109,19 +110,25 @@ export class GameGui {
             e.y >= DOS_MINIMAP.y && e.y < DOS_MINIMAP.y + DOS_MINIMAP.height;
     }
 
-    /** Level pixels per minimap pixel, chosen so the whole level fits the box. */
-    private minimapScale(): { x: number; y: number } {
+    /** Actual centered map bounds and the projection used to draw and navigate it. */
+    private dosMinimapGeometry(): { projection: MinimapProjection; mapWidth: number; mapHeight: number } {
         const level = this.game.level;
-        return { x: Math.max(1, Math.ceil(level.width / DOS_MINIMAP.width)), y: Math.max(1, Math.ceil(level.height / DOS_MINIMAP.height)) };
+        const scaleX = Math.max(1, Math.ceil(level.width / DOS_MINIMAP.width));
+        const scaleY = Math.max(1, Math.ceil(level.height / DOS_MINIMAP.height));
+        const mapWidth = Math.min(DOS_MINIMAP.width, Math.ceil(level.width / scaleX));
+        const mapHeight = Math.min(DOS_MINIMAP.height, Math.ceil(level.height / scaleY));
+        return { mapWidth, mapHeight, projection: {
+            originX: DOS_MINIMAP.x + Math.floor((DOS_MINIMAP.width - mapWidth) / 2),
+            originY: DOS_MINIMAP.y + Math.floor((DOS_MINIMAP.height - mapHeight) / 2),
+            scaleX, scaleY, maxX: level.width - 1, maxY: level.height - 1,
+        } };
     }
 
     /** Centre the view on the level position under a minimap point; off-map points clamp to the edge. */
     private navigateDosMinimap(e: { x: number; y: number }) {
         if (!this.minimapNavigationHandler || !this.hasDosMinimap) return;
-        const level = this.game.level, scale = this.minimapScale();
-        const x = Math.max(0, Math.min(level.width - 1, (e.x - DOS_MINIMAP.x) * scale.x));
-        const y = Math.max(0, Math.min(level.height - 1, (e.y - DOS_MINIMAP.y) * scale.y));
-        this.minimapNavigationHandler(x, y);
+        const point = minimapToWorld(this.dosMinimapGeometry().projection, e.x, e.y);
+        this.minimapNavigationHandler(point.x, point.y);
     }
 
     constructor(private game: Game,
@@ -387,15 +394,11 @@ export class GameGui {
     /** Terrain in green, live lemmings as light dots and the visible area as a white box, as on the DOS panel. */
     private renderDosMinimap(display: DisplayImage) {
         const level = this.game.level;
-        const scale = this.minimapScale();
-        const mapWidth = Math.min(DOS_MINIMAP.width, Math.ceil(level.width / scale.x));
-        const mapHeight = Math.min(DOS_MINIMAP.height, Math.ceil(level.height / scale.y));
-        // The level's own area is centred in the box; the DOS game leaves a small margin too.
-        const originX = DOS_MINIMAP.x + Math.floor((DOS_MINIMAP.width - mapWidth) / 2);
-        const originY = DOS_MINIMAP.y + Math.floor((DOS_MINIMAP.height - mapHeight) / 2);
+        const { projection, mapWidth, mapHeight } = this.dosMinimapGeometry();
+        const { originX, originY, scaleX, scaleY } = projection;
 
         if (!this.minimapTerrain || this.minimapTerrain.length !== mapWidth * mapHeight || this.minimapTerrainAge >= MINIMAP_TERRAIN_REFRESH_TICKS) {
-            this.minimapTerrain = this.sampleMinimapTerrain(mapWidth, mapHeight, scale.x, scale.y);
+            this.minimapTerrain = this.sampleMinimapTerrain(mapWidth, mapHeight, scaleX, scaleY);
             this.minimapTerrainAge = 0;
         }
 
@@ -408,15 +411,17 @@ export class GameGui {
         }
 
         for (const lemming of this.game.getLemmingManager().getSelectableLemmings()) {
-            const x = Math.floor(lemming.x / scale.x), y = Math.floor(lemming.y / scale.y);
-            if (x >= 0 && x < mapWidth && y >= 0 && y < mapHeight) display.setPixel(originX + x, originY + y, ...MINIMAP_LEMMING_RGB);
+            const point = worldToMinimap(projection, lemming.x, lemming.y);
+            const x = Math.floor(point.x), y = Math.floor(point.y);
+            if (x >= originX && x < originX + mapWidth && y >= originY && y < originY + mapHeight) display.setPixel(x, y, ...MINIMAP_LEMMING_RGB);
         }
 
         const view = this.viewportProvider?.();
         if (view) {
-            const x1 = originX + Math.floor(view.x / scale.x), y1 = originY + Math.floor(view.y / scale.y);
-            const x2 = Math.min(originX + mapWidth, x1 + Math.max(1, Math.round(view.width / scale.x))) - 1;
-            const y2 = Math.min(originY + mapHeight, y1 + Math.max(1, Math.round(view.height / scale.y))) - 1;
+            const point = worldToMinimap(projection, view.x, view.y);
+            const x1 = Math.floor(point.x), y1 = Math.floor(point.y);
+            const x2 = Math.min(originX + mapWidth, x1 + Math.max(1, Math.round(view.width / scaleX))) - 1;
+            const y2 = Math.min(originY + mapHeight, y1 + Math.max(1, Math.round(view.height / scaleY))) - 1;
             display.drawHorizontalLine(x1, y1, x2, ...MINIMAP_VIEW_RGB);
             display.drawHorizontalLine(x1, y2, x2, ...MINIMAP_VIEW_RGB);
             display.drawVerticalLine(x1, y1, y2, ...MINIMAP_VIEW_RGB);
