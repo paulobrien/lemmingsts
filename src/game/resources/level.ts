@@ -310,6 +310,15 @@ export class Level {
 
 
 
+    /** Show the resting level objects in the preview without advancing the game. */
+    public renderPreview(gameDisplay: DisplayImage) {
+        this.render(gameDisplay);
+        for (const object of this.objects) {
+            const frame = object.animation.frames[0];
+            if (frame) gameDisplay.drawFrameFlags(frame, object.x, object.y, object.drawProperties);
+        }
+    }
+
     /** render ground to display */
     public render(gameDisplay: DisplayImage) {
         gameDisplay.initSize(this.width, this.height);

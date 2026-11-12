@@ -1,7 +1,7 @@
 // @vitest-environment node
 import { readFileSync } from 'node:fs';
 import { runInNewContext } from 'node:vm';
-import { describe, expect, it } from 'vitest';
+import { describe, expect, it, vi } from 'vitest';
 
 const origin = 'https://example.test/';
 const oldHtml = '<script type="module" src="/assets/old.js"></script>';
@@ -10,10 +10,14 @@ const newHtml = '<script type="module" src="/assets/new.js"></script><link href=
 function worker({ rejectWrites = false, rejectOpen = false } = {}) {
     const entries = new Map<string, Response>([[origin, new Response(oldHtml)], [`${origin}assets/old.js`, new Response('old')]]);
     const network = new Map<string, Response>();
+    const stalled = new Set<string>();
+    const requests: string[] = [];
     let offline = false;
     const fetch = async (request: string | { url: string }) => {
         const key = typeof request === 'string' ? request : request.url;
+        requests.push(key);
         if (offline) throw new Error('offline');
+        if (stalled.has(key)) return new Promise<Response>(() => {});
         return (network.get(key) ?? new Response('missing', { status: 404 })).clone();
     };
     const cache = {
@@ -29,13 +33,13 @@ function worker({ rejectWrites = false, rejectOpen = false } = {}) {
         },
     };
     const listeners: Record<string, (event: any) => void> = {};
-    const self = { location: { href: `${origin}sw.js` }, clients: { claim: async () => {} },
+    const self = { location: { href: `${origin}sw.js` }, navigator: { onLine: true }, clients: { claim: async () => {} },
         addEventListener: (name: string, listener: (event: any) => void) => { listeners[name] = listener; } };
     const caches = { open: async () => {
         if (rejectOpen) throw new Error('cache storage unavailable');
         return cache;
     }, keys: async () => [], delete: async () => true };
-    runInNewContext(readFileSync('public/sw.js', 'utf8'), { self, caches, fetch, URL, Error, Set });
+    runInNewContext(readFileSync('public/sw.js', 'utf8'), { self, caches, fetch, URL, Error, Set, AbortController, setTimeout, clearTimeout });
     const request = async (url: string, mode = 'navigate') => {
         let result!: Promise<Response>;
         listeners.fetch({ request: { url, mode, method: 'GET' }, respondWith: (promise: Promise<Response>) => { result = promise; } });
@@ -46,7 +50,7 @@ function worker({ rejectWrites = false, rejectOpen = false } = {}) {
         listeners.install({ waitUntil: (promise: Promise<void>) => { result = promise; } });
         return result;
     };
-    return { entries, network, request, install, goOffline: () => { offline = true; } };
+    return { entries, network, request, install, stalled, requests, goOffline: () => { offline = true; self.navigator.onLine = false; } };
 }
 
 describe('offline shell updates', () => {
@@ -57,6 +61,41 @@ describe('offline shell updates', () => {
         expect(await app.request(`${origin}data/local-windows-audio/manifest.json`, 'cors')).toBeUndefined();
         expect(await app.request(`${origin}data/local-windows-audio/letsgo.wav`, 'cors')).toBeUndefined();
         expect(await app.request(`${origin}data/local-windows-graphics/lemmbig.spr`, 'cors')).toBeUndefined();
+        expect(await app.request(`${origin}data/local-windows-game/manifest.json`, 'cors')).toBeUndefined();
+    });
+
+    it('uses cached documents and resources immediately when the browser reports offline', async () => {
+        const app = worker();
+        app.goOffline();
+        expect(await (await app.request(origin)).text()).toBe(oldHtml);
+        expect(await (await app.request(`${origin}assets/old.js`, 'cors')).text()).toBe('old');
+        expect(app.requests).toEqual([]);
+    });
+
+    it('falls back promptly when a navigation, asset or shell update stalls', async () => {
+        vi.useFakeTimers();
+        try {
+            const app = worker();
+            app.stalled.add(origin);
+            let pending = app.request(origin);
+            await vi.advanceTimersByTimeAsync(1500);
+            expect(await (await pending).text()).toBe(oldHtml);
+
+            app.stalled.delete(origin);
+            app.stalled.add(`${origin}assets/old.js`);
+            pending = app.request(`${origin}assets/old.js`, 'cors');
+            await vi.advanceTimersByTimeAsync(1500);
+            expect(await (await pending).text()).toBe('old');
+
+            app.stalled.delete(`${origin}assets/old.js`);
+            app.network.set(origin, new Response(newHtml));
+            app.stalled.add(`${origin}assets/new.js`);
+            app.network.set(`${origin}assets/new.css`, new Response('style', { headers: { 'Content-Type': 'text/css' } }));
+            pending = app.request(origin);
+            await vi.advanceTimersByTimeAsync(1500);
+            expect(await (await pending).text()).toBe(oldHtml);
+            expect(await app.entries.get(origin)!.clone().text()).toBe(oldHtml);
+        } finally { vi.useRealTimers(); }
     });
     it('keeps the previous complete shell when an update asset fails, then works offline', async () => {
         const app = worker();

@@ -21,6 +21,7 @@ import { prepareWindowsTerrain } from '@/game/resources/prepare-windows-terrain'
 import { prepareWindowsSprites } from '@/game/resources/prepare-windows-sprites';
 import { prepareWindowsObjects } from '@/game/resources/prepare-windows-objects';
 import { prepareWindowsPanel } from '@/game/resources/windows-panel';
+import { prepareWindowsLevelPreview, renderWindowsLevelPreview } from '@/game/view/windows-level-preview';
 import { AudioPlayer } from '@/game/resources/sound/audio-player';
 import { SoundEffectsPlayer } from '@/game/resources/sound/sound-effects-player';
 import { VoiceEffectsPlayer } from '@/game/resources/sound/voice-effects-player';
@@ -121,6 +122,7 @@ export default defineComponent({
         const levelIndex = ref(readLevelIndex(route.query.level));
         const groupIndex = ref(readLevelIndex(route.query.group));
         const groupName = ref('');
+        const groupLevelCount = ref(0);
         const error = ref('');
         const loading = ref(true);
         const playing = ref(false);
@@ -179,9 +181,22 @@ export default defineComponent({
         let viewportObserver: ResizeObserver | null = null;
         function updateFullscreenViewport() {
             if (!stage) return;
-            if (!fullscreenActive.value) { stage.setWindowsFullscreenViewport(); return; }
-            const bounds = gameScreen.value?.getBoundingClientRect();
-            if (bounds?.width && bounds.height) stage.setWindowsFullscreenViewport(bounds.width, bounds.height);
+            const entrance = !playing.value && !finished.value ? level.value?.entrances[0] : undefined;
+            const entranceWasVisible = entrance && stage.isGameRectVisible(entrance.x, entrance.y, 48, 25);
+            let resized: boolean;
+            if (!fullscreenActive.value) {
+                resized = stage.setWindowsFullscreenViewport();
+            } else {
+                const bounds = gameScreen.value?.getBoundingClientRect();
+                if (!bounds?.width || !bounds.height) return;
+                resized = stage.setWindowsFullscreenViewport(bounds.width, bounds.height);
+            }
+            // Keep an initially visible entrance in view after either entering
+            // or leaving fullscreen. Respect a player's deliberate preview pan.
+            if (resized && entrance && entranceWasVisible) {
+                stage.ensureGameRectVisible(entrance.x, entrance.y, 48, 25);
+                stage.redraw();
+            }
         }
         let keyboardTargeting: KeyboardTargeting | null = null;
         let music: Pick<AudioPlayer, 'play' | 'suspend' | 'stop'> | null = null;
@@ -320,6 +335,7 @@ export default defineComponent({
                 if (disposed || generation !== loadGeneration) return;
                 resources = nextResources;
                 groupName.value = config.level.groups[requestedGroup] || `Group ${requestedGroup + 1}`;
+                groupLevelCount.value = group.length;
                 level.value = nextLevel;
                 nextLevelAvailable.value = levelIndex.value + 1 < group.length || groupIndex.value + 1 < config.level.order.length;
                 noteSaveResult(rememberLevel(requestedGame, requestedGroup, requestedLevel, gameMode.value));
@@ -336,16 +352,34 @@ export default defineComponent({
                     stage.resetFade();
                     display.clear();
                     graphicsNotice.value = '';
+                    let previewPanel: Awaited<ReturnType<typeof prepareWindowsLevelPreview>> = null;
                     if (gameMode.value === 'windows') {
-                        const prepared = await prepareWindowsTerrain(nextLevel);
+                        const [prepared, objects, panel] = await Promise.all([
+                            prepareWindowsTerrain(nextLevel), prepareWindowsObjects(nextLevel),
+                            prepareWindowsLevelPreview(nextResources, nextLevel),
+                        ]);
                         if (disposed || generation !== loadGeneration || gameMode.value !== 'windows') return;
+                        display.setNativeSprites(objects);
+                        previewPanel = panel;
                         if (prepared.status === 'ready') {
                             nextLevel.setWindowsTerrain(prepared.layer);
                             if (prepared.usesDosBackground) graphicsNotice.value = 'This special level uses its DOS background with Windows characters and objects.';
                         } else graphicsNotice.value = 'High-resolution Windows artwork is unavailable. This level uses its original-sized Windows graphics.';
                     }
-                    nextLevel.render(display);
+                    nextLevel.renderPreview(display);
+                    if (previewPanel) {
+                        renderWindowsLevelPreview(stage, nextLevel, previewPanel);
+                        nativeWindowsPanel.value = true;
+                    } else if (gameMode.value === 'windows') {
+                        // Do not leave the DOS HUD or a previous game's
+                        // counts visible when Windows artwork is missing.
+                        const gui = stage.getGuiDisplay();
+                        gui.setNativeBackground(null);
+                        gui.clear();
+                    }
                     display.setScreenPosition(nextLevel.screenPositionX, 0);
+                    const entrance = nextLevel.entrances[0];
+                    if (entrance) stage.ensureGameRectVisible(entrance.x, entrance.y, 48, 25);
                     display.redraw();
                 }
             } catch (reason) {
@@ -386,8 +420,15 @@ export default defineComponent({
                     if (panel) {
                         nextGame.setWindowsPanel(panel.panel, panel.nativePanel, panel.animations, panel.nativeAnimations);
                         nextGame.setWindowsIconAnimationsEnabled(windowsIconAnimationsEnabled.value);
-                        nativeWindowsPanel.value = panel.panel.length === 13;
                         windowsSkillIcons.value = panel.skillIcons;
+                    }
+                    // The live game's artwork can differ from the preview if
+                    // files became unavailable during loading. Never keep the
+                    // preview's Windows controls active for a fallback panel.
+                    nativeWindowsPanel.value = panel?.panel.length === 13;
+                    if (!nativeWindowsPanel.value) {
+                        stage.setWindowsStatusProvider(null);
+                        stage.setMinimapProvider(null);
                     }
                     if (terrain?.status === 'ready' && sprites) {
                         nextGame.level.setWindowsTerrain(terrain.layer);
@@ -430,7 +471,7 @@ export default defineComponent({
                     });
                 });
                 stage.clearInputBindings();
-                game.setGameDisplay(stage.getGameDisplay());
+                game.setGameDisplay(stage.getGameDisplay(), true);
                 game.setGuiDisplay(stage.getGuiDisplay());
                 if (gameMode.value === 'dos') {
                     // The classic panel paints its own minimap; give it the camera and let it move the view.
@@ -465,6 +506,9 @@ export default defineComponent({
                 game.onGameEnd.on(result => {
                     if (!result || !game) return;
                     game.getGameTimer().suspend();
+                    // Fast-forward is temporary: the next attempt or level
+                    // should start at normal speed after either outcome.
+                    if (speed.value > 1) setSpeed(1);
                     stopEffects();
                     stopMusic();
                     playing.value = false;
@@ -781,7 +825,7 @@ export default defineComponent({
         });
 
         return { gameScreen, fullscreenEnterButton, startControl, gameCanvas, beginCanvasGesture, finishCanvasGesture, cancelCanvasGesture, loseCanvasCapture, finishCanvasGestureFromClick, gameMode, nativeWindowsPanel, deferFullscreenControls, graphicsError, graphicsNotice, windowsSkillIcons, pauseControl, pauseHeading, fullscreenActive, fullscreenControlsOpen, fullscreenMode, toggleFullscreen,
-            level, levelIndex, groupName, title, error, loading, playing, paused,
+            level, levelIndex, groupName, groupLevelCount, title, error, loading, playing, paused,
             finished, levelSucceeded, nextLevelAvailable, savedCount, saveWarning, assignmentMessage, keyboardMessage, resultMessage, hints, availableHints, hintCompatibility, visibleHintCount, exampleMove, exampleBusy, exampleError, exampleSkillName, exampleClock, hideHints, showExample, clearExample, nukeArmed, nukeExecuted, selectedSkill, skillCounts, releaseRate, gameTime, speed,
             musicEnabled, soundEnabled, skillButtons, canPlay, start, openPauseMenu, resumeFromMenu, restartFromMenu, selectSkill, changeReleaseRate,
             setSpeed, onSpeedChange, toggleMusic, toggleSound, windowsIconAnimationsEnabled, toggleWindowsIconAnimations, zoom, zoomChanged, resetZoom, panLevel, changeLevel, loadLevel, confirmNuke, cancelNuke };

@@ -3,6 +3,7 @@ import { EventHandler } from '../utilities/event-handler';
 import { DisplayImage } from './display-image';
 import { StageImageProperties } from './stage-image-properties';
 import { UserInputManager } from './user-input-manager';
+import { compositeNativeLayers } from './composite-native-layers';
 import { minimapToWorld, worldToMinimap, type MinimapProjection } from './minimap-projection';
 
 /** Native Windows layout, in canvas pixels. DOS keeps its original geometry. */
@@ -35,7 +36,7 @@ export class Stage {
     private keyboardTarget: (() => Position2D | null) | null = null;
     private exampleHint: Position2D | null = null;
     private nativeCanvas: HTMLCanvasElement | null = null;
-    private nativeForegroundCanvas: HTMLCanvasElement | null = null;
+    private nativeComposite: ImageData | null = null;
     private nativeGuiCanvas: HTMLCanvasElement | null = null;
     private nativeGuiForegroundCanvas: HTMLCanvasElement | null = null;
     private minimapLemmings: (() => readonly { x: number; y: number }[]) | null = null;
@@ -340,16 +341,17 @@ export class Stage {
     }
 
     /** Resize only the native Windows fullscreen presentation, retaining camera and custom zoom. */
-    public setWindowsFullscreenViewport(width?: number, height?: number): void {
+    public setWindowsFullscreenViewport(width?: number, height?: number): boolean {
         if (width === undefined || height === undefined) {
-            if (!this.fullscreenViewport) return;
+            if (!this.fullscreenViewport) return false;
             this.fullscreenViewport = null;
         } else {
-            if (!Number.isFinite(width) || !Number.isFinite(height) || width <= 0 || height <= 0) return;
-            if (this.fullscreenViewport?.width === width && this.fullscreenViewport.height === height) return;
+            if (!Number.isFinite(width) || !Number.isFinite(height) || width <= 0 || height <= 0) return false;
+            if (this.fullscreenViewport?.width === width && this.fullscreenViewport.height === height) return false;
             this.fullscreenViewport = { width, height };
         }
         if (this.minimapLemmings) this.resizeWindowsCanvas();
+        return true;
     }
 
     private resizeWindowsCanvas(): void {
@@ -617,6 +619,41 @@ export class Stage {
             (desiredY - image.viewPoint.y) * image.viewPoint.scale, 0);
     }
 
+    /** Check whether a world rectangle is entirely within the current playfield. */
+    public isGameRectVisible(x: number, y: number, width: number, height: number): boolean {
+        const image = this.gameImgProps;
+        if (!image.display) return false;
+        const view = image.viewPoint;
+        return x >= view.x && y >= view.y && x + width <= view.x + image.width / view.scale &&
+            y + height <= view.y + image.height / view.scale;
+    }
+
+    /** Keep a level's entrance in view while preserving its preferred camera when possible. */
+    public ensureGameRectVisible(x: number, y: number, width: number, height: number): void {
+        const image = this.gameImgProps;
+        if (!image.display) return;
+        const oldScale = image.viewPoint.scale;
+        // A portal must fit within the playfield even after a previous level
+        // was inspected at a very high zoom, or in a shallow landscape view.
+        const fitScale = Math.min(oldScale, image.width / width, image.height / height);
+        image.viewPoint.scale = this.limitValue(0.5, fitScale, 10);
+        if (image.viewPoint.scale !== oldScale) {
+            this.customZoom = this.isZoomChanged(image.viewPoint.scale);
+            this.onZoomChange.trigger(this.customZoom);
+        }
+        const viewportWidth = image.width / image.viewPoint.scale;
+        const viewportHeight = image.height / image.viewPoint.scale;
+        const adjust = (start: number, size: number, camera: number, visible: number, extent: number) => {
+            let target = camera;
+            if (size > visible) target = start + (size - visible) / 2;
+            else if (start < camera) target = start;
+            else if (start + size > camera + visible) target = start + size - visible;
+            return this.limitValue(0, target, extent - visible);
+        };
+        image.viewPoint.x = adjust(x, width, image.viewPoint.x, viewportWidth, image.display.getWidth());
+        image.viewPoint.y = adjust(y, height, image.viewPoint.y, viewportHeight, image.display.getHeight());
+    }
+
     /** Remove listeners belonging to the previous game before attaching a new one. */
     public clearInputBindings(): void {
         this.cancelPress();
@@ -638,7 +675,7 @@ export class Stage {
         this.minimapDragging = false;
         this.scrollbarDragging = false;
         this.nativeCanvas = null;
-        this.nativeForegroundCanvas = null;
+        this.nativeComposite = null;
         this.nativeGuiCanvas = null;
         this.nativeGuiForegroundCanvas = null;
         this.onGraphicsError.dispose();
@@ -873,34 +910,47 @@ export class Stage {
                 const game = display === this.gameImgProps;
                 if (game) {
                     if (!this.nativeCanvas) this.nativeCanvas = document.createElement('canvas');
-                    if (!this.nativeForegroundCanvas) this.nativeForegroundCanvas = document.createElement('canvas');
                 } else {
                     if (!this.nativeGuiCanvas) this.nativeGuiCanvas = document.createElement('canvas');
                     if (!this.nativeGuiForegroundCanvas) this.nativeGuiForegroundCanvas = document.createElement('canvas');
                 }
                 const backCanvas = (game ? this.nativeCanvas : this.nativeGuiCanvas)!;
-                const frontCanvas = (game ? this.nativeForegroundCanvas : this.nativeGuiForegroundCanvas)!;
-                for (const canvas of [backCanvas, frontCanvas]) {
-                    if (canvas.width !== native.background.width || canvas.height !== native.background.height) {
-                        canvas.width = native.background.width;
-                        canvas.height = native.background.height;
-                    }
+                if (backCanvas.width !== native.background.width || backCanvas.height !== native.background.height) {
+                    backCanvas.width = native.background.width;
+                    backCanvas.height = native.background.height;
                 }
                 const background = backCanvas.getContext('2d');
-                const foreground = frontCanvas.getContext('2d');
-                if (!background || !foreground) throw new Error('Native graphics canvas unavailable');
-                background.putImageData(native.background, 0, 0);
-                foreground.putImageData(native.foreground, 0, 0);
-                background.drawImage(frontCanvas, 0, 0);
+                if (!background) throw new Error('Native graphics canvas unavailable');
+                if (game) {
+                    if (!this.nativeComposite || this.nativeComposite.width !== native.background.width ||
+                        this.nativeComposite.height !== native.background.height) {
+                        this.nativeComposite = new ImageData(native.background.width, native.background.height);
+                    }
+                    // Present a single complete image instead of composing two
+                    // changing offscreen canvas textures on every game tick.
+                    compositeNativeLayers(native.background.data, native.foreground.data, this.nativeComposite.data);
+                    background.putImageData(this.nativeComposite, 0, 0);
+                } else {
+                    const frontCanvas = this.nativeGuiForegroundCanvas!;
+                    if (frontCanvas.width !== native.foreground.width || frontCanvas.height !== native.foreground.height) {
+                        frontCanvas.width = native.foreground.width;
+                        frontCanvas.height = native.foreground.height;
+                    }
+                    const foreground = frontCanvas.getContext('2d');
+                    if (!foreground) throw new Error('Native graphics canvas unavailable');
+                    background.putImageData(native.background, 0, 0);
+                    foreground.putImageData(native.foreground, 0, 0);
+                    background.drawImage(frontCanvas, 0, 0);
+                }
                 nativeCanvas = backCanvas;
             } catch {
-                if (display === this.gameImgProps) { this.nativeCanvas = null; this.nativeForegroundCanvas = null; }
+                if (display === this.gameImgProps) { this.nativeCanvas = null; this.nativeComposite = null; }
                 else { this.nativeGuiCanvas = null; this.nativeGuiForegroundCanvas = null; }
                 display.display?.rejectNativeBackground();
             }
         } else if (display === this.gameImgProps) {
             this.nativeCanvas = null;
-            this.nativeForegroundCanvas = null;
+            this.nativeComposite = null;
         } else {
             this.nativeGuiCanvas = null;
             this.nativeGuiForegroundCanvas = null;

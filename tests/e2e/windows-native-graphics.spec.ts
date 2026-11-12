@@ -37,6 +37,27 @@ test('composites native terrain and sprites without affecting the panel', async 
     game.drawFrame(sprite, 2, 2)
     stage.redraw()
     const moved = { oldNative: pixel(canvas, 2, 2), newNative: pixel(canvas, 4, 4) }
+    // Keep two stationary objects visible through repeated live redraws while
+    // another sprite moves; transparent pixels must reveal the terrain.
+    const portal = new Frame(1, 1); portal.setPixel(0, 0, 0xff0000ff)
+    game.setNativeSprites(new Map([
+      [sprite, { width: 2, height: 2, offsetX: 0, offsetY: 0,
+        pixels: new Uint32Array([0xff00ff00, 0, 0, 0]) }],
+      [portal, { width: 2, height: 2, offsetX: 0, offsetY: 0,
+        pixels: new Uint32Array([0xff0000ff, 0, 0, 0]) }],
+    ]))
+    native[3] = 0
+    const repeated = []
+    for (let frame = 0; frame < 4; frame++) {
+      game.setBackground(dos)
+      game.drawFrame(sprite, 1, 1)
+      game.drawFrame(portal, 2, 1)
+      game.setPixel(frame, 3, 7, 8, 9)
+      stage.redraw()
+      repeated.push({ first: pixel(canvas, 2, 2), second: pixel(canvas, 4, 2),
+        transparentSprite: pixel(canvas, 5, 2), transparentTerrain: pixel(canvas, 0, 0) })
+    }
+    native[3] = 255
     game.setBackground(dos)
     game.drawFrame(sprite, 1, 1)
     // Later low-resolution particles must remain above the native sprite.
@@ -73,13 +94,15 @@ test('composites native terrain and sprites without affecting the panel', async 
     stage.redraw()
     const onlyOverwriteWithoutMask = { first: pixel(canvas, 0, 0), second: pixel(canvas, 2, 0) }
     stage.dispose()
-    return { values, moved, ordered, fallback, noOverwrite, onlyOverwrite, onlyOverwriteWithoutMask }
+    return { values, moved, repeated, ordered, fallback, noOverwrite, onlyOverwrite, onlyOverwriteWithoutMask }
   })
   expect(resultPixels.values.nativeTerrain).toEqual([0, 0, 80, 255])
   expect(resultPixels.values.nativeSprite).toEqual([0, 255, 0, 255])
   expect(resultPixels.values.panel).toEqual([255, 255, 255, 255])
   expect(resultPixels.moved.oldNative).toEqual([0, 0, 80, 255])
   expect(resultPixels.moved.newNative).toEqual([0, 255, 0, 255])
+  expect(resultPixels.repeated).toEqual(Array.from({ length: 4 }, () => ({ first: [0, 255, 0, 255],
+    second: [255, 0, 0, 255], transparentSprite: [0, 0, 80, 255], transparentTerrain: [0, 0, 0, 255] })))
   expect(resultPixels.ordered).toEqual([7, 8, 9, 255])
   expect(resultPixels.fallback).toEqual({ errors: 1, noNative: true, terrain: [0, 0, 0, 255] })
   expect(resultPixels.noOverwrite).toEqual({ solid: [0, 0, 80, 255], empty: [255, 255, 0, 255] })

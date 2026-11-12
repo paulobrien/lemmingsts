@@ -108,7 +108,7 @@ export class Game {
 
     }
 
-    public setGameDisplay(display: DisplayImage) {
+    public setGameDisplay(display: DisplayImage, preserveScreenPosition = false) {
         this.display = display;
 
         if (!this.gameDisplay) {
@@ -117,7 +117,7 @@ export class Game {
 
         this.gameDisplay.setGuiDisplay(display);
 
-        if (this.level) {
+        if (this.level && !preserveScreenPosition) {
             this.display.setScreenPosition(this.level.screenPositionX, 0);
         }
         

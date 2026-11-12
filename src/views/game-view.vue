@@ -2,7 +2,7 @@
   <main class="game-page" :class="{ 'windows-mode': gameMode === 'windows' }">
     <header class="game-header" :inert="fullscreenActive">
       <div class="level-heading">
-        <p class="level-context">{{ groupName }} <span>Level {{ levelIndex + 1 }}</span></p>
+        <p v-if="groupLevelCount && !loading && !error" class="level-context">{{ groupName }} <span>Level {{ levelIndex + 1 }} of {{ groupLevelCount }}</span><span>{{ groupLevelCount - levelIndex - 1 }} {{ groupLevelCount - levelIndex - 1 === 1 ? 'level' : 'levels' }} to go</span></p>
         <h1>{{ title }}</h1>
         <p v-if="level && !loading && !error" class="objective">
           <span v-if="playing || finished" class="saved-count">Saved {{ savedCount }}</span>
@@ -43,6 +43,7 @@
     <div id="game-controls" class="game-controls" :class="{ 'controls-open': fullscreenControlsOpen }">
     <section v-if="playing && paused && !deferFullscreenControls" id="pause-menu" class="pause-menu" role="region" aria-labelledby="pause-menu-heading">
       <h2 id="pause-menu-heading" ref="pauseHeading" tabindex="-1">Paused</h2>
+      <p v-if="groupLevelCount">{{ groupName }} · Level {{ levelIndex + 1 }} of {{ groupLevelCount }} · {{ groupLevelCount - levelIndex - 1 }} {{ groupLevelCount - levelIndex - 1 === 1 ? 'level' : 'levels' }} to go</p>
       <p>The game is paused. You can still select skills and inspect the level.</p>
       <p v-if="gameMode === 'windows' && level">Save at least {{ level.needCount }} of {{ level.releaseCount }} lemmings; saved {{ savedCount }}.</p>
       <div class="pause-actions">
@@ -133,7 +134,7 @@
 .level-heading { flex: 1; min-width: 0; }
 .audio-controls { display: flex; flex-wrap: wrap; gap: .5rem; }
 h1 { font-size: 1.5rem; overflow-wrap: break-word; min-width: 0; text-wrap: balance; margin: .1rem 0; line-height: 1.15; }
-.level-context { display: flex; align-items: center; gap: .75rem; color: var(--color-muted); font-size: .8rem; margin: 0 0 .3rem; }
+.level-context { display: flex; flex-wrap: wrap; align-items: center; gap: .5rem .75rem; color: var(--color-muted); font-size: .8rem; margin: 0 0 .3rem; }
 .level-context span { padding-left: .75rem; border-left: 1px solid var(--color-edge); }
 .saved-count { color: var(--color-accent); margin-right: 1rem; }
 
