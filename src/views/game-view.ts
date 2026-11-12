@@ -282,6 +282,10 @@ export default defineComponent({
             gameTime.value = game.getGameTimer().getGameLeftTimeString();
         }
 
+        function onGameViewportChange() {
+            if (gameMode.value === 'dos') game?.refreshGui();
+        }
+
         function disposeGame() {
             windowsSkillIcons.value = [];
             keyboardTargeting?.reset();
@@ -469,6 +473,12 @@ export default defineComponent({
                 stage.clearInputBindings();
                 game.setGameDisplay(stage.getGameDisplay(), true);
                 game.setGuiDisplay(stage.getGuiDisplay());
+                if (gameMode.value === 'dos') {
+                    // The classic panel paints its own minimap; give it the camera and let it move the view.
+                    const activeStage = stage;
+                    game.setViewportProvider(() => activeStage.getGameViewport());
+                    game.setMinimapNavigationHandler((x, y) => activeStage.revealGamePosition(x, y));
+                }
                 if (gameMode.value === 'windows' && nativeWindowsPanel.value) {
                     const activeGame = game;
                     stage.setMinimapProvider(() => activeGame.getLemmingManager().getSelectableLemmings());
@@ -789,6 +799,7 @@ export default defineComponent({
             updateFullscreenViewport();
             stage.onGraphicsError.on(onGraphicsError);
             stage.onZoomChange.on(onZoomChange);
+            stage.onGameViewportChange.on(onGameViewportChange);
             keyboardTargeting = new KeyboardTargeting(gameCanvas.value, stage, () => game, assignPlayerSkill, message => { keyboardMessage.value = message; });
             document.addEventListener('visibilitychange', onVisibilityChange);
             window.addEventListener('keydown', onKeyDown);
@@ -804,6 +815,7 @@ export default defineComponent({
             stopMusic();
             stage?.onGraphicsError.off(onGraphicsError);
             stage?.onZoomChange.off(onZoomChange);
+            stage?.onGameViewportChange.off(onGameViewportChange);
             keyboardTargeting?.dispose();
             stage?.dispose();
             viewportObserver?.disconnect();

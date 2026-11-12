@@ -22,7 +22,8 @@ const mock = vi.hoisted(() => {
     const display = { onMouseDown: event, clear: vi.fn(), redraw: vi.fn(), setScreenPosition: vi.fn(), setNativeSprites: vi.fn(), setNativeBackground: vi.fn() };
     const graphicsError: { handler?: (message?: string) => void } = {};
     const zoomChange: { handler?: (changed?: boolean) => void } = {};
-    const stage = { setWindowsFullscreenViewport: vi.fn(), setWindowsStatusProvider: vi.fn(), setMinimapProvider: vi.fn(), isGameRectVisible: vi.fn(() => true), ensureGameRectVisible: vi.fn(), panGameBy: vi.fn(), redraw: vi.fn(), getGameDisplay: vi.fn(() => display), getGuiDisplay: vi.fn(() => display), resetFade: vi.fn(), clearInputBindings: vi.fn(), dispose: vi.fn(), zoomGame: vi.fn(), resetZoom: vi.fn(), onZoomChange: { on: vi.fn((handler: (changed?: boolean) => void) => { zoomChange.handler = handler; }), off: vi.fn() }, setExampleHint: vi.fn(), setGraphicsMode: vi.fn(), setComparisonCanvases: vi.fn(), onGraphicsError: { on: vi.fn((handler: (message?: string) => void) => { graphicsError.handler = handler; }), off: vi.fn() } };
+    const viewportChange: { handler?: () => void } = {};
+    const stage = { setWindowsFullscreenViewport: vi.fn(), setWindowsStatusProvider: vi.fn(), setMinimapProvider: vi.fn(), isGameRectVisible: vi.fn(() => true), ensureGameRectVisible: vi.fn(), redraw: vi.fn(), panGameBy: vi.fn(), getGameDisplay: vi.fn(() => display), getGuiDisplay: vi.fn(() => display), resetFade: vi.fn(), clearInputBindings: vi.fn(), dispose: vi.fn(), zoomGame: vi.fn(), resetZoom: vi.fn(), onZoomChange: { on: vi.fn((handler: (changed?: boolean) => void) => { zoomChange.handler = handler; }), off: vi.fn() }, onGameViewportChange: { on: vi.fn((handler: () => void) => { viewportChange.handler = handler; }), off: vi.fn() }, setExampleHint: vi.fn(), setGraphicsMode: vi.fn(), setComparisonCanvases: vi.fn(), onGraphicsError: { on: vi.fn((handler: (message?: string) => void) => { graphicsError.handler = handler; }), off: vi.fn() } };
     const skills = { getSkill: vi.fn((_type: number) => 10), getSelectedSkill: vi.fn(() => 1) };
     const endEvent: { handler?: (result: { state: number; survivorPercentage: number }) => void } = {};
     const soundEvent: { handler?: (effect: number) => void } = {};
@@ -36,6 +37,7 @@ const mock = vi.hoisted(() => {
         getVictoryCondition: vi.fn(() => ({ getCurrentReleaseRate: () => 50, getSurvivorsCount: () => 3 })),
         setGameDisplay: vi.fn(), setGuiDisplay: vi.fn(), setWindowsPanel: vi.fn(), setWindowsIconAnimationsEnabled: vi.fn(), setNukeRequestHandler: vi.fn((handler: () => void) => { nukeRequest.handler = handler; }),
         setFastForwardRequestHandler: vi.fn((handler: () => void) => { fastForwardRequest.handler = handler; }), setFastForwardActive: vi.fn(),
+        setViewportProvider: vi.fn(), setMinimapNavigationHandler: vi.fn(), refreshGui: vi.fn(),
         start: vi.fn(() => timer.continue()),
         stop: vi.fn(() => timer.suspend()), queueCommand: vi.fn(() => true),
         onGameEnd: { on: vi.fn((handler: (result: { state: number; survivorPercentage: number }) => void) => { endEvent.handler = handler; }) },
@@ -64,7 +66,7 @@ const mock = vi.hoisted(() => {
     const verifyHints = vi.fn(async (): Promise<'verified' | 'different' | 'unavailable'> => 'verified');
     const verifyWindowsHints = vi.fn(async (): Promise<'verified' | 'different' | 'unavailable'> => 'verified');
     const exampleMove = vi.fn(async (): Promise<{ x: number; y: number; skill: number; gameSeconds: number } | null> => ({ x: 100, y: 60, skill: 8, gameSeconds: 5 }));
-    return { timer, level, display, stage, game, skills, resources, music, midiContext, midiSynth, getWindowsAudioFile, prepareWindowsTerrain, prepareWindowsSprites, prepareWindowsObjects, prepareWindowsPanel, prepareWindowsLevelPreview, renderWindowsLevelPreview, config, getGame, replace, route, endEvent, soundEvent, effects, assignmentEvent, nukeRequest, fastForwardRequest, verifyHints, verifyWindowsHints, exampleMove, graphicsError, zoomChange };
+    return { timer, level, display, stage, game, skills, resources, music, midiContext, midiSynth, getWindowsAudioFile, prepareWindowsTerrain, prepareWindowsSprites, prepareWindowsObjects, prepareWindowsPanel, prepareWindowsLevelPreview, renderWindowsLevelPreview, config, getGame, replace, route, endEvent, soundEvent, effects, assignmentEvent, nukeRequest, fastForwardRequest, verifyHints, verifyWindowsHints, exampleMove, graphicsError, zoomChange, viewportChange };
 });
 
 vi.mock('vue-router', () => ({
@@ -154,6 +156,16 @@ describe('game view lifecycle', () => {
         mock.renderWindowsLevelPreview.mockReset();
         mock.level.getWindowsTerrain.mockReset().mockReturnValue(undefined);
         mock.level.entrances = [];
+    });
+
+    it('refreshes the DOS panel when the viewport changes while paused and detaches the handler', async () => {
+        const wrapper = mountView(); await flushPromises();
+        button(wrapper.container, 'Start level').click(); await flushPromises();
+        button(wrapper.container, 'Pause').click(); await nextTick();
+        mock.viewportChange.handler?.();
+        expect(mock.game.refreshGui).toHaveBeenCalledOnce();
+        wrapper.unmount();
+        expect(mock.stage.onGameViewportChange.off).toHaveBeenCalledOnce();
     });
 
     it('provides the live saved count and exact target in the game canvas description, including fullscreen', async () => {

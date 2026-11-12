@@ -136,6 +136,22 @@ export class Game {
         this.gameGui.setNukeRequestHandler(handler);
     }
 
+    /** Tell the DOS panel's minimap which part of the level is on screen. */
+    public setViewportProvider(provider: (() => { x: number; y: number; width: number; height: number } | null) | null) {
+        this.gameGui.setViewportProvider(provider);
+    }
+
+    /** Called with level coordinates when the player taps or drags the DOS minimap. */
+    public setMinimapNavigationHandler(handler: ((x: number, y: number) => void) | null) {
+        this.gameGui.setMinimapNavigationHandler(handler);
+    }
+
+    /** Repaint the panel after a camera move, even while the timer is stopped. */
+    public refreshGui() {
+        this.gameGui.render();
+        this.guiDisplay?.redraw();
+    }
+
     public setFastForwardRequestHandler(handler: (() => void) | null) {
         this.gameGui.setFastForwardRequestHandler(handler);
     }
