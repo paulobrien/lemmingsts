@@ -267,6 +267,10 @@ export default defineComponent({
             gameTime.value = game.getGameTimer().getGameLeftTimeString();
         }
 
+        function onGameViewportChange() {
+            if (gameMode.value === 'dos') game?.refreshGui();
+        }
+
         function disposeGame() {
             windowsSkillIcons.value = [];
             keyboardTargeting?.reset();
@@ -751,6 +755,7 @@ export default defineComponent({
             updateFullscreenViewport();
             stage.onGraphicsError.on(onGraphicsError);
             stage.onZoomChange.on(onZoomChange);
+            stage.onGameViewportChange.on(onGameViewportChange);
             keyboardTargeting = new KeyboardTargeting(gameCanvas.value, stage, () => game, assignPlayerSkill, message => { keyboardMessage.value = message; });
             document.addEventListener('visibilitychange', onVisibilityChange);
             window.addEventListener('keydown', onKeyDown);
@@ -766,6 +771,7 @@ export default defineComponent({
             stopMusic();
             stage?.onGraphicsError.off(onGraphicsError);
             stage?.onZoomChange.off(onZoomChange);
+            stage?.onGameViewportChange.off(onGameViewportChange);
             keyboardTargeting?.dispose();
             stage?.dispose();
             viewportObserver?.disconnect();

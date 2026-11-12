@@ -45,6 +45,8 @@ export class Stage {
     public readonly onGraphicsError = new EventHandler<string>();
     /** True when the playfield is away from its starting scale. */
     public readonly onZoomChange = new EventHandler<boolean>();
+    /** The visible world rectangle changed, including during a paused game. */
+    public readonly onGameViewportChange = new EventHandler<void>();
     private readonly defaultZoom: number;
     private fittedZoom: number;
     private customZoom = false;
@@ -306,6 +308,7 @@ export class Stage {
             this.draw(image, frame);
             this.drawScrollbar();
             this.drawMinimap();
+            this.onGameViewportChange.trigger();
         });
     }
 
@@ -630,6 +633,7 @@ export class Stage {
         this.nativeGuiForegroundCanvas = null;
         this.onGraphicsError.dispose();
         this.onZoomChange.dispose();
+        this.onGameViewportChange.dispose();
         this.controller.dispose();
         this.resetFade();
     }
@@ -666,7 +670,11 @@ export class Stage {
 
         this.draw(stageImage, gameImg);
 
-        if (stageImage === this.gameImgProps) { this.drawScrollbar(); this.drawMinimap(); }
+        if (stageImage === this.gameImgProps) {
+            this.drawScrollbar();
+            this.drawMinimap();
+            this.onGameViewportChange.trigger();
+        }
 
     }
 

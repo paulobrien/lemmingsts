@@ -146,6 +146,12 @@ export class Game {
         this.gameGui.setMinimapNavigationHandler(handler);
     }
 
+    /** Repaint the panel after a camera move, even while the timer is stopped. */
+    public refreshGui() {
+        this.gameGui.render();
+        this.guiDisplay?.redraw();
+    }
+
     public setFastForwardRequestHandler(handler: (() => void) | null) {
         this.gameGui.setFastForwardRequestHandler(handler);
     }
