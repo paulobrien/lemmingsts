@@ -424,18 +424,20 @@ export class GameGui {
         }
     }
 
-    /** One byte per minimap cell: 1 when any sampled level pixel in that cell is ground. */
+    /** One byte per minimap cell: 1 when any level pixel in that cell is ground. */
     private sampleMinimapTerrain(mapWidth: number, mapHeight: number, scaleX: number, scaleY: number): Uint8Array {
         const level = this.game.level;
         const terrain = new Uint8Array(mapWidth * mapHeight);
-        const stepX = Math.max(1, Math.floor(scaleX / 4)), stepY = Math.max(1, Math.floor(scaleY / 2));
         for (let my = 0; my < mapHeight; my++) {
             for (let mx = 0; mx < mapWidth; mx++) {
                 const left = mx * scaleX, top = my * scaleY;
                 const right = Math.min(level.width, left + scaleX), bottom = Math.min(level.height, top + scaleY);
                 let solid = false;
-                for (let y = top; y < bottom && !solid; y += stepY) {
-                    for (let x = left; x < right; x += stepX) {
+                // Scan every pixel so single-pixel builder bricks, thin
+                // walls and terrain at cell edges remain visible. Stop as
+                // soon as this cell contains ground.
+                for (let y = top; y < bottom && !solid; y++) {
+                    for (let x = left; x < right; x++) {
                         if (level.hasGroundAt(x, y)) { solid = true; break; }
                     }
                 }
