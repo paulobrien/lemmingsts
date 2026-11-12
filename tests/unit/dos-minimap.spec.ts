@@ -43,12 +43,24 @@ function setup() {
     const gui = new GameGui(game as unknown as Game, panelSprites as unknown as SkillPanelSprites, skills as unknown as GameSkills,
         timer as unknown as GameTimer, victory as unknown as GameVictoryCondition);
     gui.setGuiDisplay(display as unknown as DisplayImage);
+    gui.setViewportProvider(() => null);
     return { game, gui, display, pixels, timer, lemmings, level };
 }
 
 const TERRAIN = '48,160,48', LEMMING = '224,255,128', VIEW = '255,255,255', BLACK = '0,0,0';
 
 describe('DOS panel minimap', () => {
+    it('does not draw or intercept a DOS minimap when no DOS viewport is installed', () => {
+        const { gui, display } = setup();
+        gui.setViewportProvider(null);
+        const navigate = vi.fn();
+        gui.setMinimapNavigationHandler(navigate);
+        gui.render();
+        expect(display.fillRect).not.toHaveBeenCalled();
+        display.onMouseDown.trigger(new Position2D(DOS_MINIMAP.x + 50, DOS_MINIMAP.y + 10));
+        expect(navigate).not.toHaveBeenCalled();
+    });
+
     it('draws terrain, lemmings and the visible area inside the panel frame', () => {
         const { gui, pixels } = setup();
         gui.setViewportProvider(() => ({ x: 320, y: 0, width: 320, height: 160 }));

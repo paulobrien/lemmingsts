@@ -102,8 +102,8 @@ export class GameGui {
         this.minimapDragging = false;
     }
 
-    /** The minimap belongs to the DOS panel; the Windows toolbar draws its own. */
-    private get hasDosMinimap(): boolean { return !this.windowsPanel && !!this.game.level; }
+    /** Only DOS games install a viewport provider; Windows owns its separate map. */
+    private get hasDosMinimap(): boolean { return !this.windowsPanel && !!this.game.level && !!this.viewportProvider; }
 
     private isOnDosMinimap(e: { x: number; y: number }): boolean {
         return this.hasDosMinimap && e.x >= DOS_MINIMAP.x && e.x < DOS_MINIMAP.x + DOS_MINIMAP.width &&

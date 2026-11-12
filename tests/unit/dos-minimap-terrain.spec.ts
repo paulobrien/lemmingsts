@@ -26,6 +26,7 @@ function setup() {
     const gui = new GameGui(game as unknown as Game, panel as unknown as SkillPanelSprites, skills as unknown as GameSkills,
         timer as unknown as GameTimer, victory as unknown as GameVictoryCondition);
     gui.setGuiDisplay(display as unknown as DisplayImage);
+    gui.setViewportProvider(() => null);
     return { ground, gui, timer, display };
 }
 
